@@ -25,7 +25,25 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
+      - run: uv run pytest
       - run: uv run pip-audit
+
+  terraform:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        root: [infra/bootstrap, infra/foundry]
+    defaults:
+      run:
+        working-directory: ${{ matrix.root }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.4
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
 
   scan:
     runs-on: ubuntu-24.04
