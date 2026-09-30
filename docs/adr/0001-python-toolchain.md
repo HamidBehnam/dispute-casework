@@ -1,6 +1,6 @@
 # ADR 0001: Python toolchain
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
