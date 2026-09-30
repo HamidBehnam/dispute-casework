@@ -1,0 +1,13 @@
+# Models
+
+Deployments on the Foundry account `ai-dcw-eus2` (East US 2), declared in `infra/foundry/main.tf`. All are GlobalStandard with `versionUpgradeOption = NoAutoUpgrade`. One capacity unit is 1,000 tokens per minute and, for chat models, 1 request per minute, as read back from `properties.rateLimits`.
+
+| Deployment | Version | SKU | Capacity | Retirement | Purpose |
+|---|---|---|---|---|---|
+| gpt-5.4-mini | 2026-03-17 | GlobalStandard | 10 | 2027-09-21 | agent: triage, drafting, tool calling |
+| gpt-5.4-nano | 2026-03-17 | GlobalStandard | 10 | 2027-09-21 | fallback routing and cheap classification |
+| text-embedding-3-large | 1 | GlobalStandard | 10 | 2028-02-09 | corpus and query embeddings at 1536 dimensions |
+| DeepSeek-V4-Pro | 2026-04-23 | GlobalStandard | 1 | 2028-02-20 | evaluation judge from a second model family |
+| Cohere-rerank-v4.0-fast | 1 | GlobalStandard | 1 (declared; not yet created, see ADR 0003) | none announced | rerank of retrieval candidates |
+
+Retirement dates are `model.deprecation.inference` from `az cognitiveservices model list -l eastus2` on 2026-09-30. The subscription-wide quota for DeepSeek-V4-Pro and Cohere-rerank-v4.0-fast in East US 2 was observed as 20 units each in `az cognitiveservices usage list`; this is an observation, not a published limit.
