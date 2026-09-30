@@ -1,5 +1,5 @@
 [project]
-name = "dispute-resolution"
+name = "dispute-casework"
 version = "0.1.0"
 description = "Casework service for a fictional bank's dispute-operations team."
 readme = "README.md"
