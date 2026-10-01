@@ -1,6 +1,6 @@
 # ADR 0003: Foundry model access
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
