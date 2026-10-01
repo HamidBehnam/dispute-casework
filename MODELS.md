@@ -10,4 +10,6 @@ Deployments on the Foundry account `ai-dcw-eus2` (East US 2), declared in `infra
 | DeepSeek-V4-Pro | 2026-04-23 | GlobalStandard | 5 | 2028-02-20 | evaluation judge from a second model family |
 | Cohere-rerank-v4.0-fast | 1 | GlobalStandard | 20 | none announced | rerank of retrieval candidates |
 
+Embedding requests carry raw strings (`check_embedding_ctx_length=False`): no tokenizer runs in the embedding path, and an input over the model's 8,191-token limit fails at the API instead of being split and averaged.
+
 Retirement dates are `model.deprecation.inference` from `az cognitiveservices model list -l eastus2` on 2026-09-30. The subscription-wide quota for DeepSeek-V4-Pro and Cohere-rerank-v4.0-fast in East US 2 was observed as 20 units each in `az cognitiveservices usage list`; this is an observation, not a published limit. Until the support request in ADR 0003 clears, capacities are changed in the Foundry portal and mirrored in `infra/foundry/main.tf`.

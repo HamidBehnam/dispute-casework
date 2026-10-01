@@ -9,6 +9,7 @@ from dispute_casework.foundry import (
     chat_model,
     cohere_base_url,
     credential,
+    embeddings,
 )
 
 ENDPOINT = "https://ai-test-eus2.cognitiveservices.azure.com"
@@ -49,6 +50,12 @@ def test_deepseek_uses_chat_completions_and_openai_models_use_responses() -> Non
     settings = FoundrySettings(endpoint=ENDPOINT, key="k")
     assert chat_model(settings, "DeepSeek-V4-Pro").use_responses_api is False
     assert chat_model(settings, "gpt-5.4-mini").use_responses_api is True
+
+
+def test_embeddings_send_raw_strings_at_1536_dimensions() -> None:
+    model = embeddings(FoundrySettings(endpoint=ENDPOINT, key="k"))
+    assert model.check_embedding_ctx_length is False
+    assert model.dimensions == 1536
 
 
 def test_check_dimensions_accepts_1536_and_rejects_others() -> None:
