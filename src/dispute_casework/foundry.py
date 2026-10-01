@@ -45,6 +45,7 @@ def embeddings(settings: FoundrySettings) -> AzureAIOpenAIApiEmbeddingsModel:
         credential=credential(settings),
         model="text-embedding-3-large",
         dimensions=EMBEDDING_DIMENSIONS,
+        check_embedding_ctx_length=False,
     )
 
 

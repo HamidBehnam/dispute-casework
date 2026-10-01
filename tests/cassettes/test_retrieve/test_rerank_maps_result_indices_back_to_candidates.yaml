@@ -1,0 +1,40 @@
+interactions:
+- request:
+    body: '{"sha256": "48ecc260c554d3daf16e5dc93f1b6640456d2a80f1aec4f785633453f5f128b7"}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-length:
+      - '267'
+      content-type:
+      - application/json
+      host:
+      - ai-dcw-eus2.cognitiveservices.azure.com
+      user-agent:
+      - cohere/7.2.0
+      x-fern-language:
+      - Python
+      x-fern-platform:
+      - darwin/25.6.0
+      x-fern-runtime:
+      - python/3.13.13
+      x-fern-sdk-name:
+      - cohere
+      x-fern-sdk-version:
+      - 7.2.0
+    method: POST
+    uri: https://ai-dcw-eus2.cognitiveservices.azure.com/providers/cohere/v2/rerank
+  response:
+    body:
+      string: '{"id":"d02e4a0c-e7f7-445d-aebc-70ca2324bb96","results":[{"index":1,"relevance_score":0.917184},{"index":2,"relevance_score":0.19534837}],"meta":{"api_version":{"version":"2"},"billed_units":{"search_units":1}}}'
+    headers:
+      content-type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+version: 1
