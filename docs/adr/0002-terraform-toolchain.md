@@ -1,6 +1,6 @@
 # ADR 0002: Terraform toolchain
 
-Status: Accepted
+Status: Proposed
 
 ## Context
 
@@ -15,12 +15,12 @@ Azure resources for this service are provisioned as reviewed, idempotent code wi
 - Two roots. `infra/bootstrap` creates the resource group `rg-dcw-eus2` and the state account `stdcwtfstate` (Standard LRS, shared-key access off, TLS 1.2, blob versioning and 30-day soft delete, container `tfstate`, Storage Blob Data Contributor to the signed-in principal); it was applied with local state and then migrated into its own container under the key `bootstrap.tfstate`. `infra/foundry` holds the workload and stores its state under `foundry.tfstate`.
 - Naming: workload token `dcw`, region suffix `eus2`, no environment segment, because there is one environment.
 - CI runs `terraform fmt -check -recursive`, `init -backend=false` and `validate` per root with `hashicorp/setup-terraform` pinned by commit SHA; Dependabot tracks the providers per root.
-- `.gitignore` excludes `.terraform/`, state files, `*.tfvars`, lock info and crash logs. Values that must not be committed, such as the budget contact email, arrive as `TF_VAR_` environment variables.
+- `.gitignore` excludes `.terraform/`, state files, `*.tfvars`, lock info and crash logs. Values that must not be committed, such as the budget contact addresses, arrive as `TF_VAR_` environment variables.
 
 ## Rationale
 
 - Terraform over Bicep: one language for Azure and the Cloudflare edge that arrives later, and the azapi provider covers preview API surfaces without leaving the plan and apply workflow.
-- tenv over a bare binary: the version file makes the pin visible in the repository, and the same file drives the CI pin.
+- tenv over a bare binary: the version file makes the pin visible in the repository, and `required_version` rejects any other binary, locally and in CI.
 - A separate bootstrap root: the state backend cannot store its own creation; the bootstrap-then-migrate sequence is the standard way to get there with no manually created resource.
 - Entra-only storage access over a shared key: nothing to rotate, and the role assignment is itself in the plan.
 
