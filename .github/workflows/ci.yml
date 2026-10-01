@@ -25,6 +25,7 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
+      - run: docker compose up -d --wait
       - run: uv run pytest
       - run: uv run pip-audit
 
@@ -68,8 +69,10 @@ jobs:
         run: |
           test -n "$BANNED_PHRASES" || { echo "BANNED_PHRASES secret is empty"; exit 1; }
           printf '%s\n' "$BANNED_PHRASES" | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases"
-          hits=$({ git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . || true
-                   git log --all -p --format='%H%n%B' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
+          # corpus/ holds vendored regulation text and is left out of this scan; gitleaks covers it.
+          hits=$({ git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus' || true
+                   git log --all --format='%H%n%B' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
+                   git log --all -p --format= -- . ':(exclude)corpus' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
                    git tag -l --format='%(refname) %(contents)' | grep -i -F -f "$RUNNER_TEMP/phrases" || true
                  } | wc -l)
           [ "$hits" -eq 0 ] || { echo "$hits banned-phrase hit(s)"; exit 1; }
