@@ -30,8 +30,8 @@ locals {
     "gpt-5.4-mini"            = { format = "OpenAI", version = "2026-03-17", capacity = 10 }
     "gpt-5.4-nano"            = { format = "OpenAI", version = "2026-03-17", capacity = 10 }
     "text-embedding-3-large"  = { format = "OpenAI", version = "1", capacity = 10 }
-    "DeepSeek-V4-Pro"         = { format = "DeepSeek", version = "2026-04-23", capacity = 1 }
-    "Cohere-rerank-v4.0-fast" = { format = "Cohere", version = "1", capacity = 1 }
+    "DeepSeek-V4-Pro"         = { format = "DeepSeek", version = "2026-04-23", capacity = 5 }
+    "Cohere-rerank-v4.0-fast" = { format = "Cohere", version = "1", capacity = 20 }
   }
 }
 
