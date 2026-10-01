@@ -47,6 +47,14 @@ def test_hybrid_config_built_per_call() -> None:
     )
 
 
+@pytest.mark.parametrize("keywords", ["", "  \n"])
+def test_retrieve_rejects_an_empty_keyword_string(keywords: str) -> None:
+    store = Mock()
+    with pytest.raises(ValueError, match="keyword string"):
+        retrieve(store, "question", [0.0], keywords)
+    store.similarity_search_by_vector.assert_not_called()
+
+
 def test_sequential_searches_use_their_own_keyword_query(
     store: PGVectorStore, corpus_vectors: dict[str, list[float]]
 ) -> None:
