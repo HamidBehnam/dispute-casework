@@ -82,7 +82,7 @@ resource "azurerm_consumption_budget_subscription" "dcw" {
       threshold      = notification.value
       operator       = "GreaterThanOrEqualTo"
       threshold_type = "Actual"
-      contact_emails = [var.budget_email]
+      contact_emails = var.budget_emails
     }
   }
 
@@ -91,6 +91,6 @@ resource "azurerm_consumption_budget_subscription" "dcw" {
     threshold      = 100
     operator       = "GreaterThanOrEqualTo"
     threshold_type = "Forecasted"
-    contact_emails = [var.budget_email]
+    contact_emails = var.budget_emails
   }
 }
