@@ -1,6 +1,6 @@
 import os
-from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Self
 
 from azure.core.credentials import TokenCredential
 from azure.identity import AzureCliCredential, get_bearer_token_provider
@@ -19,7 +19,7 @@ class FoundrySettings:
     key: str | None = None
 
     @classmethod
-    def from_env(cls) -> "FoundrySettings":
+    def from_env(cls) -> Self:
         return cls(
             endpoint=os.environ["FOUNDRY_ENDPOINT"].rstrip("/"),
             key=os.environ.get("FOUNDRY_KEY") or None,
@@ -30,26 +30,12 @@ def credential(settings: FoundrySettings) -> str | TokenCredential:
     return settings.key or AzureCliCredential()
 
 
-def bearer_token(settings: FoundrySettings) -> str | Callable[[], str]:
-    chosen = credential(settings)
-    if isinstance(chosen, str):
-        return chosen
-    return get_bearer_token_provider(chosen, TOKEN_SCOPE)
-
-
-def chat_model(
-    settings: FoundrySettings,
-    deployment: str,
-    *,
-    use_responses_api: bool | None = None,
-) -> AzureAIOpenAIApiChatModel:
-    if use_responses_api is None:
-        use_responses_api = deployment not in CHAT_COMPLETIONS_ONLY
+def chat_model(settings: FoundrySettings, deployment: str) -> AzureAIOpenAIApiChatModel:
     return AzureAIOpenAIApiChatModel(
         endpoint=f"{settings.endpoint}/openai/v1",
         credential=credential(settings),
         model=deployment,
-        use_responses_api=use_responses_api,
+        use_responses_api=deployment not in CHAT_COMPLETIONS_ONLY,
     )
 
 
@@ -62,12 +48,15 @@ def embeddings(settings: FoundrySettings) -> AzureAIOpenAIApiEmbeddingsModel:
     )
 
 
-def cohere_base_url(endpoint: str) -> str:
-    return f"{endpoint.rstrip('/')}/providers/cohere"
+def cohere_base_url(settings: FoundrySettings) -> str:
+    return f"{settings.endpoint}/providers/cohere"
 
 
 def reranker(settings: FoundrySettings) -> ClientV2:
+    chosen = credential(settings)
+    if isinstance(chosen, str):
+        return ClientV2(api_key=chosen, base_url=cohere_base_url(settings))
     return ClientV2(
-        api_key=bearer_token(settings),
-        base_url=cohere_base_url(settings.endpoint),
+        api_key=get_bearer_token_provider(chosen, TOKEN_SCOPE),
+        base_url=cohere_base_url(settings),
     )
