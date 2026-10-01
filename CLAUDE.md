@@ -11,6 +11,8 @@ Casework service for a fictional bank's dispute-operations team. A preparer open
     uv sync --locked
     uv run ruff check . && uv run ruff format --check .
     uv run mypy
+    docker compose up -d --wait
+    uv run pytest
 
 ## Code
 
