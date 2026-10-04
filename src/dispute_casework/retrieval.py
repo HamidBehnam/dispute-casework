@@ -68,7 +68,7 @@ def embed(settings: FoundrySettings, texts: list[str]) -> list[list[float]]:
 
 
 def retrieve(
-    store: PGVectorStore, query: str, embedding: list[float], keywords: str
+    store: PGVectorStore, embedding: list[float], keywords: str
 ) -> list[Document]:
     if not keywords.strip():
         # With an empty fts_query langchain-postgres 0.0.18 skips the keyword leg

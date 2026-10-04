@@ -33,8 +33,8 @@ def test_hybrid_config_names_the_stored_column_and_rrf() -> None:
 
 def test_hybrid_config_built_per_call() -> None:
     store = Mock()
-    retrieve(store, "first question", [0.0], "first keywords")
-    retrieve(store, "second question", [0.0], "second keywords")
+    retrieve(store, [0.0], "first keywords")
+    retrieve(store, [0.0], "second keywords")
     first, second = (
         call.kwargs["hybrid_search_config"]
         for call in store.similarity_search_by_vector.call_args_list
@@ -51,7 +51,7 @@ def test_hybrid_config_built_per_call() -> None:
 def test_retrieve_rejects_an_empty_keyword_string(keywords: str) -> None:
     store = Mock()
     with pytest.raises(ValueError, match="keyword string"):
-        retrieve(store, "question", [0.0], keywords)
+        retrieve(store, [0.0], keywords)
     store.similarity_search_by_vector.assert_not_called()
 
 
@@ -62,8 +62,8 @@ def test_sequential_searches_use_their_own_keyword_query(
     with patch.object(
         retrieval, "reciprocal_rank_fusion", wraps=reciprocal_rank_fusion
     ) as fusion:
-        retrieve(store, "first question", vector, "provisional credit")
-        retrieve(store, "second question", vector, "remittance transfer")
+        retrieve(store, vector, "provisional credit")
+        retrieve(store, vector, "remittance transfer")
     first_leg, second_leg = (call.args[1] for call in fusion.call_args_list)
     assert first_leg and second_leg
     assert all("provisional" in row["content"].lower() for row in first_leg)
@@ -120,7 +120,7 @@ def test_retrieve_returns_twenty_candidates_carrying_their_paragraph_id(
     store: PGVectorStore, corpus_vectors: dict[str, list[float]]
 ) -> None:
     candidates = retrieve(
-        store, "question", corpus_vectors[QUERY_VECTOR_OF], "investigate promptly"
+        store, corpus_vectors[QUERY_VECTOR_OF], "investigate promptly"
     )
     assert len(candidates) == CANDIDATES
     assert candidates[0].metadata["paragraph_id"] == QUERY_VECTOR_OF
