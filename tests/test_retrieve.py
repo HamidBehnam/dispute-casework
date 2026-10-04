@@ -25,6 +25,7 @@ QUERY_VECTOR_OF = "1005.11(c)(1)"
 def test_hybrid_config_names_the_stored_column_and_rrf() -> None:
     config = hybrid_config("provisional credit")
     assert config.tsv_column == "content_tsv"
+    assert config.tsv_lang == "pg_catalog.english"
     assert config.fts_query == "provisional credit"
     assert config.fusion_function is reciprocal_rank_fusion
     assert config.fusion_function_parameters == {"rrf_k": 60}
