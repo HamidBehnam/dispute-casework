@@ -8,6 +8,7 @@ from cohere import ClientV2
 from langchain_azure_ai.chat_models import AzureAIOpenAIApiChatModel
 from langchain_azure_ai.embeddings import AzureAIOpenAIApiEmbeddingsModel
 
+EMBEDDING_DEPLOYMENT = "text-embedding-3-large"
 EMBEDDING_DIMENSIONS = 1536
 TOKEN_SCOPE = "https://cognitiveservices.azure.com/.default"
 CHAT_COMPLETIONS_ONLY = frozenset({"DeepSeek-V4-Pro"})
@@ -43,7 +44,7 @@ def embeddings(settings: FoundrySettings) -> AzureAIOpenAIApiEmbeddingsModel:
     return AzureAIOpenAIApiEmbeddingsModel(
         endpoint=f"{settings.endpoint}/openai/v1",
         credential=credential(settings),
-        model="text-embedding-3-large",
+        model=EMBEDDING_DEPLOYMENT,
         dimensions=EMBEDDING_DIMENSIONS,
         check_embedding_ctx_length=False,
     )
