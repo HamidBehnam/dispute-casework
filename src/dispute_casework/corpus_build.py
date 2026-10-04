@@ -39,9 +39,9 @@ from dispute_casework.corpus import (
 )
 from dispute_casework.ecfr import PARSER_VERSION, parse_part
 from dispute_casework.foundry import (
+    EMBEDDING_DEPLOYMENT,
     EMBEDDING_DIMENSIONS,
     FoundrySettings,
-    embeddings,
 )
 from dispute_casework.retrieval import embed
 
@@ -147,7 +147,7 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
             "parser_version": PARSER_VERSION,
             "content_format_version": CONTENT_FORMAT_VERSION,
             "embedding": {
-                "model": embeddings(settings).model,
+                "model": EMBEDDING_DEPLOYMENT,
                 "deployment_version": EMBEDDING_DEPLOYMENT_VERSION,
                 "dimensions": EMBEDDING_DIMENSIONS,
                 "dtype": "float32",
