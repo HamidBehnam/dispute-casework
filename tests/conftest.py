@@ -3,8 +3,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import numpy.typing as npt
 import pytest
 from langchain_postgres import PGEngine, PGVectorStore
 
@@ -80,8 +78,7 @@ def store(engine: PGEngine, settings: FoundrySettings) -> PGVectorStore:
 def corpus_vectors() -> dict[str, list[float]]:
     """Corpus embeddings by paragraph ID, used as query vectors without a model call."""
     _, chunks, vectors = read_corpus(SNAPSHOT_DIR)
-    rows: npt.NDArray[np.float32] = vectors
     return {
-        chunk["paragraph_id"]: row.tolist()
-        for chunk, row in zip(chunks, rows, strict=True)
+        chunk["paragraph_id"]: vector.tolist()
+        for chunk, vector in zip(chunks, vectors, strict=True)
     }
