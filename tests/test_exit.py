@@ -69,9 +69,9 @@ def measure(
             dense = store.similarity_search_by_vector(
                 vector, k=CANDIDATES, hybrid_search_config=None
             )
-            hybrid_raw = retrieve(store, query.text, vector, query.text)
+            hybrid_raw = retrieve(store, vector, query.text)
             raw_rows = len(fusion.call_args.args[1])
-            hybrid_keyword = retrieve(store, query.text, vector, query.keywords)
+            hybrid_keyword = retrieve(store, vector, query.keywords)
             keyword_rows = len(fusion.call_args.args[1])
             time.sleep(pause)
             dense_rerank = rerank(settings, query.text, dense, RERANK_TOP_N)
