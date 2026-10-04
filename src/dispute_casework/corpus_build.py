@@ -120,9 +120,6 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
         }
         for paragraph in paragraphs
     ]
-    (directory / CHUNKS).write_text(
-        "".join(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in chunks)
-    )
     vectors: list[list[float]] = []
     started = time.monotonic()
     batches = token_batches([chunk["content"] for chunk in chunks])
@@ -136,6 +133,9 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
             f"{len(vectors)}/{len(chunks)} done after {minutes:.1f} min",
             flush=True,
         )
+    (directory / CHUNKS).write_text(
+        "".join(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in chunks)
+    )
     np.save(directory / EMBEDDINGS, np.asarray(vectors, dtype=np.float32))
     write_manifest(
         directory,
