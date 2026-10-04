@@ -1,9 +1,18 @@
+import shutil
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 import tiktoken
 
-from dispute_casework.corpus_build import TOKENS_PER_REQUEST, token_batches
+from dispute_casework import corpus_build
+from dispute_casework.corpus import verified_manifest
+from dispute_casework.corpus_build import (
+    TOKENS_PER_REQUEST,
+    embed_corpus,
+    token_batches,
+)
+from dispute_casework.foundry import FoundrySettings
 
 
 @pytest.fixture
@@ -40,3 +49,18 @@ def test_token_batches_keep_order_and_stay_under_the_request_cap() -> None:
         TOKENS_PER_REQUEST,
     ]
     assert [over_the_cap] in [batch for batch, _ in batches]
+
+
+@pytest.mark.usefixtures("one_token_per_word")
+def test_interrupted_embed_leaves_the_snapshot_matching_its_manifest(
+    snapshot_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    directory = tmp_path / "snapshot"
+    shutil.copytree(snapshot_dir, directory)
+    monkeypatch.setattr(corpus_build, "chunk_content", lambda paragraph: paragraph.text)
+    monkeypatch.setattr(
+        corpus_build, "embed", Mock(side_effect=RuntimeError("interrupted"))
+    )
+    with pytest.raises(RuntimeError, match="interrupted"):
+        embed_corpus(directory, FoundrySettings(endpoint="https://unused", key="k"))
+    verified_manifest(directory)
