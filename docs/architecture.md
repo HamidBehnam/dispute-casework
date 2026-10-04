@@ -8,7 +8,7 @@ The current state of the parts that exist. Decisions and measured results are in
 
 `ecfr.parse_part` rebuilds the paragraph outline from the flat XML and gives every paragraph an ID: `1005.11(c)(2)(i)` for regulation text, `1005.11(c)-3` for a Supplement I comment. Regulation text is tagged `binding` and Supplement I `official_interpretation`. Each paragraph is one chunk. Its content is the paragraph ID, the heading path and the paragraph text on three lines; that one string is embedded, keyword-indexed and reranked.
 
-`python -m dispute_casework.corpus_build` has one command per step: `fetch` downloads the XML, `embed` writes the chunk and embedding files, `load` rebuilds the `chunks` table, and `measure` reports the size of a part without storing it. `load` checks every file against the manifest before it touches the database.
+`python -m dispute_casework.corpus_build` has one command per step: `fetch` downloads the XML, `embed` writes the chunk and embedding files, `load` rebuilds the `chunks` table, and `measure` reports the size of Part 1026 without storing it. `load` checks every file against the manifest before it touches the database.
 
 ## Retrieval
 
