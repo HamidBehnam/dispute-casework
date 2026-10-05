@@ -8,19 +8,21 @@ import argparse
 import sys
 
 from dispute_casework.foundry import (
+    EMBEDDING_DEPLOYMENT,
     EMBEDDING_DIMENSIONS,
     FoundrySettings,
     chat_model,
     embeddings,
     reranker,
 )
+from dispute_casework.retrieval import RERANK_DEPLOYMENT, RERANK_MAX_TOKENS_PER_DOC
 
 DEPLOYMENTS = (
     "gpt-5.4-mini",
     "gpt-5.4-nano",
     "DeepSeek-V4-Pro",
-    "text-embedding-3-large",
-    "Cohere-rerank-v4.0-fast",
+    EMBEDDING_DEPLOYMENT,
+    RERANK_DEPLOYMENT,
 )
 PROMPT = "Reply with the single word: ready"
 QUERY = "When must a bank provisionally credit a consumer's account?"
@@ -40,24 +42,22 @@ def check_dimensions(vector: list[float]) -> None:
 
 
 def check(settings: FoundrySettings, deployment: str) -> str:
-    match deployment:
-        case "text-embedding-3-large":
-            vector = embeddings(settings).embed_query(PROMPT)
-            check_dimensions(vector)
-            return f"{len(vector)} dimensions"
-        case "Cohere-rerank-v4.0-fast":
-            response = reranker(settings).rerank(
-                model=deployment,
-                query=QUERY,
-                documents=DOCUMENTS,
-                top_n=3,
-                max_tokens_per_doc=512,
-            )
-            ranking = [(r.index, round(r.relevance_score, 3)) for r in response.results]
-            return f"ranking {ranking}"
-        case _:
-            reply = chat_model(settings, deployment).invoke(PROMPT)
-            return repr(reply.text.strip())
+    if deployment == EMBEDDING_DEPLOYMENT:
+        vector = embeddings(settings).embed_query(PROMPT)
+        check_dimensions(vector)
+        return f"{len(vector)} dimensions"
+    if deployment == RERANK_DEPLOYMENT:
+        response = reranker(settings).rerank(
+            model=deployment,
+            query=QUERY,
+            documents=DOCUMENTS,
+            top_n=3,
+            max_tokens_per_doc=RERANK_MAX_TOKENS_PER_DOC,
+        )
+        ranking = [(r.index, round(r.relevance_score, 3)) for r in response.results]
+        return f"ranking {ranking}"
+    reply = chat_model(settings, deployment).invoke(PROMPT)
+    return repr(reply.text.strip())
 
 
 def main() -> int:
