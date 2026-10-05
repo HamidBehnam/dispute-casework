@@ -132,7 +132,7 @@ Per query: the rank of each expected ID in each arm (– is absent), and the row
 
 **Determinism.** The hybrid-with-keyword-string and rerank arm was run live a second time. The reranked top 5 was identical for 30/30 queries. The twenty candidates were identical, in order, for 28/30; for queries 4 and 25 the candidate lists differed and the top 5 did not. The embedding deployment is the source: 20/30 query vectors differed between the two calls, by at most 0.005 in a component. Query embeddings are not bit-stable across calls, which is why CI replays the recorded ones. No fused score was tied at the cut-off of twenty. One reranked top 5 (query 18) held two equal relevance scores, in the same order in both runs.
 
-**Replay.** The recorded run replays with identical results against the same image on linux/amd64, the architecture CI runs on. vcrpy applies the request filter to the live request before matching, and on one code path twice, so the filter leaves a body that is already a hash unchanged; the default matchers are used.
+**Replay.** The recorded run replays with identical results against the same image on linux/amd64, the architecture CI runs on. vcrpy applies the request filter to the live request before matching, and on one code path twice, so the filter leaves a body that is already a hash unchanged; matching uses vcrpy's built-in method, uri and body matchers, with no custom matcher.
 
 ## Consequences
 
