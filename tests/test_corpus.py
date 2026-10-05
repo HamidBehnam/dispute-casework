@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 from unittest.mock import Mock
@@ -66,6 +67,21 @@ def test_load_rejects_manifest_mismatch(snapshot_dir: Path, tmp_path: Path) -> N
         embeddings.write(b"\0")
     engine = Mock()
     with pytest.raises(ValueError, match="embeddings.npy does not match"):
+        load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
+    assert engine.mock_calls == []
+
+
+@pytest.mark.parametrize("unlisted", ["chunks.jsonl", "embeddings.npy"])
+def test_load_rejects_a_file_the_manifest_does_not_list(
+    snapshot_dir: Path, tmp_path: Path, unlisted: str
+) -> None:
+    directory = tmp_path / "snapshot"
+    shutil.copytree(snapshot_dir, directory)
+    manifest = json.loads((directory / "manifest.json").read_text())
+    del manifest["files"][unlisted]
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    engine = Mock()
+    with pytest.raises(ValueError, match=f"{unlisted} has no sha256"):
         load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
     assert engine.mock_calls == []
 

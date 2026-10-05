@@ -58,6 +58,9 @@ def read_corpus(
     directory: Path,
 ) -> tuple[dict[str, Any], list[dict[str, str]], npt.NDArray[np.float32]]:
     manifest = verified_manifest(directory)
+    for name in (CHUNKS, EMBEDDINGS):
+        if name not in manifest["files"]:
+            raise ValueError(f"{name} has no sha256 in {MANIFEST}")
     chunks = [
         json.loads(line) for line in (directory / CHUNKS).read_text().splitlines()
     ]
