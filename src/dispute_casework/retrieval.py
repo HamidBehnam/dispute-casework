@@ -49,8 +49,8 @@ def hybrid_config(keywords: str) -> HybridSearchConfig:
 
 
 def open_store(engine: PGEngine, settings: FoundrySettings) -> PGVectorStore:
-    # The store-level config only tells inserts which tsvector column to fill;
-    # every search passes its own.
+    # The store-level config tells inserts which tsvector column to fill and in
+    # which language; every search passes its own.
     return PGVectorStore.create_sync(
         engine,
         embeddings(settings),
