@@ -9,7 +9,6 @@ dependencies = [
     "azure-identity>=1.25.3",
     "cohere>=7.2.0",
     "httpx>=0.28.1",
-    "langchain>=1.4.3",
     "langchain-azure-ai>=1.2.10",
     "langchain-postgres==0.0.18",
     "numpy>=2.5.3",
