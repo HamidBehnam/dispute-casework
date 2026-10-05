@@ -27,15 +27,7 @@ def words(count: int) -> str:
 
 @pytest.mark.usefixtures("one_token_per_word")
 def test_token_batches_keep_order_and_stay_under_the_request_cap() -> None:
-    over_the_cap = words(TOKENS_PER_REQUEST + 1000)
-    texts = [
-        words(5000),
-        words(3000),
-        words(1),
-        over_the_cap,
-        words(2),
-        words(TOKENS_PER_REQUEST),
-    ]
+    texts = [words(5000), words(3000), words(1), words(2), words(TOKENS_PER_REQUEST)]
     batches = list(token_batches(texts))
     assert [text for batch, _ in batches for text in batch] == texts
     assert all(
@@ -43,12 +35,20 @@ def test_token_batches_keep_order_and_stay_under_the_request_cap() -> None:
     )
     assert [tokens for _, tokens in batches] == [
         TOKENS_PER_REQUEST,
-        1,
-        TOKENS_PER_REQUEST + 1000,
-        2,
+        3,
         TOKENS_PER_REQUEST,
     ]
-    assert [over_the_cap] in [batch for batch, _ in batches]
+
+
+@pytest.mark.usefixtures("one_token_per_word")
+def test_a_text_over_the_request_cap_goes_out_alone() -> None:
+    over_the_cap = words(TOKENS_PER_REQUEST + 1000)
+    batches = list(token_batches([words(1), over_the_cap, words(2)]))
+    assert batches == [
+        ([words(1)], 1),
+        ([over_the_cap], TOKENS_PER_REQUEST + 1000),
+        ([words(2)], 2),
+    ]
 
 
 @pytest.mark.usefixtures("one_token_per_word")
