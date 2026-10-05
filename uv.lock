@@ -709,10 +709,12 @@ name = "dispute-casework"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "azure-core" },
     { name = "azure-identity" },
     { name = "cohere" },
     { name = "httpx" },
     { name = "langchain-azure-ai" },
+    { name = "langchain-core" },
     { name = "langchain-postgres" },
     { name = "numpy" },
     { name = "psycopg", extra = ["binary"] },
@@ -731,10 +733,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "azure-core", specifier = ">=1.41.0" },
     { name = "azure-identity", specifier = ">=1.25.3" },
     { name = "cohere", specifier = ">=7.2.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-azure-ai", specifier = ">=1.2.10" },
+    { name = "langchain-core", specifier = ">=1.6.6" },
     { name = "langchain-postgres", specifier = "==0.0.18" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
