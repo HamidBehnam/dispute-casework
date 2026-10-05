@@ -179,8 +179,9 @@ def supplement_paragraphs(part: str, supplement: ET.Element) -> Iterator[Paragra
         if not matches:
             raise ValueError(f"comment without a designator under {base}")
         number = matches[0]["plain"]
-        # Where the source prints a run of comments twice, the number goes
-        # back; the repeats and their sub-paragraphs are dropped.
+        # Where the source prints a run of comments a second time, not always
+        # word for word, the number goes back; the second run and its
+        # sub-paragraphs are dropped.
         if number.isdigit():
             repeating = bool(outline.path) and int(number) <= int(outline.path[0])
         if repeating:
