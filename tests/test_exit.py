@@ -66,6 +66,8 @@ def measure(
         retrieval, "reciprocal_rank_fusion", wraps=reciprocal_rank_fusion
     ) as fusion:
         for query, vector in zip(queries, vectors, strict=True):
+            # None turns the hybrid search off; left out, the vendor falls back to
+            # the store's own config and returns the dense leg's 40 rows.
             dense = store.similarity_search_by_vector(
                 vector, k=CANDIDATES, hybrid_search_config=None
             )
