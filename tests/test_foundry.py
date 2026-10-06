@@ -10,7 +10,6 @@ from dispute_casework.foundry import (
     FoundrySettings,
     api_key,
     chat_model,
-    cohere_base_url,
     embeddings,
     reranker,
 )
@@ -62,8 +61,9 @@ def test_sdk_clients_carry_the_timeout_under_a_key_and_under_a_token_provider(
 
 
 def test_cohere_base_url_is_the_provider_route() -> None:
+    client = reranker(FoundrySettings(endpoint=ENDPOINT, key="k"))
     assert (
-        cohere_base_url(FoundrySettings(endpoint=ENDPOINT))
+        client._client_wrapper.get_base_url()
         == "https://ai-test-eus2.cognitiveservices.azure.com/providers/cohere"
     )
 
