@@ -92,7 +92,12 @@ def nested_paragraphs(
 ) -> Iterator[Paragraph]:
     for node in parent.select(":scope > div[id]"):
         paragraph_id = str(node["id"]).removeprefix("p-")
-        text = html_text(node.select_one(":scope > p"))
+        paragraphs = node.select(":scope > p")
+        if len(paragraphs) > 1:
+            raise ValueError(
+                f"{paragraph_id} holds {len(paragraphs)} paragraphs of its own"
+            )
+        text = html_text(paragraphs[0] if paragraphs else None)
         if not text:
             raise ValueError(f"{paragraph_id} has no paragraph text")
         designator = html_text(node.select_one(":scope > p > .paragraph-hierarchy"))

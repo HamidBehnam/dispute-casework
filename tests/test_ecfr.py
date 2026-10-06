@@ -136,6 +136,16 @@ def test_node_without_paragraph_text_is_rejected() -> None:
         parse(section("1005.2", '<div id="p-1005.2(a)"></div>'))
 
 
+def test_node_with_two_paragraphs_of_its_own_is_rejected() -> None:
+    with pytest.raises(ValueError, match=r"1005.2\(a\) holds 2 paragraphs of its own"):
+        parse(
+            section(
+                "1005.2",
+                '<div id="p-1005.2(a)"><p>(a) First.</p><p>Second.</p></div>',
+            )
+        )
+
+
 def test_id_seen_twice_is_rejected() -> None:
     with pytest.raises(ValueError, match="more than once"):
         parse(
