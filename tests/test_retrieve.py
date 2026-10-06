@@ -82,8 +82,9 @@ def test_sequential_searches_use_their_own_keyword_query(
     }
 
 
+@pytest.mark.usefixtures("store")
 def test_langchain_postgres_still_writes_the_query_into_a_shared_config(
-    engine: PGEngine, store: PGVectorStore
+    engine: PGEngine,
 ) -> None:
     text_search_store = PGVectorStore.create_sync(
         engine,
