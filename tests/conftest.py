@@ -1,3 +1,15 @@
+import os
+import sys
+
+# DeepEval reads these when it is imported, so they are set before any import
+# that reaches it: no telemetry, no .env or key file read, nothing written.
+DEEPEVAL_IMPORTED_BEFORE_SWITCHES = "deepeval" in sys.modules
+os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "1"
+os.environ["DEEPEVAL_DISABLE_DOTENV"] = "1"
+os.environ["DEEPEVAL_FILE_SYSTEM"] = "READ_ONLY"
+os.environ["DEEPEVAL_DISABLE_LEGACY_KEYFILE"] = "1"
+os.environ.pop("CONFIDENT_API_KEY", None)
+
 import hashlib
 import json
 from pathlib import Path
