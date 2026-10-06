@@ -15,7 +15,7 @@ A greenfield Python service built by one engineer with a coding agent. The repos
 - ruff 0.16.9 for linting and formatting; mypy 2.3.1 in strict mode; pytest 9.1.1; pip-audit 2.10.1.
 - gitleaks 8.30.1: the installed binary in the local hooks; in CI the official image `ghcr.io/gitleaks/gitleaks`, pinned by the digest of its multi-platform index and run over the full history.
 - GitHub Actions on `ubuntu-24.04` with actions pinned by commit SHA; Dependabot for the uv and github-actions ecosystems.
-- Tools are pinned exactly in `pyproject.toml`; runtime dependencies use floors, with `uv.lock` as the exact pin.
+- Tools are pinned exactly in `pyproject.toml`; runtime dependencies use floors, with `uv.lock` as the exact pin. langchain-postgres is the exception and is pinned exactly; ADR 0004 records the version and what depends on it.
 
 ## Rationale
 
