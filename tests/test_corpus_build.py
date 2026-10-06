@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from dispute_casework import corpus_build
-from dispute_casework.corpus import verified_manifest
+from dispute_casework.corpus import SNAPSHOT_DIR, verified_manifest
 from dispute_casework.corpus_build import embed_corpus, fetch
 from dispute_casework.foundry import FoundrySettings
 
@@ -55,10 +55,10 @@ def test_fetch_writes_nothing_when_a_source_answers_with_an_error(
 
 
 def test_interrupted_embed_leaves_the_snapshot_matching_its_manifest(
-    snapshot_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     directory = tmp_path / "snapshot"
-    shutil.copytree(snapshot_dir, directory)
+    shutil.copytree(SNAPSHOT_DIR, directory)
     monkeypatch.setattr(corpus_build, "chunk_content", lambda paragraph: paragraph.text)
     monkeypatch.setattr(
         corpus_build, "embed", Mock(side_effect=RuntimeError("interrupted"))
