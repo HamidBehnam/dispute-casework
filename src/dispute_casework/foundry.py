@@ -74,5 +74,6 @@ def reranker(settings: FoundrySettings) -> ClientV2:
     return ClientV2(
         api_key=api_key(settings, COHERE_ROUTE_SCOPE),
         base_url=f"{settings.endpoint}/providers/cohere",
+        timeout=TIMEOUT_SECONDS,
         max_retries=RERANK_MAX_RETRIES,
     )

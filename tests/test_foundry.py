@@ -55,8 +55,10 @@ def test_sdk_clients_carry_the_timeout_under_a_key_and_under_a_token_provider(
     settings = FoundrySettings(endpoint=ENDPOINT, key=key)
     chat_client = chat_model(settings, "gpt-5.4-mini").root_client
     embeddings_client = embeddings(settings).client._client
+    rerank_client = reranker(settings)._client_wrapper
     assert chat_client.timeout == TIMEOUT_SECONDS
     assert embeddings_client.timeout == TIMEOUT_SECONDS
+    assert rerank_client.get_timeout() == TIMEOUT_SECONDS
     assert str(embeddings_client.base_url) == f"{ENDPOINT}/openai/v1/"
 
 
