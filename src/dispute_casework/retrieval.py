@@ -26,7 +26,6 @@ LEG_TOP_K = 40
 CANDIDATES = 20
 RRF_K = 60
 RERANK_DEPLOYMENT = "Cohere-rerank-v4.0-fast"
-RERANK_MAX_TOKENS_PER_DOC = 512
 
 
 def hybrid_config(keywords: str) -> HybridSearchConfig:
@@ -87,6 +86,5 @@ def rerank(
         query=query,
         documents=[candidate.page_content for candidate in candidates],
         top_n=top_n,
-        max_tokens_per_doc=RERANK_MAX_TOKENS_PER_DOC,
     )
     return [candidates[result.index] for result in response.results]
