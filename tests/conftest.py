@@ -12,13 +12,12 @@ os.environ.pop("CONFIDENT_API_KEY", None)
 
 import hashlib
 import json
-from pathlib import Path
 from typing import Any
 
 import pytest
 from langchain_postgres import PGEngine, PGVectorStore
 
-from dispute_casework.corpus import SNAPSHOT_DIR, load, read_corpus
+from dispute_casework.corpus import SNAPSHOT_DIR, load
 from dispute_casework.foundry import FoundrySettings
 
 DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
@@ -84,11 +83,6 @@ def no_foundry_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(scope="session")
-def snapshot_dir() -> Path:
-    return SNAPSHOT_DIR
-
-
-@pytest.fixture(scope="session")
 def engine() -> PGEngine:
     return PGEngine.from_connection_string(DATABASE_URL)
 
@@ -96,13 +90,3 @@ def engine() -> PGEngine:
 @pytest.fixture(scope="session")
 def store(engine: PGEngine, settings: FoundrySettings) -> PGVectorStore:
     return load(engine, SNAPSHOT_DIR, settings)
-
-
-@pytest.fixture(scope="session")
-def corpus_vectors() -> dict[str, list[float]]:
-    """Corpus embeddings by paragraph ID, used as query vectors without a model call."""
-    _, chunks, vectors = read_corpus(SNAPSHOT_DIR)
-    return {
-        chunk["paragraph_id"]: vector.tolist()
-        for chunk, vector in zip(chunks, vectors, strict=True)
-    }

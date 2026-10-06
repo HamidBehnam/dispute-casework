@@ -1,8 +1,8 @@
 from collections import Counter
-from pathlib import Path
 
 import pytest
 
+from dispute_casework.corpus import SNAPSHOT_DIR
 from dispute_casework.ecfr import Paragraph, parse_part
 
 SUPPLEMENT_HEADING = "Supplement I to Part 1005—Official Interpretations"
@@ -301,10 +301,10 @@ def test_citation_followed_by_see_also_is_not_split() -> None:
     assert paragraph.text.endswith("under § 1005.6. See also § 1005.6(a).")
 
 
-def test_snapshot_yields_one_unique_id_per_paragraph(snapshot_dir: Path) -> None:
+def test_snapshot_yields_one_unique_id_per_paragraph() -> None:
     paragraphs = parse_part(
-        (snapshot_dir / "part-1005.xml").read_bytes(),
-        (snapshot_dir / "part-1005.html").read_bytes(),
+        (SNAPSHOT_DIR / "part-1005.xml").read_bytes(),
+        (SNAPSHOT_DIR / "part-1005.html").read_bytes(),
     )
     assert Counter(paragraph.source for paragraph in paragraphs) == {
         "regulation": 741,
@@ -325,14 +325,12 @@ def test_snapshot_yields_one_unique_id_per_paragraph(snapshot_dir: Path) -> None
     assert {"1005.2", "1005.30", "1005.35", "1005.17(b)(3)-1"} <= by_id.keys()
 
 
-def test_every_regulation_id_is_an_id_of_the_ecfr_file_verbatim(
-    snapshot_dir: Path,
-) -> None:
-    html = (snapshot_dir / "part-1005.html").read_text()
+def test_every_regulation_id_is_an_id_of_the_ecfr_file_verbatim() -> None:
+    html = (SNAPSHOT_DIR / "part-1005.html").read_text()
     regulation = [
         paragraph
         for paragraph in parse_part(
-            (snapshot_dir / "part-1005.xml").read_bytes(), html.encode()
+            (SNAPSHOT_DIR / "part-1005.xml").read_bytes(), html.encode()
         )
         if paragraph.source == "regulation"
     ]

@@ -9,6 +9,7 @@ from langchain_postgres import PGVectorStore
 
 from dispute_casework.corpus import (
     SNAPSHOT,
+    SNAPSHOT_DIR,
     chunk_content,
     load,
     read_corpus,
@@ -32,8 +33,8 @@ def test_chunk_content_is_id_then_heading_path_then_text() -> None:
     )
 
 
-def test_snapshot_manifest_pins_the_four_files(snapshot_dir: Path) -> None:
-    manifest = verified_manifest(snapshot_dir)
+def test_snapshot_manifest_pins_the_four_files() -> None:
+    manifest = verified_manifest(SNAPSHOT_DIR)
     assert set(manifest["files"]) == {
         "part-1005.xml",
         "part-1005.html",
@@ -48,28 +49,26 @@ def test_snapshot_manifest_pins_the_four_files(snapshot_dir: Path) -> None:
     assert manifest["embedding"]["dimensions"] == 1536
 
 
-def test_chunks_file_is_what_the_parser_yields_from_the_snapshot(
-    snapshot_dir: Path,
-) -> None:
-    _, chunks, _ = read_corpus(snapshot_dir)
+def test_chunks_file_is_what_the_parser_yields_from_the_snapshot() -> None:
+    _, chunks, _ = read_corpus(SNAPSHOT_DIR)
     paragraphs = parse_part(
-        (snapshot_dir / "part-1005.xml").read_bytes(),
-        (snapshot_dir / "part-1005.html").read_bytes(),
+        (SNAPSHOT_DIR / "part-1005.xml").read_bytes(),
+        (SNAPSHOT_DIR / "part-1005.html").read_bytes(),
     )
     assert [chunk["content"] for chunk in chunks] == [
         chunk_content(paragraph) for paragraph in paragraphs
     ]
 
 
-def test_embeddings_are_float32_rows_aligned_with_chunks(snapshot_dir: Path) -> None:
-    _, chunks, vectors = read_corpus(snapshot_dir)
+def test_embeddings_are_float32_rows_aligned_with_chunks() -> None:
+    _, chunks, vectors = read_corpus(SNAPSHOT_DIR)
     assert vectors.shape == (len(chunks), 1536)
     assert vectors.dtype == np.float32
 
 
-def test_load_rejects_manifest_mismatch(snapshot_dir: Path, tmp_path: Path) -> None:
+def test_load_rejects_manifest_mismatch(tmp_path: Path) -> None:
     directory = tmp_path / "snapshot"
-    shutil.copytree(snapshot_dir, directory)
+    shutil.copytree(SNAPSHOT_DIR, directory)
     with (directory / "embeddings.npy").open("ab") as embeddings:
         embeddings.write(b"\0")
     engine = Mock()
@@ -82,10 +81,10 @@ def test_load_rejects_manifest_mismatch(snapshot_dir: Path, tmp_path: Path) -> N
     "unlisted", ["part-1005.xml", "part-1005.html", "chunks.jsonl", "embeddings.npy"]
 )
 def test_load_rejects_a_file_the_manifest_does_not_list(
-    snapshot_dir: Path, tmp_path: Path, unlisted: str
+    tmp_path: Path, unlisted: str
 ) -> None:
     directory = tmp_path / "snapshot"
-    shutil.copytree(snapshot_dir, directory)
+    shutil.copytree(SNAPSHOT_DIR, directory)
     manifest = json.loads((directory / "manifest.json").read_text())
     del manifest["files"][unlisted]
     (directory / "manifest.json").write_text(json.dumps(manifest))
@@ -95,10 +94,8 @@ def test_load_rejects_a_file_the_manifest_does_not_list(
     assert engine.mock_calls == []
 
 
-def test_loaded_table_holds_every_chunk_with_its_metadata(
-    store: PGVectorStore, snapshot_dir: Path
-) -> None:
-    manifest, chunks, _ = read_corpus(snapshot_dir)
+def test_loaded_table_holds_every_chunk_with_its_metadata(store: PGVectorStore) -> None:
+    manifest, chunks, _ = read_corpus(SNAPSHOT_DIR)
     rows = store.get(where={"paragraph_id": "1005.11(c)-3"})
     assert len(store.get()["ids"]) == len(chunks)
     assert rows["documents"] == [

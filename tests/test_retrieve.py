@@ -7,6 +7,7 @@ from langchain_postgres import PGEngine, PGVectorStore
 from langchain_postgres.v2.hybrid_search_config import reciprocal_rank_fusion
 
 from dispute_casework import retrieval
+from dispute_casework.corpus import SNAPSHOT_DIR, read_corpus
 from dispute_casework.foundry import FoundrySettings
 from dispute_casework.retrieval import (
     CANDIDATES,
@@ -20,6 +21,14 @@ from dispute_casework.retrieval import (
 )
 
 QUERY_VECTOR_OF = "1005.11(c)(1)"
+
+
+@pytest.fixture(scope="module")
+def query_vector() -> list[float]:
+    """The corpus embedding of one paragraph: a query vector without a model call."""
+    _, chunks, vectors = read_corpus(SNAPSHOT_DIR)
+    row = [chunk["paragraph_id"] for chunk in chunks].index(QUERY_VECTOR_OF)
+    return vectors[row].tolist()
 
 
 def test_hybrid_config_names_the_stored_column_and_rrf() -> None:
@@ -57,14 +66,13 @@ def test_retrieve_rejects_an_empty_keyword_string(keywords: str) -> None:
 
 
 def test_sequential_searches_use_their_own_keyword_query(
-    store: PGVectorStore, corpus_vectors: dict[str, list[float]]
+    store: PGVectorStore, query_vector: list[float]
 ) -> None:
-    vector = corpus_vectors[QUERY_VECTOR_OF]
     with patch.object(
         retrieval, "reciprocal_rank_fusion", wraps=reciprocal_rank_fusion
     ) as fusion:
-        retrieve(store, vector, "provisional credit")
-        retrieve(store, vector, "remittance transfer")
+        retrieve(store, query_vector, "provisional credit")
+        retrieve(store, query_vector, "remittance transfer")
     first_leg, second_leg = (call.args[1] for call in fusion.call_args_list)
     assert first_leg and second_leg
     assert all("provisional" in row["content"].lower() for row in first_leg)
@@ -94,16 +102,14 @@ def test_langchain_postgres_still_writes_the_query_into_a_shared_config(
 
 
 def test_metadata_filter_constrains_both_legs(
-    store: PGVectorStore, corpus_vectors: dict[str, list[float]]
+    store: PGVectorStore, query_vector: list[float]
 ) -> None:
-    vector = corpus_vectors[QUERY_VECTOR_OF]
-
     def sources_per_leg(filter: dict[str, str] | None) -> list[set[str]]:
         fusion = Mock(wraps=reciprocal_rank_fusion)
         config = hybrid_config("error resolution")
         config.fusion_function = fusion
         store.similarity_search_by_vector(
-            vector, k=CANDIDATES, filter=filter, hybrid_search_config=config
+            query_vector, k=CANDIDATES, filter=filter, hybrid_search_config=config
         )
         return [{row["source"] for row in leg} for leg in fusion.call_args.args[:2]]
 
@@ -118,11 +124,9 @@ def test_metadata_filter_constrains_both_legs(
 
 
 def test_retrieve_returns_twenty_candidates_carrying_their_paragraph_id(
-    store: PGVectorStore, corpus_vectors: dict[str, list[float]]
+    store: PGVectorStore, query_vector: list[float]
 ) -> None:
-    candidates = retrieve(
-        store, corpus_vectors[QUERY_VECTOR_OF], "investigate promptly"
-    )
+    candidates = retrieve(store, query_vector, "investigate promptly")
     assert len(candidates) == CANDIDATES
     assert candidates[0].metadata["paragraph_id"] == QUERY_VECTOR_OF
     assert candidates[0].page_content.startswith(QUERY_VECTOR_OF + "\n")
