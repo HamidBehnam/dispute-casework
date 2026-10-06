@@ -14,7 +14,7 @@ The current state of the parts that exist. Decisions and measured results are in
 
 `retrieval.py` holds three plain functions. `embed` calls the embedding deployment. `retrieve(store, embedding, keywords)` runs the vendor's hybrid search on Postgres (pgvector cosine distance and a stored `tsvector` column, fused by reciprocal rank fusion) and returns twenty candidates. `rerank` sends candidates to the rerank deployment and returns them in relevance order. Every search builds its own `HybridSearchConfig`; `INVARIANTS.md` names the tests that hold this in place. `retrieve` takes the query embedding for the dense leg and a short keyword string for the keyword leg, and raises `ValueError` when the keyword string is empty or blank, because the vendor then returns the dense leg without fusion.
 
-Model clients are built in `foundry.py` with an explicit 60-second timeout. Rate limits are handled by the retries of the OpenAI and cohere SDKs; this repository's code batches nothing by token count and waits nowhere.
+Model clients are built in `foundry.py` with an explicit 60-second timeout. Rate limits are handled by the retries of the OpenAI and cohere SDKs: the embedding client keeps langchain-openai's default of two retries, and the rerank client is built with seven; `MODELS.md` gives the reason for each.
 
 The database is the single service in `compose.yaml`. Nothing is created when the container starts: the extension and the table are created by `corpus_build load`, and by a session fixture in the tests.
 
