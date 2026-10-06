@@ -75,8 +75,8 @@ class RecallAtK(BaseMetric):
 
     def __init__(self, k: int) -> None:
         self.k = k
+        # evaluate() refuses a list of metrics in which none has a threshold.
         self.threshold = 1.0
-        self.async_mode = False
 
     @property
     def __name__(self) -> str:
