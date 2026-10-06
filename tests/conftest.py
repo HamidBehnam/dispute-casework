@@ -43,6 +43,11 @@ def body_as_hash(request: Any) -> Any:
     return request
 
 
+def without_rate_limit_responses(response: dict[str, Any]) -> dict[str, Any] | None:
+    """Keeps a 429 out of the cassette; the SDK's retry is recorded in its place."""
+    return None if response["status"]["code"] == 429 else response
+
+
 def content_type_only(response: dict[str, Any]) -> dict[str, Any]:
     response["headers"] = {
         name: value
@@ -56,9 +61,19 @@ def content_type_only(response: dict[str, Any]) -> dict[str, Any]:
 def vcr_config() -> dict[str, Any]:
     return {
         "match_on": ["method", "uri", "body"],
-        "filter_headers": ["authorization", "api-key"],
+        "filter_headers": [
+            "authorization",
+            "api-key",
+            "user-agent",
+            "x-stainless-arch",
+            "x-stainless-os",
+            "x-stainless-runtime",
+            "x-stainless-runtime-version",
+            "x-fern-platform",
+            "x-fern-runtime",
+        ],
         "before_record_request": body_as_hash,
-        "before_record_response": content_type_only,
+        "before_record_response": [without_rate_limit_responses, content_type_only],
         "decode_compressed_response": True,
     }
 
