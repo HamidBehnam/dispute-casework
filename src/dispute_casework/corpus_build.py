@@ -171,10 +171,10 @@ def main() -> None:
         case "measure":
             measure()
         case "embed":
-            embed_corpus(SNAPSHOT_DIR, FoundrySettings.from_env())
+            embed_corpus(SNAPSHOT_DIR, FoundrySettings())
         case "load":
             engine = PGEngine.from_connection_string(os.environ["DATABASE_URL"])
-            load(engine, SNAPSHOT_DIR, FoundrySettings.from_env())
+            load(engine, SNAPSHOT_DIR, FoundrySettings())
 
 
 if __name__ == "__main__":

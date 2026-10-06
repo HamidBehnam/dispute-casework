@@ -53,6 +53,7 @@ addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerun
 [tool.mypy]
 strict = true
 files = ["src"]
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = ["langchain_azure_ai.*"]

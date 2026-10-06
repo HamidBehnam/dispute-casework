@@ -1,24 +1,25 @@
 import sys
 
 import pytest
-from azure.identity import AzureCliCredential
+from pydantic import ValidationError
 
 from dispute_casework import foundry_smoke
 from dispute_casework.foundry import (
+    OPENAI_ROUTE_SCOPE,
+    TIMEOUT_SECONDS,
     FoundrySettings,
+    api_key,
     chat_model,
     cohere_base_url,
-    credential,
     embeddings,
 )
 
 ENDPOINT = "https://ai-test-eus2.cognitiveservices.azure.com"
 
 
-def test_settings_require_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("FOUNDRY_ENDPOINT", raising=False)
-    with pytest.raises(KeyError):
-        FoundrySettings.from_env()
+def test_settings_require_endpoint() -> None:
+    with pytest.raises(ValidationError, match="endpoint"):
+        FoundrySettings()
 
 
 def test_settings_strip_trailing_slash_and_treat_empty_key_as_absent(
@@ -26,17 +27,37 @@ def test_settings_strip_trailing_slash_and_treat_empty_key_as_absent(
 ) -> None:
     monkeypatch.setenv("FOUNDRY_ENDPOINT", f"{ENDPOINT}/")
     monkeypatch.setenv("FOUNDRY_KEY", "")
-    assert FoundrySettings.from_env() == FoundrySettings(endpoint=ENDPOINT)
+    assert FoundrySettings() == FoundrySettings(endpoint=ENDPOINT)
+    assert FoundrySettings().key is None
 
 
-def test_credential_is_the_key_when_set() -> None:
-    assert credential(FoundrySettings(endpoint=ENDPOINT, key="k")) == "k"
+def test_settings_keep_the_key_out_of_their_repr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FOUNDRY_ENDPOINT", ENDPOINT)
+    monkeypatch.setenv("FOUNDRY_KEY", "not-a-real-key")
+    assert "not-a-real-key" not in repr(FoundrySettings())
 
 
-def test_credential_is_cli_identity_without_key() -> None:
-    assert isinstance(
-        credential(FoundrySettings(endpoint=ENDPOINT)), AzureCliCredential
-    )
+def test_api_key_is_the_key_when_set() -> None:
+    settings = FoundrySettings(endpoint=ENDPOINT, key="k")
+    assert api_key(settings, OPENAI_ROUTE_SCOPE) == "k"
+
+
+def test_api_key_is_a_token_provider_without_key() -> None:
+    assert callable(api_key(FoundrySettings(endpoint=ENDPOINT), OPENAI_ROUTE_SCOPE))
+
+
+@pytest.mark.parametrize("key", ["k", None])
+def test_sdk_clients_carry_the_timeout_under_a_key_and_under_a_token_provider(
+    key: str | None,
+) -> None:
+    settings = FoundrySettings(endpoint=ENDPOINT, key=key)
+    chat_client = chat_model(settings, "gpt-5.4-mini").root_client
+    embeddings_client = embeddings(settings).client._client
+    assert chat_client.timeout == TIMEOUT_SECONDS
+    assert embeddings_client.timeout == TIMEOUT_SECONDS
+    assert str(embeddings_client.base_url) == f"{ENDPOINT}/openai/v1/"
 
 
 def test_cohere_base_url_is_the_provider_route() -> None:
@@ -52,10 +73,11 @@ def test_deepseek_uses_chat_completions_and_openai_models_use_responses() -> Non
     assert chat_model(settings, "gpt-5.4-mini").use_responses_api is True
 
 
-def test_embeddings_send_raw_strings_at_1536_dimensions() -> None:
+def test_embeddings_send_raw_strings_at_1536_dimensions_sixteen_a_request() -> None:
     model = embeddings(FoundrySettings(endpoint=ENDPOINT, key="k"))
     assert model.check_embedding_ctx_length is False
     assert model.dimensions == 1536
+    assert model.chunk_size == 16
 
 
 def test_check_dimensions_accepts_1536_and_rejects_others() -> None:
