@@ -47,6 +47,11 @@ def without_rate_limit_responses(response: dict[str, Any]) -> dict[str, Any] | N
 
 
 @pytest.fixture(scope="session")
+def deepeval_imported_before_switches() -> bool:
+    return DEEPEVAL_IMPORTED_BEFORE_SWITCHES
+
+
+@pytest.fixture(scope="session")
 def vcr_config() -> dict[str, Any]:
     return {
         "match_on": ["method", "uri", "body"],
