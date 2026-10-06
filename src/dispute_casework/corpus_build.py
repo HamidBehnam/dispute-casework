@@ -4,22 +4,18 @@ fetch    download the part as XML and as rendered HTML and start manifest.json
 embed    parse both, write chunks.jsonl and embeddings.npy, complete the manifest
 load     rebuild the chunk table in the database named by DATABASE_URL
 
-embed and load need FOUNDRY_ENDPOINT. embed sends one request a minute to stay
-under the embedding deployment's tokens-per-minute limit.
+embed and load need FOUNDRY_ENDPOINT.
 """
 
 import argparse
 import json
 import os
-import time
 from collections import Counter
-from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 
 import httpx
 import numpy as np
-import tiktoken
 from langchain_postgres import PGEngine
 
 from dispute_casework.corpus import (
@@ -52,8 +48,6 @@ PIN_REASON = (
     "(May 9, 2025) disapproved before they took effect."
 )
 EMBEDDING_DEPLOYMENT_VERSION = "1"
-TOKENS_PER_REQUEST = 8000
-SECONDS_BETWEEN_REQUESTS = 60
 
 
 def fetch(directory: Path) -> None:
@@ -88,20 +82,6 @@ def fetch(directory: Path) -> None:
     )
 
 
-def token_batches(texts: list[str]) -> Iterator[tuple[list[str], int]]:
-    encoding = tiktoken.get_encoding("cl100k_base")
-    batch: list[str] = []
-    used = 0
-    for text in texts:
-        tokens = len(encoding.encode(text))
-        if batch and used + tokens > TOKENS_PER_REQUEST:
-            yield batch, used
-            batch, used = [], 0
-        batch.append(text)
-        used += tokens
-    yield batch, used
-
-
 def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
     manifest = verified_manifest(directory)
     paragraphs = parse_part(
@@ -118,19 +98,7 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
         }
         for paragraph in paragraphs
     ]
-    vectors: list[list[float]] = []
-    started = time.monotonic()
-    batches = token_batches([chunk["content"] for chunk in chunks])
-    for request, (batch, tokens) in enumerate(batches, start=1):
-        if request > 1:
-            time.sleep(SECONDS_BETWEEN_REQUESTS)
-        vectors.extend(embed(settings, batch))
-        minutes = (time.monotonic() - started) / 60
-        print(
-            f"request {request}: {len(batch)} chunks, {tokens} tokens, "
-            f"{len(vectors)}/{len(chunks)} done after {minutes:.1f} min",
-            flush=True,
-        )
+    vectors = embed(settings, [chunk["content"] for chunk in chunks])
     (directory / CHUNKS).write_text(
         "".join(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in chunks)
     )
