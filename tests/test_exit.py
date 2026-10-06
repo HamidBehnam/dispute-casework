@@ -40,7 +40,7 @@ CUTOFFS = {
     "dense_rerank": [RERANK_TOP_N],
     "hybrid_keyword_rerank": [RERANK_TOP_N],
 }
-RERANKED = {"dense_rerank": "dense", "hybrid_keyword_rerank": "hybrid_keyword"}
+RERANK_OF = {"dense_rerank": "dense", "hybrid_keyword_rerank": "hybrid_keyword"}
 GATE_D_NOT_MET = (
     "ADR 0004: gate d is not met in the recorded run. On the gate strata the mean "
     "recall@5 after rerank is 0.84 (22/26 expected IDs), under the 0.85 threshold "
@@ -177,28 +177,29 @@ def rank(paragraph_id: str, ranked: list[str]) -> int | None:
     return ranked.index(paragraph_id) + 1 if paragraph_id in ranked else None
 
 
-def cell(outcomes: list[Outcome], arm: str, k: int) -> dict[str, Any]:
+def cell(
+    outcomes: list[Outcome], arm: str, k: int, recalls: list[float]
+) -> dict[str, Any]:
     """One arm at one cut-off: the gated mean, the pooled count and the interval."""
-    numbered = list(enumerate(outcomes))
     pooled = ir_measures.calc_aggregate(
         [NumRelRet, NumRel],
         [
             Qrel(str(number), paragraph_id, 1)
-            for number, outcome in numbered
+            for number, outcome in enumerate(outcomes)
             for paragraph_id in outcome.query.expected
         ],
         [
             ScoredDoc(str(number), paragraph_id, -position)
-            for number, outcome in numbered
+            for number, outcome in enumerate(outcomes)
             for position, paragraph_id in enumerate(outcome.ranked[arm][:k])
         ],
     )
-    complete = sum(score == 1.0 for score in scores(outcomes, arm, k))
+    complete = recalls.count(1.0)
     interval = binomtest(complete, len(outcomes)).proportion_ci(
         confidence_level=CONFIDENCE_LEVEL, method="wilson"
     )
     return {
-        "mean_recall": round(recall(outcomes, arm, k), 4),
+        "mean_recall": round(fmean(recalls), 4),
         "found": int(pooled[NumRelRet]),
         "expected": int(pooled[NumRel]),
         "queries_with_every_expected_id": complete,
@@ -209,28 +210,24 @@ def cell(outcomes: list[Outcome], arm: str, k: int) -> dict[str, Any]:
     }
 
 
-def beyond_dense(outcomes: list[Outcome], arm: str, other: str) -> list[str]:
-    """Expected IDs in the first arm's twenty candidates and not in the other's."""
+def found_by(outcomes: list[Outcome], arm: str, missed_by: str) -> list[str]:
+    """Expected IDs among one arm's twenty candidates and not among the other's."""
     return [
         paragraph_id
         for outcome in outcomes
         for paragraph_id in outcome.query.expected
         if paragraph_id in outcome.ranked[arm]
-        and paragraph_id not in outcome.ranked[other]
+        and paragraph_id not in outcome.ranked[missed_by]
     ]
 
 
-def rerank_against_first_five(outcomes: list[Outcome], reranked: str) -> dict[str, Any]:
+def rerank_against_first_five(
+    after: list[float], before: list[float]
+) -> dict[str, Any]:
     """Queries whose recall@5 is higher, and lower, after rerank than before it."""
-    pairs = list(
-        zip(
-            scores(outcomes, reranked, RERANK_TOP_N),
-            scores(outcomes, RERANKED[reranked], RERANK_TOP_N),
-            strict=True,
-        )
-    )
-    higher = sum(after > before for after, before in pairs)
-    lower = sum(after < before for after, before in pairs)
+    pairs = list(zip(after, before, strict=True))
+    higher = sum(reranked > first_five for reranked, first_five in pairs)
+    lower = sum(reranked < first_five for reranked, first_five in pairs)
     return {
         "higher": higher,
         "lower": lower,
@@ -241,8 +238,15 @@ def rerank_against_first_five(outcomes: list[Outcome], reranked: str) -> dict[st
 
 
 def stratum_results(outcomes: list[Outcome]) -> dict[str, Any]:
+    per_query = {
+        (arm, k): scores(outcomes, arm, k)
+        for arm, cutoffs in CUTOFFS.items()
+        for k in cutoffs
+    }
     arms: dict[str, Any] = {
-        arm: {f"recall_at_{k}": cell(outcomes, arm, k) for k in cutoffs}
+        arm: {
+            f"recall_at_{k}": cell(outcomes, arm, k, per_query[arm, k]) for k in cutoffs
+        }
         for arm, cutoffs in CUTOFFS.items()
     }
     for arm in ("hybrid_raw", "hybrid_keyword"):
@@ -250,12 +254,12 @@ def stratum_results(outcomes: list[Outcome]) -> dict[str, Any]:
             "keyword_leg_non_empty": sum(
                 outcome.keyword_leg_rows[arm] > 0 for outcome in outcomes
             ),
-            "rescued": beyond_dense(outcomes, arm, "dense"),
-            "lost": beyond_dense(outcomes, "dense", arm),
+            "rescued": found_by(outcomes, arm, missed_by="dense"),
+            "lost": found_by(outcomes, "dense", missed_by=arm),
         }
-    for reranked in RERANKED:
+    for reranked, before in RERANK_OF.items():
         arms[reranked]["against_first_five_before_rerank"] = rerank_against_first_five(
-            outcomes, reranked
+            per_query[reranked, RERANK_TOP_N], per_query[before, RERANK_TOP_N]
         )
     return {
         "queries": len(outcomes),
@@ -362,11 +366,10 @@ def test_recall_at_5_after_rerank_gate(
     store: PGVectorStore, settings: FoundrySettings
 ) -> None:
     gated = gate_strata(measure(store, settings, QUERIES))
+    after_rerank = recall(gated, "hybrid_keyword_rerank", 5)
 
-    assert recall(gated, "hybrid_keyword_rerank", 5) >= 0.85
-    assert recall(gated, "hybrid_keyword_rerank", 5) >= recall(
-        gated, "hybrid_keyword", 5
-    )
+    assert after_rerank >= 0.85
+    assert after_rerank >= recall(gated, "hybrid_keyword", 5)
 
 
 @pytest.mark.vcr(record_mode="none")
