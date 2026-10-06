@@ -1,7 +1,6 @@
 """Builds the corpus files of the pinned eCFR snapshot, one step per command.
 
 fetch    download the part XML and start manifest.json
-measure  report the size of Part 1026 without storing it
 embed    parse the XML, write chunks.jsonl and embeddings.npy, complete the manifest
 load     rebuild the chunk table in the database named by DATABASE_URL
 
@@ -10,11 +9,9 @@ under the embedding deployment's tokens-per-minute limit.
 """
 
 import argparse
-import hashlib
 import json
 import os
 import time
-import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
@@ -80,16 +77,6 @@ def fetch(directory: Path) -> None:
             "files": {XML: sha256(directory / XML)},
         },
     )
-
-
-def measure() -> None:
-    content = part_xml("1026").content
-    root = ET.fromstring(content)
-    text = " ".join("".join(root.itertext()).split())
-    print(f"bytes       {len(content)}")
-    print(f"sha256      {hashlib.sha256(content).hexdigest()}")
-    print(f"paragraphs  {sum(1 for _ in root.iter('P'))}")
-    print(f"tokens      {len(tiktoken.get_encoding('cl100k_base').encode(text))}")
 
 
 def token_batches(texts: list[str]) -> Iterator[tuple[list[str], int]]:
@@ -164,12 +151,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("command", choices=["fetch", "measure", "embed", "load"])
+    parser.add_argument("command", choices=["fetch", "embed", "load"])
     match parser.parse_args().command:
         case "fetch":
             fetch(SNAPSHOT_DIR)
-        case "measure":
-            measure()
         case "embed":
             embed_corpus(SNAPSHOT_DIR, FoundrySettings())
         case "load":
