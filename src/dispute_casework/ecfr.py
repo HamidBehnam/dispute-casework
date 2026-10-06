@@ -15,7 +15,7 @@ import re
 import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from bs4 import BeautifulSoup, Tag
 
@@ -26,7 +26,7 @@ LEGAL_STATUS = {"regulation": "binding", "commentary": "official_interpretation"
 # heading that follows a comment number. A few comments carry their number
 # inside the italic: "<I>1. Amount received.</I>".
 COMMENT = re.compile(
-    r"⟨?(?P<plain>\d+|[ivx]+|[A-Z])\.\s+(?:⟨?(?P<heading>[^⟨⟩]+)⟩)?\s*"
+    r"⟨?(?P<designator>\d+|[ivx]+|[A-Z])\.\s+(?:⟨?(?P<heading>[^⟨⟩]+)⟩)?\s*"
 )
 SECTION_HEADING = re.compile(r"Section (\d+\.\d+)")
 ANCHOR_HEADING = re.compile(r"(?:Paragraph )?(\d+(?:\(\w+\))+)")
@@ -51,23 +51,6 @@ class Paragraph:
     @property
     def legal_status(self) -> str:
         return LEGAL_STATUS[self.source]
-
-
-@dataclass
-class Outline:
-    """Designators and headings of the paragraph being read and of its ancestors."""
-
-    path: list[str] = field(default_factory=list)
-    headings: list[str | None] = field(default_factory=list)
-
-    def enter(self, depth: int, designator: str, heading: str | None) -> list[str]:
-        """Moves to a paragraph at this depth and returns its ancestors' headings."""
-        if depth > len(self.path) + 1:
-            raise ValueError(f"{designator} skips a level after {self.path}")
-        inherited = [heading for heading in self.headings[: depth - 1] if heading]
-        self.path[depth - 1 :] = [designator]
-        self.headings[depth - 1 :] = [heading]
-        return inherited
 
 
 def parse_part(xml: bytes, html: bytes) -> list[Paragraph]:
@@ -133,12 +116,12 @@ def nested_paragraphs(
 def supplement_paragraphs(part: str, supplement: ET.Element) -> Iterator[Paragraph]:
     supplement_heading = plain_text(supplement.find("HEAD"))
     section = base = section_heading = anchor_heading = ""
-    outline = Outline()
+    outline: list[str] = []
+    outline_headings: list[str] = []
     repeating = False
     for is_heading, text in supplement_items(supplement):
         if is_heading:
-            outline = Outline()
-            repeating = False
+            outline, outline_headings, repeating = [], [], False
             if found := SECTION_HEADING.match(text):
                 section = base = found[1]
                 section_heading, anchor_heading = text, ""
@@ -151,35 +134,35 @@ def supplement_paragraphs(part: str, supplement: ET.Element) -> Iterator[Paragra
             else:
                 raise ValueError(f"unrecognised Supplement I heading: {text}")
             continue
-        matches = leading_matches(COMMENT, text)
+        matches = leading_designators(text)
         if not matches:
             raise ValueError(f"comment without a designator under {base}")
-        number = matches[0]["plain"]
+        number = matches[0]["designator"]
         # Where the source prints a run of comments a second time, not always
         # word for word, the number goes back; the second run and its
         # sub-paragraphs are dropped.
         if number.isdigit():
-            repeating = bool(outline.path) and int(number) <= int(outline.path[0])
+            repeating = bool(outline) and int(number) <= int(outline[0])
         if repeating:
             continue
-        inherited: list[str] = []
+        inherited = outline_headings[: comment_depth(number) - 1]
         for match in matches:
-            designator = match["plain"]
-            above = outline.enter(
-                comment_depth(designator),
-                designator,
-                f"{designator}. {match['heading']}" if match["heading"] else None,
-            )
-            if match is matches[0]:
-                inherited = above
+            designator = match["designator"]
+            depth = comment_depth(designator)
+            if depth > len(outline) + 1:
+                raise ValueError(f"{designator} skips a level after {outline}")
+            outline[depth - 1 :] = [designator]
+            outline_headings[depth - 1 :] = [
+                f"{designator}. {match['heading']}" if match["heading"] else ""
+            ]
         context = (supplement_heading, section_heading, anchor_heading, *inherited)
         yield Paragraph(
-            paragraph_id=f"{base}-{'.'.join(outline.path)}",
+            paragraph_id=f"{base}-{'.'.join(outline)}",
             part=part,
             section=section,
             source="commentary",
             heading_path=tuple(heading for heading in context if heading),
-            text=unmarked(text),
+            text=text.replace("⟨", "").replace("⟩", ""),
         )
 
 
@@ -203,10 +186,12 @@ def comment_depth(designator: str) -> int:
     return 2 if designator.islower() else 3
 
 
-def leading_matches(pattern: re.Pattern[str], marked: str) -> list[re.Match[str]]:
-    matches: list[re.Match[str]] = []
-    while match := pattern.match(marked, matches[-1].end() if matches else 0):
+def leading_designators(marked: str) -> list[re.Match[str]]:
+    matches = []
+    position = 0
+    while match := COMMENT.match(marked, position):
         matches.append(match)
+        position = match.end()
     return matches
 
 
@@ -215,10 +200,6 @@ def marked_text(element: ET.Element) -> str:
     for child in element:
         parts += ["⟨", "".join(child.itertext()), "⟩", child.tail or ""]
     return " ".join("".join(parts).split())
-
-
-def unmarked(marked: str) -> str:
-    return marked.replace("⟨", "").replace("⟩", "")
 
 
 def plain_text(element: ET.Element | None) -> str:
