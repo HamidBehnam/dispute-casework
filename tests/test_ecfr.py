@@ -336,7 +336,7 @@ def test_snapshot_yields_one_unique_id_per_paragraph() -> None:
 
 
 def test_every_regulation_id_is_an_id_of_the_ecfr_file_verbatim() -> None:
-    html = (SNAPSHOT_DIR / "part-1005.html").read_text()
+    html = (SNAPSHOT_DIR / "part-1005.html").read_text(encoding="utf-8")
     regulation = [
         paragraph
         for paragraph in parse_part(

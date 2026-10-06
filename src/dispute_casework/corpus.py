@@ -49,7 +49,9 @@ def sha256(path: Path) -> str:
 
 
 def verified_manifest(directory: Path) -> dict[str, Any]:
-    manifest: dict[str, Any] = json.loads((directory / MANIFEST).read_text())
+    manifest: dict[str, Any] = json.loads(
+        (directory / MANIFEST).read_text(encoding="utf-8")
+    )
     for name, recorded in manifest["files"].items():
         if sha256(directory / name) != recorded:
             raise ValueError(f"{name} does not match the sha256 in {MANIFEST}")
@@ -64,7 +66,8 @@ def read_corpus(
         if name not in manifest["files"]:
             raise ValueError(f"{name} has no sha256 in {MANIFEST}")
     chunks = [
-        json.loads(line) for line in (directory / CHUNKS).read_text().splitlines()
+        json.loads(line)
+        for line in (directory / CHUNKS).read_text(encoding="utf-8").splitlines()
     ]
     return manifest, chunks, np.load(directory / EMBEDDINGS)
 
