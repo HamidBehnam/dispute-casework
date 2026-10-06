@@ -18,10 +18,9 @@ from typing import Any
 import pytest
 from langchain_postgres import PGEngine, PGVectorStore
 
-from dispute_casework.corpus import load, read_corpus
+from dispute_casework.corpus import SNAPSHOT_DIR, load, read_corpus
 from dispute_casework.foundry import FoundrySettings
 
-SNAPSHOT_DIR = Path(__file__).parents[1] / "corpus/ecfr/2026-09-29"
 DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
 RECORDED_ENDPOINT = "https://ai-dcw-eus2.cognitiveservices.azure.com"
 

@@ -1,8 +1,8 @@
 """The corpus files of one eCFR snapshot and their load into the chunk store.
 
-A snapshot directory holds the part XML, chunks.jsonl, embeddings.npy (float32,
-row-aligned with chunks.jsonl) and manifest.json, which records the sha256 of
-the other three.
+A snapshot directory holds the part as XML and as rendered HTML, chunks.jsonl,
+embeddings.npy (float32, row-aligned with chunks.jsonl) and manifest.json,
+which records the sha256 of the other four.
 """
 
 import hashlib
@@ -26,10 +26,12 @@ from dispute_casework.retrieval import (
     open_store,
 )
 
-SNAPSHOT = "2026-09-29"
+SNAPSHOT = "2023-04-19"
 PART = "1005"
 SNAPSHOT_DIR = Path("corpus/ecfr") / SNAPSHOT
 MANIFEST = "manifest.json"
+XML = f"part-{PART}.xml"
+HTML = f"part-{PART}.html"
 CHUNKS = "chunks.jsonl"
 EMBEDDINGS = "embeddings.npy"
 CONTENT_FORMAT_VERSION = "1"
@@ -58,7 +60,7 @@ def read_corpus(
     directory: Path,
 ) -> tuple[dict[str, Any], list[dict[str, str]], npt.NDArray[np.float32]]:
     manifest = verified_manifest(directory)
-    for name in (CHUNKS, EMBEDDINGS):
+    for name in (XML, HTML, CHUNKS, EMBEDDINGS):
         if name not in manifest["files"]:
             raise ValueError(f"{name} has no sha256 in {MANIFEST}")
     chunks = [

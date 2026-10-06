@@ -1,7 +1,7 @@
 """Builds the corpus files of the pinned eCFR snapshot, one step per command.
 
-fetch    download the part XML and start manifest.json
-embed    parse the XML, write chunks.jsonl and embeddings.npy, complete the manifest
+fetch    download the part as XML and as rendered HTML and start manifest.json
+embed    parse both, write chunks.jsonl and embeddings.npy, complete the manifest
 load     rebuild the chunk table in the database named by DATABASE_URL
 
 embed and load need FOUNDRY_ENDPOINT. embed sends one request a minute to stay
@@ -14,6 +14,7 @@ import os
 import time
 from collections import Counter
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 
 import httpx
@@ -25,10 +26,12 @@ from dispute_casework.corpus import (
     CHUNKS,
     CONTENT_FORMAT_VERSION,
     EMBEDDINGS,
+    HTML,
     MANIFEST,
     PART,
     SNAPSHOT,
     SNAPSHOT_DIR,
+    XML,
     chunk_content,
     load,
     sha256,
@@ -42,39 +45,45 @@ from dispute_casework.foundry import (
 )
 from dispute_casework.retrieval import embed
 
-API = "https://www.ecfr.gov/api/versioner/v1"
-XML = f"part-{PART}.xml"
+ECFR = "https://www.ecfr.gov/api"
+PIN_REASON = (
+    "2023-04-19 is the date of the last Part 1005 amendment in force. Later eCFR "
+    "versions carry the amendments of 89 FR 106768, which Public Law 119-10 "
+    "(May 9, 2025) disapproved before they took effect."
+)
 EMBEDDING_DEPLOYMENT_VERSION = "1"
 TOKENS_PER_REQUEST = 8000
 SECONDS_BETWEEN_REQUESTS = 60
 
 
-def part_xml(part: str) -> httpx.Response:
-    response = httpx.get(
-        f"{API}/full/{SNAPSHOT}/title-12.xml", params={"part": part}, timeout=60
-    )
-    response.raise_for_status()
-    return response
-
-
 def fetch(directory: Path) -> None:
-    response = part_xml(PART)
-    versions = httpx.get(
-        f"{API}/versions/title-12.json",
-        params={"part": PART, "issue_date[lte]": SNAPSHOT},
-        timeout=60,
-    )
-    versions.raise_for_status()
+    # The renderer answers with a redirect to the same content addressed by chapter.
+    with httpx.Client(timeout=60, follow_redirects=True) as client:
+        xml = client.get(
+            f"{ECFR}/versioner/v1/full/{SNAPSHOT}/title-12.xml", params={"part": PART}
+        )
+        html = client.get(
+            f"{ECFR}/renderer/v1/content/enhanced/{SNAPSHOT}/title-12",
+            params={"part": PART},
+        )
+        versions = client.get(
+            f"{ECFR}/versioner/v1/versions/title-12.json",
+            params={"part": PART, "issue_date[lte]": SNAPSHOT},
+        )
+    for response in (xml, html, versions):
+        response.raise_for_status()
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / XML).write_bytes(response.content)
+    (directory / XML).write_bytes(xml.content)
+    (directory / HTML).write_bytes(html.content)
     write_manifest(
         directory,
         {
             "snapshot": SNAPSHOT,
             "label": "unofficial eCFR snapshot",
-            "source_url": str(response.url),
+            "sources": {XML: str(xml.url), HTML: str(html.url)},
             "latest_amendment_date": versions.json()["meta"]["latest_amendment_date"],
-            "files": {XML: sha256(directory / XML)},
+            "pin": {"reason": PIN_REASON, "checked": date.today().isoformat()},
+            "files": {name: sha256(directory / name) for name in (XML, HTML)},
         },
     )
 
@@ -95,7 +104,9 @@ def token_batches(texts: list[str]) -> Iterator[tuple[list[str], int]]:
 
 def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
     manifest = verified_manifest(directory)
-    paragraphs = parse_part((directory / XML).read_bytes())
+    paragraphs = parse_part(
+        (directory / XML).read_bytes(), (directory / HTML).read_bytes()
+    )
     chunks = [
         {
             "paragraph_id": paragraph.paragraph_id,

@@ -5,20 +5,36 @@ import pytest
 
 from dispute_casework.ecfr import Paragraph, parse_part
 
-SNAPSHOT_XML = Path(__file__).parents[1] / "corpus/ecfr/2026-09-29/part-1005.xml"
 SUPPLEMENT_HEADING = "Supplement I to Part 1005—Official Interpretations"
 
 
-def section(number: str, *paragraphs: str) -> str:
-    body = "".join(f"<P>{paragraph}</P>" for paragraph in paragraphs)
-    return f'<DIV8 N="{number}"><HEAD>§ {number} Title.</HEAD>{body}</DIV8>'
+def mark(designator: str) -> str:
+    return (
+        '<span class="paragraph-hierarchy"><span class="paren">(</span>'
+        f'{designator}<span class="paren">)</span></span>'
+    )
+
+
+def heading(text: str) -> str:
+    return f'<em class="paragraph-heading">{text}</em>'
+
+
+def node(node_id: str, paragraph: str, *children: str) -> str:
+    return f'<div id="{node_id}"><p>{paragraph}</p>{"".join(children)}</div>'
+
+
+def section(number: str, *content: str) -> str:
+    return (
+        f'<div class="section" id="{number}"><h4>§ {number} Title.</h4>'
+        f"{''.join(content)}</div>"
+    )
 
 
 def parse(sections: str = "", supplement: str = "") -> list[Paragraph]:
     return parse_part(
-        f'<DIV5 N="1005">{sections}'
-        f'<DIV9 N="Supplement I to Part 1005"><HEAD>{SUPPLEMENT_HEADING}</HEAD>'
-        f"{supplement}</DIV9></DIV5>".encode()
+        '<DIV5 N="1005"><DIV9 N="Supplement I to Part 1005">'
+        f"<HEAD>{SUPPLEMENT_HEADING}</HEAD>{supplement}</DIV9></DIV5>".encode(),
+        f'<div class="part" id="part-1005">{sections}</div>'.encode(),
     )
 
 
@@ -26,147 +42,114 @@ def ids(paragraphs: list[Paragraph]) -> list[str]:
     return [paragraph.paragraph_id for paragraph in paragraphs]
 
 
-def test_adjacent_designators_take_the_deepest_level() -> None:
-    paragraphs = parse(section("1005.2", "(a)(1) One.", "(2) Two.", "(b) Three."))
-    assert ids(paragraphs) == ["1005.2(a)(1)", "1005.2(a)(2)", "1005.2(b)"]
-
-
-def test_em_dash_chain_and_inherited_headings() -> None:
+def test_regulation_id_is_the_node_id_without_its_prefix() -> None:
     paragraphs = parse(
         section(
             "1005.11",
-            "(a) <I>Definition</I>—(1) <I>Covered.</I> The term means:",
-            "(i) A first kind;",
-            "(b) <I>Notice.</I> Text.",
+            node(
+                "p-1005.11(a)",
+                f"{mark('a')} First.",
+                node("p-1005.11(a)(1)", f"{mark('1')} Second."),
+            ),
+            node("p-as-the-file-has-it", f"{mark('b')} Third."),
+        )
+    )
+    assert ids(paragraphs) == ["1005.11(a)", "1005.11(a)(1)", "as-the-file-has-it"]
+    assert {paragraph.section for paragraph in paragraphs} == {"1005.11"}
+
+
+def test_text_of_a_node_leaves_out_the_paragraphs_below_it() -> None:
+    paragraphs = parse(
+        section(
+            "1005.6",
+            node(
+                "p-1005.6(a)",
+                f"{mark('a')}  The consumer is liable\n if:",
+                node("p-1005.6(a)(1)", f"{mark('1')} A device was used."),
+            ),
+        )
+    )
+    assert [paragraph.text for paragraph in paragraphs] == [
+        "(a) The consumer is liable if:",
+        "(1) A device was used.",
+    ]
+
+
+def test_node_with_only_designator_and_heading_gives_its_heading_to_its_children() -> (
+    None
+):
+    paragraphs = parse(
+        section(
+            "1005.11",
+            node(
+                "p-1005.11(a)",
+                f"{mark('a')} {heading('Definition of error')} —",
+                node(
+                    "p-1005.11(a)(1)",
+                    f"{mark('1')} {heading('Covered.')}  The term means:",
+                    node("p-1005.11(a)(1)(i)", f"{mark('i')} A first kind;"),
+                ),
+            ),
+            node("p-1005.11(b)", f"{mark('b')} {heading('Notice.')} Text."),
         )
     )
     assert ids(paragraphs) == ["1005.11(a)(1)", "1005.11(a)(1)(i)", "1005.11(b)"]
     assert [paragraph.heading_path for paragraph in paragraphs] == [
-        ("§ 1005.11 Title.",),
-        ("§ 1005.11 Title.", "(a) Definition", "(1) Covered."),
+        ("§ 1005.11 Title.", "(a) Definition of error"),
+        ("§ 1005.11 Title.", "(a) Definition of error", "(1) Covered."),
         ("§ 1005.11 Title.",),
     ]
-    assert paragraphs[0].text == "(a) Definition—(1) Covered. The term means:"
+    assert paragraphs[0].text == "(1) Covered. The term means:"
 
 
-def test_heading_then_designator() -> None:
-    paragraphs = parse(
-        section(
-            "1005.6",
-            "(a) Text.",
-            "(b) <I>Limits.</I> Text.",
-            "(5) <I>Notice.</I> (i) Notice is given when sent.",
-            "(ii) In person or in writing.",
-        )
-    )
-    assert ids(paragraphs)[1:] == ["1005.6(b)", "1005.6(b)(5)(i)", "1005.6(b)(5)(ii)"]
-    assert paragraphs[3].heading_path == (
-        "§ 1005.6 Title.",
-        "(b) Limits.",
-        "(5) Notice.",
-    )
-
-
-def test_letter_i_after_h_and_roman_i_after_a_number() -> None:
+def test_node_with_only_a_designator_adds_nothing_to_the_heading_path() -> None:
     paragraphs = parse(
         section(
             "1005.2",
-            "(a) Text.",
-            "(b)(1) Text.",
-            "(i) Roman one.",
-            "(ii) Roman two.",
-            *(f"({letter}) Text." for letter in "cdefgh"),
-            "(i) Letter i.",
-            "(j) Letter j.",
+            node(
+                "p-1005.2(a)",
+                mark("a"),
+                node("p-1005.2(a)(1)", f"{mark('1')} “Access device” means a card."),
+            ),
         )
     )
-    assert ids(paragraphs)[2:4] == ["1005.2(b)(1)(i)", "1005.2(b)(1)(ii)"]
-    assert ids(paragraphs)[-2:] == ["1005.2(i)", "1005.2(j)"]
+    assert ids(paragraphs) == ["1005.2(a)(1)"]
+    assert paragraphs[0].heading_path == ("§ 1005.2 Title.",)
+    assert paragraphs[0].text == "(1) “Access device” means a card."
 
 
-@pytest.mark.parametrize(
-    ("after_i", "expected"),
-    [
-        ("(ii) Second roman.", "1005.20(h)(2)(i)"),
-        ("(j) Next letter.", "1005.20(i)"),
-    ],
-)
-def test_i_after_h_with_numbered_children_is_settled_by_what_follows(
-    after_i: str, expected: str
-) -> None:
-    letters = [f"({letter}) Text." for letter in "abcdefg"]
-    paragraphs = parse(
-        section(
-            "1005.20",
-            *letters,
-            "(h) <I>Dates.</I> (1) One.",
-            "(2) Two.",
-            "(i) Ambiguous.",
-            after_i,
-        )
-    )
-    assert ids(paragraphs)[-2] == expected
-
-
-def test_italic_designators_are_the_fifth_and_sixth_levels() -> None:
+def test_paragraph_directly_inside_a_section_takes_the_section_id() -> None:
     paragraphs = parse(
         section(
             "1005.2",
-            "(a)(1) Text.",
-            "(i) Text.",
-            "(A) Text.",
-            "(<I>1</I>) Text.",
-            "(<I>i</I>) Text.",
-            "(<I>2</I>) Text.",
-            "(2) Text.",
+            "<p>For this part:</p>",
+            node("p-1005.2(a)", f"{mark('a')} Text."),
+            '<p class="citation">[76 FR 81023, Dec. 27, 2011]</p>',
         )
     )
-    assert ids(paragraphs)[3:] == [
-        "1005.2(a)(1)(i)(A)(1)",
-        "1005.2(a)(1)(i)(A)(1)(i)",
-        "1005.2(a)(1)(i)(A)(2)",
-        "1005.2(a)(2)",
-    ]
-
-
-def test_each_section_starts_its_own_outline() -> None:
-    paragraphs = parse(
-        section("1005.11", "(a) Text.", "(b) Text.")
-        + section("1005.33", "(a) Text.", "(b) Text.")
-    )
-    assert ids(paragraphs) == [
-        "1005.11(a)",
-        "1005.11(b)",
-        "1005.33(a)",
-        "1005.33(b)",
-    ]
-    assert {paragraph.section for paragraph in paragraphs} == {"1005.11", "1005.33"}
-
-
-def test_references_inside_the_text_are_not_designators() -> None:
-    paragraphs = parse(
-        section(
-            "1005.11",
-            "(a) See paragraphs (b)(1)(i) through (vi) and § 1005.6(a).",
-            "(b) A request (other than one under paragraph (a)) is covered.",
-        )
-    )
-    assert ids(paragraphs) == ["1005.11(a)", "1005.11(b)"]
-
-
-def test_undesignated_opening_paragraph_takes_the_section_id() -> None:
-    paragraphs = parse(section("1005.2", "For this part:", "(a) Text."))
     assert ids(paragraphs) == ["1005.2", "1005.2(a)"]
+    assert paragraphs[0].text == "For this part:"
 
 
-def test_undesignated_paragraph_after_a_designated_one_is_rejected() -> None:
-    with pytest.raises(ValueError, match="undesignated"):
-        parse(section("1005.2", "(a) Text.", "Stray text."))
+def test_node_without_paragraph_text_is_rejected() -> None:
+    with pytest.raises(ValueError, match=r"1005.2\(a\) has no paragraph text"):
+        parse(section("1005.2", '<div id="p-1005.2(a)"></div>'))
 
 
-def test_designator_that_fits_nowhere_is_rejected() -> None:
-    with pytest.raises(ValueError, match="does not follow"):
-        parse(section("1005.2", "(a) Text.", "(c) Text."))
+def test_id_seen_twice_is_rejected() -> None:
+    with pytest.raises(ValueError, match="more than once"):
+        parse(
+            section(
+                "1005.2",
+                node("p-1005.2(a)", f"{mark('a')} Text."),
+                node("p-1005.2(a)", f"{mark('a')} Other text."),
+            )
+        )
+
+
+def test_regulation_text_is_binding() -> None:
+    (paragraph,) = parse(section("1005.13", node("p-1005.13(a)", "(a) Text.")))
+    assert (paragraph.source, paragraph.legal_status) == ("regulation", "binding")
 
 
 def test_supplement_anchors_and_comment_levels() -> None:
@@ -289,13 +272,40 @@ def test_supplement_heading_of_an_unknown_form_is_rejected() -> None:
         parse(supplement="<HD1>General Notes</HD1><P>1. Text.</P>")
 
 
-def test_regulation_text_is_binding() -> None:
-    (paragraph,) = parse(section("1005.13", "(a) Text."))
-    assert (paragraph.source, paragraph.legal_status) == ("regulation", "binding")
+def test_two_comments_printed_as_one_paragraph_are_split() -> None:
+    paragraphs = parse(
+        supplement=(
+            "<HD1>Section 1005.20 Gift Cards</HD1>"
+            "<HD2>20(c)(4) Disclosures</HD2>"
+            "<P>1. <I>Non-physical cards.</I> On the code or confirmation.2. "
+            "<I>No disclosures.</I> Not needed. <I>See also</I> comment 20(c)(2)-2.</P>"
+        )
+    )
+    assert ids(paragraphs) == ["1005.20(c)(4)-1", "1005.20(c)(4)-2"]
+    assert [paragraph.text for paragraph in paragraphs] == [
+        "1. Non-physical cards. On the code or confirmation.",
+        "2. No disclosures. Not needed. See also comment 20(c)(2)-2.",
+    ]
 
 
-def test_snapshot_yields_one_unique_id_per_paragraph() -> None:
-    paragraphs = parse_part(SNAPSHOT_XML.read_bytes())
+def test_citation_followed_by_see_also_is_not_split() -> None:
+    (paragraph,) = parse(
+        supplement=(
+            "<HD1>Section 1005.7 Initial Disclosures</HD1>"
+            "<HD2>7(b)(1) Liability</HD2>"
+            "<P>4. <I>Change of address.</I> Liability under § 1005.6. "
+            "<I>See also</I> § 1005.6(a).</P>"
+        )
+    )
+    assert paragraph.paragraph_id == "1005.7(b)(1)-4"
+    assert paragraph.text.endswith("under § 1005.6. See also § 1005.6(a).")
+
+
+def test_snapshot_yields_one_unique_id_per_paragraph(snapshot_dir: Path) -> None:
+    paragraphs = parse_part(
+        (snapshot_dir / "part-1005.xml").read_bytes(),
+        (snapshot_dir / "part-1005.html").read_bytes(),
+    )
     assert Counter(paragraph.source for paragraph in paragraphs) == {
         "regulation": 741,
         "commentary": 1001,
@@ -311,4 +321,24 @@ def test_snapshot_yields_one_unique_id_per_paragraph() -> None:
     assert by_id["1005.2(i)"].text.startswith("(i) “Financial institution”")
     assert by_id["1005.2(b)(3)(i)(D)(1)"].text.startswith("(1) That is issued")
     assert by_id["1005.11(c)(4)-5.i"].text.startswith("i. The ACH transaction")
+    assert by_id["1005.20(c)(4)-2"].text.startswith("2. No disclosures on")
     assert {"1005.2", "1005.30", "1005.35", "1005.17(b)(3)-1"} <= by_id.keys()
+
+
+def test_every_regulation_id_is_an_id_of_the_ecfr_file_verbatim(
+    snapshot_dir: Path,
+) -> None:
+    html = (snapshot_dir / "part-1005.html").read_text()
+    regulation = [
+        paragraph
+        for paragraph in parse_part(
+            (snapshot_dir / "part-1005.xml").read_bytes(), html.encode()
+        )
+        if paragraph.source == "regulation"
+    ]
+    assert len(regulation) == 741
+    for paragraph in regulation:
+        assert (
+            f'<div id="p-{paragraph.paragraph_id}">' in html
+            or f'<div class="section" id="{paragraph.paragraph_id}">' in html
+        )

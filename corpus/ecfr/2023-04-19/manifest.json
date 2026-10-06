@@ -1,0 +1,17 @@
+{
+  "snapshot": "2023-04-19",
+  "label": "unofficial eCFR snapshot",
+  "sources": {
+    "part-1005.xml": "https://www.ecfr.gov/api/versioner/v1/full/2023-04-19/title-12.xml?part=1005",
+    "part-1005.html": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/2023-04-19/title-12?chapter=X&part=1005"
+  },
+  "latest_amendment_date": "2023-04-19",
+  "pin": {
+    "reason": "2023-04-19 is the date of the last Part 1005 amendment in force. Later eCFR versions carry the amendments of 89 FR 106768, which Public Law 119-10 (May 9, 2025) disapproved before they took effect.",
+    "checked": "2026-10-06"
+  },
+  "files": {
+    "part-1005.xml": "04c370d90631ae9037583b615690635015e3ef9d70da9c39858b541f8a9d7f74",
+    "part-1005.html": "4aacbd2d4bb509fb467cbd8745a04ab5b3a2198d4fa8a53c118185b84a577d8b"
+  }
+}

@@ -8,6 +8,7 @@ import pytest
 from langchain_postgres import PGVectorStore
 
 from dispute_casework.corpus import (
+    SNAPSHOT,
     chunk_content,
     load,
     read_corpus,
@@ -31,14 +32,17 @@ def test_chunk_content_is_id_then_heading_path_then_text() -> None:
     )
 
 
-def test_snapshot_manifest_pins_the_three_files(snapshot_dir: Path) -> None:
+def test_snapshot_manifest_pins_the_four_files(snapshot_dir: Path) -> None:
     manifest = verified_manifest(snapshot_dir)
     assert set(manifest["files"]) == {
         "part-1005.xml",
+        "part-1005.html",
         "chunks.jsonl",
         "embeddings.npy",
     }
-    assert manifest["snapshot"] == "2026-09-29"
+    assert set(manifest["sources"]) == {"part-1005.xml", "part-1005.html"}
+    assert manifest["snapshot"] == SNAPSHOT == manifest["latest_amendment_date"]
+    assert manifest["pin"]["reason"] and manifest["pin"]["checked"]
     assert manifest["label"] == "unofficial eCFR snapshot"
     assert manifest["chunks"] == {"regulation": 741, "commentary": 1001}
     assert manifest["embedding"]["dimensions"] == 1536
@@ -48,7 +52,10 @@ def test_chunks_file_is_what_the_parser_yields_from_the_snapshot(
     snapshot_dir: Path,
 ) -> None:
     _, chunks, _ = read_corpus(snapshot_dir)
-    paragraphs = parse_part((snapshot_dir / "part-1005.xml").read_bytes())
+    paragraphs = parse_part(
+        (snapshot_dir / "part-1005.xml").read_bytes(),
+        (snapshot_dir / "part-1005.html").read_bytes(),
+    )
     assert [chunk["content"] for chunk in chunks] == [
         chunk_content(paragraph) for paragraph in paragraphs
     ]
@@ -71,7 +78,9 @@ def test_load_rejects_manifest_mismatch(snapshot_dir: Path, tmp_path: Path) -> N
     assert engine.mock_calls == []
 
 
-@pytest.mark.parametrize("unlisted", ["chunks.jsonl", "embeddings.npy"])
+@pytest.mark.parametrize(
+    "unlisted", ["part-1005.xml", "part-1005.html", "chunks.jsonl", "embeddings.npy"]
+)
 def test_load_rejects_a_file_the_manifest_does_not_list(
     snapshot_dir: Path, tmp_path: Path, unlisted: str
 ) -> None:

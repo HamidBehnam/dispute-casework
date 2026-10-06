@@ -1,11 +1,14 @@
-"""Paragraph IDs for one part of the eCFR XML.
+"""Paragraphs of one part of the eCFR, each with its ID.
 
-The XML is flat: every paragraph is a <P> whose designators, "(c)" or "1.",
-are plain text at its start. The outline is rebuilt from the order of those
-designators. Regulation paragraphs get IDs such as 1005.11(c)(2)(i);
-Supplement I comments get IDs such as 1005.11(c)-3 and 1005.11(c)(4)-5.i.
-A paragraph that opens several levels at once, "(a) Heading—(1) Heading.",
-takes the deepest one.
+Regulation text is read from the eCFR's rendered HTML, where every paragraph is
+a <div id="p-1005.11(c)(2)(i)"> nested inside its parent paragraph. The ID is
+that id without "p-".
+
+Supplement I is read from the XML, which is flat: every comment is a <P> whose
+number, "1." or "i.", is plain text at its start, and the outline is rebuilt
+from the order of those numbers. Comments get IDs such as 1005.11(c)-3 and
+1005.11(c)(4)-5.i. A comment that opens two levels at once, "1. Heading. i.
+Heading.", takes the deeper one.
 """
 
 import re
@@ -14,20 +17,14 @@ from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
-PARSER_VERSION = "0"
+from bs4 import BeautifulSoup, Tag
+
+PARSER_VERSION = "1"
 LEGAL_STATUS = {"regulation": "binding", "commentary": "official_interpretation"}
 
-ROMAN = (
-    "i ii iii iv v vi vii viii ix x xi xii xiii xiv xv xvi xvii xviii xix xx".split()
-)
-
-# Italic runs are wrapped in ⟨ ⟩ so that one pattern can tell "(1)" from "(<I>1</I>)"
-# and can pick up the italic heading that follows a designator.
-DESIGNATOR = re.compile(
-    r"\((?:⟨(?P<italic>\d+|[ivx]+)⟩|(?P<plain>\d+|[a-z]+|[A-Z]+))\)"
-    r"\s*(?:⟨(?P<heading>[^⟩]+)⟩)?[\s—]*"
-)
-# A few comments carry their number inside the italic: "<I>1. Amount received.</I>".
+# Italic runs are wrapped in ⟨ ⟩ so that the pattern can pick up the italic
+# heading that follows a comment number. A few comments carry their number
+# inside the italic: "<I>1. Amount received.</I>".
 COMMENT = re.compile(
     r"⟨?(?P<plain>\d+|[ivx]+|[A-Z])\.\s+(?:⟨?(?P<heading>[^⟨⟩]+)⟩)?\s*"
 )
@@ -37,6 +34,9 @@ APPENDIX_HEADING = re.compile(r"Appendix ([A-Z])")
 # A heading whose tag was lost in the source sits at the end of the preceding
 # paragraph as "…transactions.2>17(b)(3) Same Account Terms, …".
 LOST_HEADING_TAG = re.compile(r"\d>(?=\d+\()")
+# Two comments printed as one paragraph: "…or confirmation.2. ⟨No disclosures…".
+# A citation before an italic, "§ 1005.6. ⟨See also⟩", has a digit before the period.
+FUSED_COMMENT = re.compile(r"(?<=[^\d\s]\.)(?=\d+\. ⟨)")
 
 
 @dataclass(frozen=True)
@@ -70,14 +70,10 @@ class Outline:
         return inherited
 
 
-def parse_part(xml: bytes) -> list[Paragraph]:
+def parse_part(xml: bytes, html: bytes) -> list[Paragraph]:
     root = ET.fromstring(xml)
     part = root.attrib["N"]
-    paragraphs = [
-        paragraph
-        for section in root.iter("DIV8")
-        for paragraph in section_paragraphs(part, section)
-    ]
+    paragraphs = list(regulation_paragraphs(part, html))
     for appendix in root.iter("DIV9"):
         if appendix.attrib["N"].startswith("Supplement I"):
             paragraphs.extend(supplement_paragraphs(part, appendix))
@@ -91,67 +87,47 @@ def parse_part(xml: bytes) -> list[Paragraph]:
     return paragraphs
 
 
-def section_paragraphs(part: str, section: ET.Element) -> Iterator[Paragraph]:
-    number = section.attrib["N"]
-    section_heading = plain_text(section.find("HEAD"))
-    texts = [marked_text(element) for element in section.iter("P")]
-    leading = [leading_matches(DESIGNATOR, text) for text in texts]
-    later = [match for matches in leading for match in matches]
-    outline = Outline()
-    for text, matches in zip(texts, leading, strict=True):
-        if not matches and outline.path:
-            raise ValueError(f"undesignated paragraph inside § {number}")
-        inherited: list[str] = []
-        for match in matches:
-            later = later[1:]
-            designator = match["italic"] or match["plain"]
-            above = outline.enter(
-                regulation_depth(match, outline.path, later),
-                designator,
-                f"({designator}) {match['heading']}" if match["heading"] else None,
+def regulation_paragraphs(part: str, html: bytes) -> Iterator[Paragraph]:
+    for section in BeautifulSoup(html, "html.parser").select("div.section"):
+        number = str(section["id"])
+        heading = html_text(section.select_one(":scope > h4"))
+        # A paragraph directly inside the section has no id of its own.
+        for paragraph in section.select(":scope > p:not(.citation)"):
+            yield Paragraph(
+                paragraph_id=number,
+                part=part,
+                section=number,
+                source="regulation",
+                heading_path=(heading,),
+                text=html_text(paragraph),
             )
-            if match is matches[0]:
-                inherited = above
-        yield Paragraph(
-            paragraph_id=number + "".join(f"({d})" for d in outline.path),
-            part=part,
-            section=number,
-            source="regulation",
-            heading_path=(section_heading, *inherited),
-            text=unmarked(text),
+        yield from nested_paragraphs(part, number, section, (heading,))
+
+
+def nested_paragraphs(
+    part: str, section: str, parent: Tag, heading_path: tuple[str, ...]
+) -> Iterator[Paragraph]:
+    for node in parent.select(":scope > div[id]"):
+        paragraph_id = str(node["id"]).removeprefix("p-")
+        text = html_text(node.select_one(":scope > p"))
+        if not text:
+            raise ValueError(f"{paragraph_id} has no paragraph text")
+        designator = html_text(node.select_one(":scope > p > .paragraph-hierarchy"))
+        heading = html_text(node.select_one(":scope > p > .paragraph-heading"))
+        label = f"{designator} {heading}".strip()
+        # "(a) Definition of error —" only introduces the paragraphs below it.
+        if text.removeprefix(label).strip(" —"):
+            yield Paragraph(
+                paragraph_id=paragraph_id,
+                part=part,
+                section=section,
+                source="regulation",
+                heading_path=heading_path,
+                text=text,
+            )
+        yield from nested_paragraphs(
+            part, section, node, (*heading_path, label) if heading else heading_path
         )
-
-
-def regulation_depth(
-    match: re.Match[str], path: list[str], later: list[re.Match[str]]
-) -> int:
-    """(a) is depth 1, then (1), (i), (A), and the italic (1) and (i) at 5 and 6.
-
-    A lowercase designator such as (i) after (h)(2) can be the next letter or
-    the first roman numeral. The next lowercase designator in the section
-    settles it: a roman (i) is followed by (ii).
-    """
-    if match["italic"]:
-        return 5 if match["italic"].isdigit() else 6
-    designator = match["plain"]
-    if designator.isdigit():
-        return 2
-    if designator.isupper():
-        return 4
-    is_letter = designator == (chr(ord(path[0]) + 1) if path else "a")
-    is_roman = len(path) >= 2 and designator == next_roman(path[2:3])
-    if is_letter and is_roman:
-        next_lowercase = next(
-            (m["plain"] for m in later if m["plain"] and m["plain"].islower()), None
-        )
-        is_letter = next_lowercase != next_roman([designator])
-    elif not is_letter and not is_roman:
-        raise ValueError(f"({designator}) does not follow {path}")
-    return 1 if is_letter else 3
-
-
-def next_roman(current: list[str]) -> str:
-    return ROMAN[ROMAN.index(current[0]) + 1] if current else ROMAN[0]
 
 
 def supplement_paragraphs(part: str, supplement: ET.Element) -> Iterator[Paragraph]:
@@ -213,8 +189,9 @@ def supplement_items(supplement: ET.Element) -> Iterator[tuple[bool, str]]:
         if element.tag in ("HD1", "HD2", "HD3"):
             yield True, plain_text(element)
         elif element.tag == "P":
-            comment, *lost_heading = LOST_HEADING_TAG.split(marked_text(element), 1)
-            yield False, comment
+            comments, *lost_heading = LOST_HEADING_TAG.split(marked_text(element), 1)
+            for comment in FUSED_COMMENT.split(comments):
+                yield False, comment
             if lost_heading:
                 yield True, lost_heading[0]
 
@@ -248,3 +225,7 @@ def plain_text(element: ET.Element | None) -> str:
     if element is None:
         raise ValueError("heading element missing")
     return " ".join("".join(element.itertext()).split())
+
+
+def html_text(tag: Tag | None) -> str:
+    return " ".join(tag.get_text().split()) if tag else ""
