@@ -34,7 +34,193 @@ The following were fixed before the run recorded here.
 
 ## Decision
 
-- **Corpus pin.** Regulation E is pinned to the eCFR text of 2023-04-19, the date of the last Part 1005 amendment in force. Later eCFR versions carry the amendments of 89 FR 106768, which Public Law 119-10 (May 9, 2025) disapproved before they took effect. `corpus/ecfr/2023-04-19/` holds the part as the versioner's XML and as the renderer's HTML, both as downloaded, with `chunks.jsonl`, `embeddings.npy` and a `manifest.json` that records both source URLs as fetched, the sha256 of the four other files, the latest amendment date reported by the versioner, the reason for the pin, the date it was checked and the label "unofficial eCFR snapshot". The eCFR is not an official legal edition of the CFR.
+- **Store.** PostgreSQL with pgvector through langchain-postgres 0.0.18 stays. The flip trigger did not fire: on the exact-term stratum hybrid search with keyword strings and dense search both have recall@20 of 1.00 (9/9), so no Qdrant run was made.
+- **Gate d.** Recorded as not met, as measured: on the gate strata recall@5 after rerank is 0.84, under the threshold of 0.85 and under the 0.88 of the fused top 5. The thresholds, the chunking, the labels and the recorded run are left as they are. The exit test carries gate d as an expected failure that fails the suite once the gate is met.
+- **Corpus pin.** Regulation E is pinned to the eCFR text of 2023-04-19, the date of the last Part 1005 amendment in force. Later eCFR versions carry the amendments of 89 FR 106768, which Public Law 119-10 (May 9, 2025) disapproved before they took effect. `corpus/ecfr/2023-04-19/` holds the part as the versioner's XML and as the renderer's HTML, both as downloaded, with `chunks.jsonl`, `embeddings.npy` and a `manifest.json` that records both source URLs as fetched, the sha256 of the four other files, the latest amendment date reported by the versioner, the reason for the pin, the date it was checked and the label "unofficial eCFR snapshot". The eCFR is not an official legal edition of the CFR. Appendices A to C are not parsed; they are deferred to the corpus step, where the model forms get the legal status `model_form`.
 - **Refresh rule.** List the amendment dates since the pin from the versioner, read each amending Federal Register document, and check for a Congressional Review Act disapproval. The pin moves only if every amendment it brings is in force.
+- **Corpus source.** The paragraph IDs, text and hierarchy of the regulation come from the eCFR's renderer output, `https://www.ecfr.gov/api/renderer/v1/content/enhanced/<date>/title-12?part=1005`, stored with its sha256 beside the versioner XML. The renderer endpoint is outside the eCFR's published API specification; its identifiers are the anchors of the public eCFR pages. Supplement I is read from the versioner XML.
+- **Paragraph IDs.** The ID of a regulation paragraph is the id of its node in the eCFR's file, verbatim, without the `p-` prefix: `1005.11(c)(2)(i)`. A paragraph directly inside a section, with no id of its own, takes the section's id (`1005.2`, `1005.30` and `1005.35`). A node that holds only a designator and a heading is not a chunk; its heading goes into the heading path of its children. A node's text excludes its descendants. A node without paragraph text raises, and so does an ID seen twice. The eCFR gives the comments of Supplement I no ids of their own, so they keep the IDs the comment parser assigns from the XML: `1005.11(c)-3` and `1005.11(c)(4)-5.i`, and `1005.A-1` for comments on Appendix A, a form that is provisional until the corpus step. The comment parser raises on a comment without a designator, on a designator more than one level below the paragraph before it and on a Supplement I heading of an unknown form. It places every designator of a comment by its form alone, with no check against the paragraph before, so a gap in a sequence is accepted. Three defects of the source are handled, each by its own rule: under 32(b)(1) the run of comments 2 to 7 is printed twice, and a comment whose number is not above that of the last comment kept under the same heading is dropped with its sub-paragraphs; the heading of 17(b)(3) lost its tag and sits at the end of the preceding paragraph, from where it is recovered; and comments 1 and 2 under 20(c)(4) are printed as one paragraph, which is split where a comment number follows a sentence without a space. Regulation text is `binding`, Supplement I `official_interpretation`.
+- **Chunking.** One chunk per paragraph. The content is the paragraph ID, the heading path and the paragraph text on three lines (content format 1); the same string is embedded, keyword-indexed and reranked.
+- **Embeddings.** text-embedding-3-large at 1536 dimensions, generated once into a float32 `.npy` file row-aligned with `chunks.jsonl`, by one embed call that sends 16 chunks a request. Requests carry raw strings (`check_embedding_ctx_length=False`). Rate limits are left to the OpenAI SDK's default retries: no `max_retries` is set, and nothing in this repository batches by token count or waits. The files are committed to plain git; Git LFS starts with the first file over about 50 MB and is set up before that file is added.
+- **Table.** Exact search, cosine distance, `PGVectorStore` on the psycopg 3 driver. Table `chunks` is created by the vendor's `init_vectorstore_table` with typed metadata columns (`paragraph_id`, `part`, `section`, `source`, `legal_status`, `snapshot`), a stored `content_tsv` column in `pg_catalog.english`, no JSON metadata column, no vector index and no GIN index at this size. Row IDs are `uuid5(snapshot:paragraph_id)`. The table is created and loaded by an explicit step, after the manifest hashes verify; nothing runs at container start.
+- **Hybrid search.** Every search builds a new `HybridSearchConfig`: the stored tsvector column, reciprocal rank fusion with `rrf_k` 60, 40 rows per leg, and `k` 20 candidates passed explicitly because the vendor overwrites `fetch_top_k` with `k`. The keyword query is a separate short string, and `retrieve` raises `ValueError` when it is empty or blank. The text-search language is one constant that the vendor applies when rows are inserted (the store-level config) and when they are queried (the per-call config); `init_vectorstore_table` takes only the column name.
+- **Rerank.** Cohere-rerank-v4.0-fast through the existing client, top 5. Requests carry no `max_tokens_per_doc`, and the cohere client is built with `max_retries=7`; the rerank session under Findings gives the reason for both.
+- **Database image.** `pgvector/pgvector:0.8.2-pg17`, pinned in `compose.yaml` by the digest of its multi-platform image index (linux/amd64 and linux/arm64) and used by CI through `docker compose`. The pin follows the PostgreSQL and pgvector versions Azure Database for PostgreSQL flexible server offers, not the newest image, so it is not on the dependency update bot.
+- **Recorded responses.** pytest-recording 0.13.4 on vcrpy 8.3.0, record mode `none` and the network blocked by default. A cassette stores the sha256 of each request body; authorization headers and the request headers that describe the recording machine are filtered; response headers are stored as received; a rate-limit response is dropped by a response hook, so a call the SDK retried is stored as the response that succeeded. For this step the recorded embedding response is the cache of query embeddings; an evaluation set of real size will want a plain file.
+- **Evaluation tooling.** Recall@k is computed by ir-measures 0.4.3 inside a DeepEval 4.2.8 metric class that DeepEval's `evaluate()` runs; the statistics come from scipy 1.18.1. ir-measures calls trec_eval through pytrec-eval-terrier 0.5.10, which compiles trec_eval 9.0.8 sources whose file headers read "research, non-commercial purposes"; it is a test-only dependency and no part of it ships with the service. DeepEval is used as a library: it is switched off before import (no telemetry, no `.env` or key file read, read-only file system), its pytest plugin and the four plugins it installs are not loaded, and one test holds those switches in place.
+- **Next configuration.** Fixed here, before it is built, for the corpus step, in this order: the label policy for lead-in and parent/child paragraphs is settled first as a domain question (which paragraph is the correct citation); then a chunking rule that can be decided from the source files alone, under which lead-ins and list items carry their context, is applied to every chunk and every label; the corpus is embedded again as a new configuration under its own tag; it is evaluated on new queries written after the rule and before the run; and the result below is kept beside the new one.
 
-The remaining decisions and the findings are recorded from the run made under the rules above.
+## Findings
+
+The exit run was recorded on 2026-10-06 against PostgreSQL 17.10 with pgvector 0.8.2, SQLAlchemy 2.1.1 and psycopg 3.3.6. Every figure of that run below is in `docs/results/0004-exit-run.json`, which a test regenerates from the recorded responses. Figures marked as an observation come from a named live session and are not reproduced by a test.
+
+**Corpus.** The versioner XML is 858,281 bytes (sha256 `04c370d9…8a9d7f74`) and the renderer HTML 1,401,436 bytes (sha256 `4aacbd2d…4a577d8b`); the versioner reports 2023-04-19 as the latest amendment date at the pin. The renderer file has the regulation's 27 sections with 834 paragraph nodes, each holding one paragraph of its own. 96 of them hold only a designator and a heading (four a designator alone) and are not chunks, and three sections open with a paragraph that has no id and takes the section's, which leaves 741 regulation chunks. Four chunk texts start with one designator where the XML prints two, "(a)(1)", because their parent node has no heading to pass down. Supplement I has 1,012 paragraph elements, 1,013 comment paragraphs once the two comments under 20(c)(4) are split; the second run under 32(b)(1), 12 paragraphs, is dropped, which leaves 1,001 comments and 1,742 chunks, each with a unique ID. Comments on Appendix A carry the provisional section value `1005.A`, which is why the snapshot test counts 28 distinct section values.
+
+**Embedding session** (observations, 2026-10-06, Azure CLI login). One request of 16 chunks returned 200 with `x-ratelimit-limit-tokens: 10000`. Six requests of 16 chunks sent back to back all returned 200, so that probe met no rate limit. Stage 1 then passed: one embed call over the 1,742 contents made 109 requests, each ending in a 200, in 29.5 minutes; 50 responses were a 429 and each was followed by a 200 on the SDK's first retry, after waits of 1 to 59 seconds that add up to 28.0 minutes. Stage 2 was not run and no `max_retries` is set on the embedding client. Twelve requests sent back to back afterwards through a client with a response hook captured the 429: `retry-after: 56` and `x-ratelimit-reset-tokens: 56`, no `retry-after-ms`, error code `RateLimitReached`; the SDK logged "Retrying request in 56.000000 seconds (retry 1 of 2)" and the retry returned 200. On the 1,648 chunks whose content is byte-identical in the previous snapshot, the new vectors pass `assert_allclose(new, old, rtol=0, atol=0.01)`; the largest absolute difference in a component is 0.0092. `embeddings.npy` is 10.7 MB.
+
+**Rerank session** (observations, 2026-10-06, Azure CLI login). One 20-candidate call returned 200 with `x-ratelimit-limit-requests: 20`, `x-ratelimit-limit-tokens: 20000`, both with a renewal period of 60 seconds, and was billed one search unit. The fixed request sent back to back with `max_tokens_per_doc=512` returned 22 times 200 and a 429 on call 23; sent without the cap after 90 idle seconds it again returned 22 times 200 and a 429 on call 23, with the same top 5 and one billed search unit a call. The cap is therefore removed. Both 429s carry `retry-after-ms` (302 and 381) and `x-ratelimit-reset-requests: 60`, and neither `retry-after` nor `x-ratelimit-reset`; the error code is `RateLimitReached`. cohere 7.2.0 waits on an integer or HTTP-date `retry-after` or on `x-ratelimit-reset` as an absolute time, reads neither of the headers sent, and backs off exponentially from one second, so the client's retry count is raised from 2 to 7. The three cassettes were then recorded once, in 2 minutes 46 seconds on those retries: 64 calls returned 200, and 55 rate-limit responses were retried by the SDK and are not stored. The exit cassette holds 62 interactions, two embedding requests and 60 rerank calls, each billed one search unit.
+
+**Response headers** (observation from the same probes). The 200 and 429 responses of both deployments carry request IDs, model, deployment, cluster and region names and rate-limit counters. None of their values contains the subscription ID, the tenant ID, the signed-in user, the account's name, internal ID or principal ID or a resource path, and none sets a cookie, so cassettes store response headers as received.
+
+**langchain-postgres 0.0.18.** Issue 337 and its fix, pull request 338, were both open on 2026-10-06. Line numbers refer to `langchain_postgres/v2/async_vectorstore.py` at 0.0.18.
+
+- A search writes into the config it is given: `fetch_top_k` (line 719) and, when the keyword query is empty, the query text (lines 804 to 806). A test shows that 0.0.18 still writes the query into a shared config and fails once a later version stops doing so. With a config per call, two consecutive searches each use their own keyword query. A metadata filter constrains both legs.
+- The keyword leg is `plainto_tsquery` (line 726), which requires every term to match; pull requests 268 and 339, both open, would relax this. Whatever produces the keyword string is therefore part of the retrieval path.
+- The keyword leg orders by `ts_rank_cd` with no tie-breaker (line 733). Run directly on the loaded table (observation, 2026-10-06), 7 of the 30 keyword strings return rows with tied scores; the rank within a tie follows the order in which Postgres returns the rows.
+- With a config whose keyword query is empty, the search skips the keyword leg and the fusion and returns the dense leg's 40 rows instead of `k` (lines 654 to 656 and 746). `retrieve` rejects an empty keyword string for that reason.
+- Each leg runs on its own pooled connection (lines 708 and 734), so a transaction-scoped setting made by the caller does not reach either query. Row-level security for the corpus has to bind at the engine or pool level.
+- Both legs select the embedding column (lines 661 to 665): a search fetches 80 vectors it does not use. The cost is latency only.
+
+**Exit test.** 30 queries: 5 bare citations, 9 exact-term queries and 16 paraphrased questions. One paraphrased query has two expected IDs, so the 25 gate-strata queries have 26. A recall cell gives the mean recall@k over the queries and, in brackets, the pooled count. Recall@5 of the three search arms is taken on the first five of their twenty candidates. "Rescued" counts expected IDs among the twenty candidates of a hybrid arm that the twenty of dense search lack; "lost" is the reverse.
+
+| Stratum (queries, expected IDs) | Arm | Keyword leg non-empty | Rescued | Lost | recall@20 | recall@5 |
+|---|---|---|---|---|---|---|
+| citation (5, 5) | dense | – | – | – | 0.20 (1/5) | 0.00 (0/5) |
+| citation (5, 5) | hybrid, raw question | 4/5 | 2 | 0 | 0.60 (3/5) | 0.60 (3/5) |
+| citation (5, 5) | hybrid, keyword string | 5/5 | 4 | 0 | 1.00 (5/5) | 0.80 (4/5) |
+| citation (5, 5) | dense + rerank | – | – | – | – | 0.20 (1/5) |
+| citation (5, 5) | hybrid, keyword string + rerank | – | – | – | – | 1.00 (5/5) |
+| exact-term (9, 9) | dense | – | – | – | 1.00 (9/9) | 0.89 (8/9) |
+| exact-term (9, 9) | hybrid, raw question | 6/9 | 0 | 0 | 1.00 (9/9) | 1.00 (9/9) |
+| exact-term (9, 9) | hybrid, keyword string | 9/9 | 0 | 0 | 1.00 (9/9) | 1.00 (9/9) |
+| exact-term (9, 9) | dense + rerank | – | – | – | – | 1.00 (9/9) |
+| exact-term (9, 9) | hybrid, keyword string + rerank | – | – | – | – | 1.00 (9/9) |
+| paraphrased (16, 17) | dense | – | – | – | 0.94 (16/17) | 0.81 (14/17) |
+| paraphrased (16, 17) | hybrid, raw question | 0/16 | 0 | 0 | 0.94 (16/17) | 0.81 (14/17) |
+| paraphrased (16, 17) | hybrid, keyword string | 15/16 | 0 | 0 | 0.94 (16/17) | 0.81 (14/17) |
+| paraphrased (16, 17) | dense + rerank | – | – | – | – | 0.75 (13/17) |
+| paraphrased (16, 17) | hybrid, keyword string + rerank | – | – | – | – | 0.75 (13/17) |
+| gate strata (25, 26) | dense | – | – | – | 0.96 (25/26) | 0.84 (22/26) |
+| gate strata (25, 26) | hybrid, raw question | 6/25 | 0 | 0 | 0.96 (25/26) | 0.88 (23/26) |
+| gate strata (25, 26) | hybrid, keyword string | 24/25 | 0 | 0 | 0.96 (25/26) | 0.88 (23/26) |
+| gate strata (25, 26) | dense + rerank | – | – | – | – | 0.84 (22/26) |
+| gate strata (25, 26) | hybrid, keyword string + rerank | – | – | – | – | 0.84 (22/26) |
+
+| Gate | Threshold | Result | |
+|---|---|---|---|
+| a. Consecutive searches use their own keyword query | holds | holds | met |
+| b. Keyword leg non-empty with keyword strings, gate strata | at least 90%, which is 23 of 25 | 24 of 25 | met |
+| c. Recall@20, hybrid with keyword strings, gate strata | at least 0.90 | 0.96 (25/26) | met |
+| d. Recall@5 after rerank, hybrid with keyword strings, gate strata | at least 0.85 and not below the fused top 5 | 0.84 (22/26); the fused top 5 has 0.88 (23/26) | not met |
+| e. Two live runs return the same top 5 | reported | 30 of 30 identical, see Second live run | – |
+
+Dense search with rerank also has 0.84 (22/26) on the gate strata and misses the same four expected IDs.
+
+**Sample size.** The interval is on the share of queries with every expected ID found, which on the gate strata differs from the mean recall only through the one query with two expected IDs.
+
+| Stratum | Arm | k | Queries with every expected ID found | 95% Wilson interval of that share |
+|---|---|---|---|---|
+| gate strata | dense | 20 | 24/25 | 0.80 to 0.99 |
+| gate strata | dense | 5 | 21/25 | 0.65 to 0.94 |
+| gate strata | hybrid, raw question | 20 | 24/25 | 0.80 to 0.99 |
+| gate strata | hybrid, raw question | 5 | 22/25 | 0.70 to 0.96 |
+| gate strata | hybrid, keyword string | 20 | 24/25 | 0.80 to 0.99 |
+| gate strata | hybrid, keyword string | 5 | 22/25 | 0.70 to 0.96 |
+| gate strata | dense + rerank | 5 | 21/25 | 0.65 to 0.94 |
+| gate strata | hybrid, keyword string + rerank | 5 | 21/25 | 0.65 to 0.94 |
+
+The intervals of the fused and the reranked top 5 overlap almost entirely. The per-stratum figures, over 5, 9 and 16 queries, are descriptive only; their intervals are in the results file.
+
+**Gate d.** Four expected IDs are missing from the reranked top 5.
+
+| # | Missed after rerank | Rank in the fused twenty | Rank in the dense top 40 |
+|---|---|---|---|
+| 15 | 1005.11(a)(1) | 1 | 1 |
+| 18 | 1005.11(c)(2)(i)(A) | 7 | 7 |
+| 26 | 1005.12(a)(1)(iv) | – | 21 |
+| 30 | 1005.33(b)(1)(i) | 3 | 2 |
+
+Three of the four were among the twenty candidates the store returned, two of them in its first three, so their miss lies in the order after retrieval. The fourth, 1005.12(a)(1)(iv), was not among the twenty candidates: the keyword leg returned no row for its query and the dense leg ranked it 21st of its 40. By the fault-attribution rule none counts against the store. The two levers were not run: neither can change the order after retrieval. All four are a lead-in or a list item: 1005.11(a)(1) and 1005.12(a)(1)(iv) end in a colon and leave their substance to the list items below them, and 1005.11(c)(2)(i)(A) and 1005.33(b)(1)(i) are list items without the sentence of their parent paragraph. That this parent/child granularity explains the misses is a hypothesis for the corpus step, not a finding.
+
+**Reranker.** By query, recall@5 after rerank against recall@5 of the same arm's first five candidates:
+
+| Stratum | Rerank of | Queries higher after rerank | Queries lower | p |
+|---|---|---|---|---|
+| citation | dense | 1 | 0 | 1.0 |
+| citation | hybrid, keyword string | 1 | 0 | 1.0 |
+| exact-term | dense | 1 | 0 | 1.0 |
+| exact-term | hybrid, keyword string | 0 | 0 | – |
+| paraphrased | dense | 1 | 2 | 1.0 |
+| paraphrased | hybrid, keyword string | 1 | 2 | 1.0 |
+| gate strata | dense | 2 | 2 | 1.0 |
+| gate strata | hybrid, keyword string | 1 | 2 | 1.0 |
+
+On the gate strata rerank changes three queries of the hybrid arm, one up and two down, and four of the dense arm, two each way. A non-significant test is not evidence that rerank is no worse: with three or four differing queries the test cannot show a difference of this size either way. The data supports neither that rerank lowers recall nor that rerank meets the 0.85 threshold. On the citation stratum rerank puts the expected paragraph first for all five queries of the hybrid arm.
+
+**Keyword leg.** On the gate strata the keyword leg returns rows for 6 of 25 queries when it is given the question as written (0 of 16 paraphrased questions) and for 24 of 25 when it is given the keyword string. There it rescued no expected ID at 20, and the fused top 5 has 0.88 (23/26) against 0.84 (22/26) for dense search. On the citation stratum, with keyword strings, it rescued 4 of 5 expected IDs; dense search finds 1 of 5. The keyword strings were written by hand before the run, so these figures are an upper bound until strings generated by the triage stage are measured. The measured value of the keyword leg is on citation-shaped queries, which the citation lookup in the design also serves. The keyword leg is not recorded as optional, because dense search with rerank does not meet the gate d target.
+
+Per query: the rank of each expected ID in each arm (– is absent), and the rows returned by the keyword leg for the raw question and for the keyword string.
+
+| # | Stratum | Expected | Keyword rows raw / keyword | Dense | Hybrid raw | Hybrid keyword | Dense + rerank | Hybrid keyword + rerank |
+|---|---|---|---|---|---|---|---|---|
+| 1 | citation | 1005.6(b)(1) | 19 / 19 | – | 2 | 2 | – | 1 |
+| 2 | citation | 1005.11(c)(2)(i) | 2 / 21 | – | – | 7 | – | 1 |
+| 3 | citation | 1005.11(c)-3 | 0 / 3 | – | – | 2 | – | 1 |
+| 4 | citation | 1005.33(c)(1) | 24 / 24 | – | 5 | 5 | – | 1 |
+| 5 | citation | 1005.6(b)-2 | 6 / 5 | 9 | 2 | 1 | 1 | 1 |
+| 6 | exact-term | 1005.11(c)(2)(i) | 0 / 2 | 2 | 2 | 1 | 1 | 1 |
+| 7 | exact-term | 1005.11(c)(3)(i) | 0 / 3 | 2 | 2 | 2 | 1 | 1 |
+| 8 | exact-term | 1005.6(b)(1) | 0 / 7 | 1 | 1 | 2 | 4 | 4 |
+| 9 | exact-term | 1005.6(b)(3) | 2 / 5 | 1 | 1 | 1 | 2 | 2 |
+| 10 | exact-term | 1005.11(b)(2) | 2 / 4 | 1 | 1 | 1 | 1 | 1 |
+| 11 | exact-term | 1005.11(c)(3)(ii)(B) | 2 / 2 | 6 | 1 | 1 | 4 | 4 |
+| 12 | exact-term | 1005.10(c)(1) | 1 / 2 | 1 | 1 | 1 | 1 | 1 |
+| 13 | exact-term | 1005.13(b)(1) | 1 / 1 | 1 | 1 | 1 | 1 | 1 |
+| 14 | exact-term | 1005.2(d) | 4 / 4 | 2 | 2 | 2 | 1 | 1 |
+| 15 | paraphrased | 1005.11(a)(1) | 0 / 3 | 1 | 1 | 1 | – | – |
+| 16 | paraphrased | 1005.11(b)(1)(i) | 0 / 15 | 1 | 1 | 2 | 1 | 1 |
+| 17 | paraphrased | 1005.11(c)(1) | 0 / 5 | 1 | 1 | 1 | 1 | 1 |
+| 18 | paraphrased | 1005.11(c)(2)(i)(A) | 0 / 1 | 7 | 7 | 7 | – | – |
+| 19 | paraphrased | 1005.11(c)(3)(ii) | 0 / 1 | 1 | 1 | 1 | 1 | 1 |
+| 20 | paraphrased | 1005.11(c)(4) | 0 / 2 | 8 | 8 | 8 | 4 | 4 |
+| 21 | paraphrased | 1005.11(d)(1) | 0 / 5 | 1 | 1 | 1 | 1 | 1 |
+| 22 | paraphrased | 1005.11(d)(2)(ii) | 0 / 1 | 1 | 1 | 1 | 1 | 1 |
+| 23 | paraphrased | 1005.11(e) | 0 / 4 | 1 | 1 | 1 | 1 | 1 |
+| 24 | paraphrased | 1005.6(b)(4), 1005.6(b)(4)-1 | 0 / 1 | 2, 1 | 2, 1 | 2, 1 | 2, 1 | 2, 1 |
+| 25 | paraphrased | 1005.2(m)(1) | 0 / 1 | 5 | 5 | 5 | 2 | 2 |
+| 26 | paraphrased | 1005.12(a)(1)(iv) | 0 / 0 | – | – | – | – | – |
+| 27 | paraphrased | 1005.6(b)-2 | 0 / 1 | 1 | 1 | 1 | 1 | 1 |
+| 28 | paraphrased | 1005.11(c)-3 | 0 / 3 | 1 | 1 | 1 | 1 | 1 |
+| 29 | paraphrased | 1005.11(a)-4 | 0 / 1 | 1 | 1 | 1 | 1 | 1 |
+| 30 | paraphrased | 1005.33(b)(1)(i) | 0 / 25 | 2 | 2 | 3 | – | – |
+
+**Second live run** (observation, 2026-10-06). The hybrid-with-keyword-string and rerank arm was run live a second time, in half a minute, with six rate-limit responses retried by the SDK. The reranked top 5 was identical to the recorded run for 30 of 30 queries. The twenty candidates were identical, in order, for 29 of 30; for query 3 the same twenty came back in another order and the top 5 did not change. 10 of the 30 query vectors differed between the two embedding calls, by at most 0.0005 in a component. Query embeddings are not bit-stable across calls, which is why CI replays the recorded ones. In the recorded run 2 of the 60 rerank responses hold two equal relevance scores in their top 5.
+
+**Replay.** vcrpy applies the request filter to the live request before matching, and on one code path twice, so the filter leaves a body that is already a hash unchanged; matching uses vcrpy's built-in method, uri and body matchers, with no custom matcher. CI replays the run on linux/amd64 against the same database image, and the results-file test fails there if the replay does not reproduce the committed figures.
+
+## Code written here
+
+Each unit below is written in this repository because no component does its whole job. The candidates were checked on the locked versions on 2026-10-06.
+
+- **Comment IDs of Supplement I** (`ecfr.supplement_paragraphs`, including the split of the two comments printed as one under 20(c)(4)). The eCFR renderer gives 194 distinct ids for 1,064 comment paragraphs. The CFPB's published interpretation pages carry anchors that match 980 to 989 of the 1,001 comments, measured on the earlier snapshot, give no usable anchor for section-level comments and a few others, and would add a second publisher with fetch-and-match code of its own. The CFPB importer, a Django script and not a package, matches 871 to 891. regparser 4.3.1 dates from 2017 and its repository is archived.
+- **Regulation paragraph extraction** (`ecfr.regulation_paragraphs`). The IDs and the hierarchy are the eCFR's and the HTML tree is BeautifulSoup's; no component turns the renderer's HTML into paragraph records.
+- **Chunk text format** (`corpus.chunk_content`: ID, heading path, text). Text splitters split by size, which this design does not use; langchain-core's `format_document` needs a template and a heading path that is already joined.
+- **Manifest hash check** (`corpus.verified_manifest`, `corpus.read_corpus`). The hashing is hashlib's. bagit 1.9.0 forces the BagIt folder layout, DVC adds its own tool, files and cache, and pooch downloads a mismatching file again where this check has to refuse it.
+- **Snapshot download** (`corpus_build.fetch`). The download is httpx's. pooch 1.9.0 adds a hash check and a cache but records neither the final URL nor the manifest fields, and the manifest check already covers every later read.
+- **Rerank index mapping** (one line in `retrieval.rerank`). The Cohere v2 API returns only an index and a score. langchain-cohere 0.6.0 requires cohere below 6 and does not resolve beside 7.2.0; langchain-azure-ai 1.2.10 has no reranker.
+- **The seams `embed`, `retrieve` and `rerank`, and the blank-keyword guard.** Each seam is one vendor call. The guard exists because langchain-postgres 0.0.18, the latest release, returns the dense leg's rows when the keyword query is empty (issue 337 and pull request 338, both open).
+- **Request-body hash in recorded responses** (`tests/conftest.py`). vcrpy 8.3.0 and pytest-recording 0.13.4 have no body hashing, and vcrpy's post-data filter would make different requests match.
+- **Dropping a recorded rate-limit response** (`tests/conftest.py`). vcrpy records every response and has no status filter; its response hook is the extension point, and the hook is one line.
+- **Keyword-leg observation in the exit test.** langchain-postgres 0.0.18 exposes the keyword leg's rows nowhere but in the arguments of the fusion function, so the test wraps that function and reads them.
+- **The recall@k metric class and the five-arm loop** (`tests/test_exit.py`). The arithmetic is ir-measures'. DeepEval's own recall metrics are judged by a model, and no framework runs these five arms.
+- **Results generation** (`tests/test_exit.py`). Ranks, rescued and lost IDs and shares are an aggregation of library output; ir-measures has no measure for them.
+
+Two units outside the subject of this record are kept on the same rule: the banned-phrase scan in CI (gitleaks 8.30.1 custom rules read file and history content but neither commit messages nor tag bodies, and no scanner tested reads tag bodies) and the Foundry smoke script with its dimension check, the readback script and the command lines (no vendor command makes one live call per deployment through this project's clients).
+
+## Consequences
+
+- Gate d stays not met until the next configuration is measured. Retrieval through this path delivers every expected paragraph in the top 5 for 21 of 25 gate-strata queries (22 of 26 expected IDs), and later steps are built on that figure, not on the threshold.
+- Gates fixed before a later run are written with these points, which do not change this result:
+  - A comparison between two arms is paired and carries a stated non-inferiority margin; a comparison of two point values is decided by one query.
+  - Store gates are kept apart from rerank-stage gates, and the flip trigger is the operative rule for the store.
+  - The relevance policy for hierarchical paragraphs is defined before the labels are written.
+  - A clause over "every stratum" names what it means for a stratum without a target; the clause on the optional keyword leg did not, for the citation stratum.
+- The citation check and every later step depend on the paragraph IDs. A move of the pin, a parser change or a content-format change produces new chunk files, a new embedding run of about half an hour at the current quota, and new cassettes.
+- Regulation IDs depend on the renderer endpoint, which the eCFR does not document. The file is stored with its sha256, so the pinned text stays reproducible without the endpoint; a change in the endpoint's markup shows at the next refresh, where the parser raises or the snapshot tests fail.
+- Rate limits are handled by SDK retries alone. An embedding run takes as long as the tokens-per-minute quota allows, and a rate limit that outlasts the retries fails the run; it is not paced around in this repository's code.
+- Hybrid search adds to dense search only when the caller supplies a keyword string. Whatever produces that string for a live query becomes part of the retrieval path and has to be measured with it.
+- The per-call `HybridSearchConfig` stays until a langchain-postgres release stops mutating the config; the test that detects that release names what to review.
+- The corpus row-level security has to be set on the engine or its pool, because the vendor's searches do not run inside the caller's transaction.
+- A dependency update that changes a request body fails the recorded tests until the cassettes are recorded again, which needs the Foundry account, the Azure CLI login and the database, and about three minutes for the exit test at the current rerank quota. An update of deepeval, ir-measures, pytrec-eval-terrier, scipy or langchain-postgres changes the versions in the results file, so the results test fails until the file is generated again.
+- pytrec-eval-terrier stays a test-only dependency; using trec_eval in the service itself would need its licence terms settled first.
+- The database image is updated by hand when the versions offered by Azure Database for PostgreSQL change.
