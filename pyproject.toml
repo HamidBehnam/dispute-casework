@@ -47,7 +47,7 @@ select = ["E", "F", "I", "UP", "B"]
 "tests/conftest.py" = ["E402"]
 
 [tool.pytest.ini_options]
-addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerunfailures -p no:xdist"
+addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerunfailures -p no:xdist -p no:xdist.looponfail"
 
 [tool.mypy]
 strict = true

@@ -16,4 +16,5 @@ def test_deepeval_is_switched_off_before_import_and_kept_out_of_pytest(
     assert "CONFIDENT_API_KEY" not in os.environ
     for plugin in ("deepeval", "asyncio", "repeat", "rerunfailures", "xdist"):
         assert not pytestconfig.pluginmanager.has_plugin(plugin)
+    assert not pytestconfig.pluginmanager.has_plugin("xdist.looponfail")
     assert not is_confident()
