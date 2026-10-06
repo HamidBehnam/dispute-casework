@@ -68,7 +68,14 @@ def settings(record_mode: str) -> FoundrySettings:
     """Replay needs no credential; recording uses FOUNDRY_ENDPOINT and the CLI login."""
     if record_mode == "none":
         return FoundrySettings(endpoint=RECORDED_ENDPOINT, key="replay")
-    return FoundrySettings.from_env()
+    return FoundrySettings()
+
+
+@pytest.fixture(autouse=True)
+def no_foundry_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Settings built from keyword arguments still read the environment."""
+    monkeypatch.delenv("FOUNDRY_ENDPOINT", raising=False)
+    monkeypatch.delenv("FOUNDRY_KEY", raising=False)
 
 
 @pytest.fixture(scope="session")

@@ -69,7 +69,7 @@ def main() -> int:
         help="check only this deployment; all of them when omitted",
     )
     selected = parser.parse_args().deployment
-    settings = FoundrySettings.from_env()
+    settings = FoundrySettings()
     auth = "key" if settings.key else "Azure CLI identity"
     print(f"endpoint {settings.endpoint}; credential: {auth}")
     failed = False
