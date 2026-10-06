@@ -7,7 +7,12 @@ Correctness that can look like complexity. Each item is backed by the named test
 | `interrupt()` is the first statement of the approval node; no side effect precedes it | pending, step 14: `tests/test_graph.py::test_approval_node_interrupts_before_side_effects` |
 | Approvals and bank writes carry an idempotency key enforced by a unique constraint | pending, step 15: `tests/test_approval.py::test_duplicate_approval_rejected_by_constraint`; migration assertion in step 7 |
 | A fresh `HybridSearchConfig` is built for every retrieval call | `tests/test_retrieve.py::test_hybrid_config_built_per_call`, `tests/test_retrieve.py::test_sequential_searches_use_their_own_keyword_query`; `tests/test_retrieve.py::test_langchain_postgres_still_writes_the_query_into_a_shared_config` fails once the vendor no longer mutates the config |
-| Corpus embeddings are loaded only after every snapshot file matches its sha256 in the manifest | `tests/test_corpus.py::test_load_rejects_manifest_mismatch`, `tests/test_corpus.py::test_load_rejects_a_file_the_manifest_does_not_list` |
+| Corpus embeddings are loaded only after every snapshot file (the XML, the HTML, the chunks and the embeddings) is listed in the manifest and matches its sha256 | `tests/test_corpus.py::test_load_rejects_manifest_mismatch`, `tests/test_corpus.py::test_load_rejects_a_file_the_manifest_does_not_list` |
+| Every regulation paragraph ID is an id of the eCFR's rendered file, verbatim | `tests/test_ecfr.py::test_every_regulation_id_is_an_id_of_the_ecfr_file_verbatim` |
+| Model clients carry the explicit timeout under a key and under a token credential | `tests/test_foundry.py::test_sdk_clients_carry_the_timeout_under_a_key_and_under_a_token_provider` |
+| A rate-limit response is never stored in a cassette | `tests/test_recording.py::test_a_rate_limit_response_is_never_stored` |
+| The published results file is what the recorded run produces | `tests/test_exit.py::test_results_file_is_current` |
+| DeepEval is switched off before it is imported (no telemetry, no `.env` or key file read, read-only file system), its pytest plugin is not loaded and it reports no Confident AI login | `tests/test_deepeval_quiet.py::test_deepeval_is_switched_off_before_import_and_kept_out_of_pytest` |
 | No checkpoint row holds a token | pending, step 14: `tests/test_graph.py::test_checkpoint_rows_contain_no_token` |
 | The token ledger fails closed, including when usage is missing from the response | pending, step 13: `tests/test_ledger.py::test_reserve_denies_without_row`, `tests/test_ledger.py::test_settle_without_usage_fails_closed` |
 | `FORCE ROW LEVEL SECURITY` is set on every protected table | pending, step 3: `tests/test_rls.py::test_force_rls_on_protected_tables`; re-asserted in step 7 |
