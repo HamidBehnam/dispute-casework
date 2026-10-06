@@ -1,6 +1,6 @@
 # ADR 0001: Python toolchain
 
-Status: Accepted
+Status: Superseded by 0005
 
 ## Context
 
