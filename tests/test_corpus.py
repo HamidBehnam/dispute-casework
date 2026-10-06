@@ -85,9 +85,9 @@ def test_load_rejects_a_file_the_manifest_does_not_list(
 ) -> None:
     directory = tmp_path / "snapshot"
     shutil.copytree(SNAPSHOT_DIR, directory)
-    manifest = json.loads((directory / "manifest.json").read_text())
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     del manifest["files"][unlisted]
-    (directory / "manifest.json").write_text(json.dumps(manifest))
+    (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     engine = Mock()
     with pytest.raises(ValueError, match=f"{unlisted} has no sha256"):
         load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))

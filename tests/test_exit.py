@@ -66,7 +66,9 @@ class Outcome:
 
 QUERIES = [
     Query(**query)
-    for query in json.loads((Path(__file__).parent / "queries.json").read_text())
+    for query in json.loads(
+        (Path(__file__).parent / "queries.json").read_text(encoding="utf-8")
+    )
 ]
 
 
@@ -381,9 +383,9 @@ def test_results_file_is_current(
         json.dumps(results(measure(store, settings, QUERIES)), indent=2, sort_keys=True)
         + "\n"
     )
-    if generated != RESULTS.read_text():
+    if generated != RESULTS.read_text(encoding="utf-8"):
         regenerated = tmp_path / RESULTS.name
-        regenerated.write_text(generated)
+        regenerated.write_text(generated, encoding="utf-8")
         pytest.fail(
             f"{RESULTS} is not what the recorded run produces; "
             f"the regenerated file is {regenerated}"

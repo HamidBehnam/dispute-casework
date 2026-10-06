@@ -100,7 +100,8 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
     ]
     vectors = embed(settings, [chunk["content"] for chunk in chunks])
     (directory / CHUNKS).write_text(
-        "".join(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in chunks)
+        "".join(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in chunks),
+        encoding="utf-8",
     )
     np.save(directory / EMBEDDINGS, np.asarray(vectors, dtype=np.float32))
     write_manifest(
@@ -123,7 +124,9 @@ def embed_corpus(directory: Path, settings: FoundrySettings) -> None:
 
 
 def write_manifest(directory: Path, manifest: dict[str, object]) -> None:
-    (directory / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n")
+    (directory / MANIFEST).write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def main() -> None:
