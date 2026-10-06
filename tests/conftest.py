@@ -74,7 +74,11 @@ def vcr_config() -> dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def settings(record_mode: str) -> FoundrySettings:
-    """Replay needs no credential; recording uses FOUNDRY_ENDPOINT and the CLI login."""
+    """Replay needs no credential; recording uses FOUNDRY_ENDPOINT and the CLI login.
+
+    Session-scoped so that it reads the environment before the per-test
+    fixture below removes the variables.
+    """
     if record_mode == "none":
         return FoundrySettings(endpoint=RECORDED_ENDPOINT, key="replay")
     return FoundrySettings()
