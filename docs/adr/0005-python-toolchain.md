@@ -1,6 +1,8 @@
-# ADR 0001: Python toolchain
+# ADR 0005: Python toolchain
 
-Status: Superseded by 0005
+Status: Proposed
+
+Supersedes 0001
 
 ## Context
 
@@ -11,7 +13,7 @@ A greenfield Python service built by one engineer with a coding agent. The repos
 - Python 3.13, pinned by minor in `.python-version`. Python 3.14 was considered and deferred: grpcio, psycopg binary wheels and the Azure SDKs lag new minor releases, and this service depends on all three from its first spikes. Python 3.13 receives security fixes until October 2029.
 - uv 0.12.21 for dependency resolution, the lockfile, interpreter installation and task running, with `uv_build` as the build backend.
 - ruff 0.16.9 for linting and formatting; mypy 2.3.1 in strict mode; pytest 9.1.1; pip-audit 2.10.1.
-- gitleaks 8.30.1 in the local hooks and in CI, run as the release binary verified by checksum.
+- gitleaks 8.30.1: the installed binary in the local hooks; in CI the official image `ghcr.io/gitleaks/gitleaks`, pinned by the digest of its multi-platform index and run over the full history.
 - GitHub Actions on `ubuntu-24.04` with actions pinned by commit SHA; Dependabot for the uv and github-actions ecosystems.
 - Tools are pinned exactly in `pyproject.toml`; runtime dependencies use floors, with `uv.lock` as the exact pin.
 
@@ -30,6 +32,6 @@ A greenfield Python service built by one engineer with a coding agent. The repos
 
 - Exact tool pins produce a Dependabot pull request for every tool release; a formatter or linter change is always a visible commit.
 - uv is pre-1.0. Its version is pinned in `pyproject.toml` and read by the setup action, so local and CI runs use the same binary.
-- The gitleaks version and checksum in the workflow are updated by hand; Dependabot does not track them.
+- The gitleaks image digest in the workflow is updated by hand; Dependabot does not track it.
 - pip-audit runs per commit against the locked environment while Dependabot alerts run continuously; the overlap is intended.
 - Moving to Python 3.14 is a one-line change plus a superseding ADR once the wheels are available.
