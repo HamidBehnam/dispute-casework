@@ -12,7 +12,7 @@ def response(code: int) -> dict[str, Any]:
 
 
 def test_a_rate_limit_response_is_never_stored(vcr_config: dict[str, Any]) -> None:
-    assert without_rate_limit_responses in vcr_config["before_record_response"]
+    assert vcr_config["before_record_response"] is without_rate_limit_responses
     assert without_rate_limit_responses(response(429)) is None
     assert without_rate_limit_responses(response(200)) == response(200)
 

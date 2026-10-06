@@ -1,6 +1,6 @@
 interactions:
 - request:
-    body: '{"sha256": "48ecc260c554d3daf16e5dc93f1b6640456d2a80f1aec4f785633453f5f128b7"}'
+    body: '{"sha256": "4f2f9540e35b42bd5ee5d141c722a0d3c5b31dade85be29f9ac22fa9975c5d27"}'
     headers:
       accept:
       - '*/*'
@@ -9,19 +9,13 @@ interactions:
       connection:
       - keep-alive
       content-length:
-      - '267'
+      - '242'
       content-type:
       - application/json
       host:
       - ai-dcw-eus2.cognitiveservices.azure.com
-      user-agent:
-      - cohere/7.2.0
       x-fern-language:
       - Python
-      x-fern-platform:
-      - darwin/25.6.0
-      x-fern-runtime:
-      - python/3.13.13
       x-fern-sdk-name:
       - cohere
       x-fern-sdk-version:
@@ -30,10 +24,92 @@ interactions:
     uri: https://ai-dcw-eus2.cognitiveservices.azure.com/providers/cohere/v2/rerank
   response:
     body:
-      string: '{"id":"d02e4a0c-e7f7-445d-aebc-70ca2324bb96","results":[{"index":1,"relevance_score":0.917184},{"index":2,"relevance_score":0.19534837}],"meta":{"api_version":{"version":"2"},"billed_units":{"search_units":1}}}'
+      string: '{"id":"bdc95f04-d530-49a2-ab62-5db1ef1b4941","results":[{"index":1,"relevance_score":0.917184},{"index":2,"relevance_score":0.19534837}],"meta":{"api_version":{"version":"2"},"billed_units":{"search_units":1}}}'
     headers:
+      apim-request-id:
+      - 36db901b-6998-465d-8d7c-5fb2aa03716b
+      azureai-fe-is-streaming:
+      - 'False'
+      azureai-fe-offer-type:
+      - paygo
+      azureai-processed-tier:
+      - default
+      azureai-requested-tier:
+      - default
+      azureml-destination-deployment:
+      - d20260923073811-10c42494
+      azureml-destination-endpoint:
+      - cohpv3-usc-h1-oai-oe-fqub23
+      azureml-destination-model-group:
+      - rerank-v4-fast-cus-v2
+      azureml-destination-region:
+      - centralus
+      azureml-model-deployment:
+      - d20260923073811-10c42494
+      azureml-model-group:
+      - rerank-v4-fast-cus-v2
+      azureml-model-session:
+      - d20260923073811-10c42494
+      azureml-ms-model-error-comprehensive:
+      - --
+      azureml-served-by-cluster:
+      - hyena-eastus2-01
+      cache-control:
+      - no-store, no-transform, must-revalidate, no-cache, max-age=0, private
+      content-length:
+      - '210'
       content-type:
       - application/json
+      date:
+      - Tue, 06 Oct 2026 19:47:43 GMT,Tue, 06 Oct 2026 19:47:43 GMT
+      expires:
+      - Thu, 01 Jan 1970 00:00:00 GMT
+      pragma:
+      - no-cache
+      prompt_token_len:
+      - '1'
+      sampling_token_len:
+      - '0'
+      server:
+      - istio-envoy
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      vary:
+      - Origin
+      x-accel-expires:
+      - '0'
+      x-content-type-options:
+      - nosniff
+      x-ms-client-request-id:
+      - 36db901b-6998-465d-8d7c-5fb2aa03716b
+      x-ms-inference-retry-history:
+      - '{"v":1,"entries":[{"service_id":"mir.frontdoor","layer":"regional","role":"direct","retries":0}]}'
+      x-ms-is-spilled-over:
+      - 'false'
+      x-ms-region:
+      - East US 2
+      x-ratelimit-abusepenalty-active:
+      - 'False'
+      x-ratelimit-key:
+      - Cohere-rerank-v4.0-fast
+      x-ratelimit-limit-requests:
+      - '20'
+      x-ratelimit-limit-tokens:
+      - '20000'
+      x-ratelimit-remaining-requests:
+      - '19'
+      x-ratelimit-remaining-tokens:
+      - '19994'
+      x-ratelimit-renewalperiod-requests:
+      - '60'
+      x-ratelimit-renewalperiod-tokens:
+      - '60'
+      x-ratelimit-reset-requests:
+      - '3'
+      x-ratelimit-reset-tokens:
+      - '0'
+      x-request-id:
+      - c1cf0d67-0a87-4599-a309-c9858adeeab9
     status:
       code: 200
       message: OK
