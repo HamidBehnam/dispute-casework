@@ -15,7 +15,7 @@ from dispute_casework.foundry import (
     embeddings,
     reranker,
 )
-from dispute_casework.retrieval import RERANK_DEPLOYMENT, RERANK_MAX_TOKENS_PER_DOC
+from dispute_casework.retrieval import RERANK_DEPLOYMENT
 
 DEPLOYMENTS = (
     "gpt-5.4-mini",
@@ -52,7 +52,6 @@ def check(settings: FoundrySettings, deployment: str) -> str:
             query=QUERY,
             documents=DOCUMENTS,
             top_n=3,
-            max_tokens_per_doc=RERANK_MAX_TOKENS_PER_DOC,
         )
         ranking = [(r.index, round(r.relevance_score, 3)) for r in response.results]
         return f"ranking {ranking}"

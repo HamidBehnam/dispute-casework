@@ -13,6 +13,10 @@ EMBEDDING_INPUTS_PER_REQUEST = 16
 OPENAI_ROUTE_SCOPE = "https://ai.azure.com/.default"
 COHERE_ROUTE_SCOPE = "https://cognitiveservices.azure.com/.default"
 TIMEOUT_SECONDS = 60
+# The rerank route answers a 429 with retry-after-ms only, which cohere 7.2.0
+# does not read: it backs off 1, 2, 4 ... seconds, and seven retries outlast the
+# deployment's one-minute window where the default two do not.
+RERANK_MAX_RETRIES = 7
 CHAT_COMPLETIONS_ONLY = frozenset({"DeepSeek-V4-Pro"})
 
 
@@ -72,4 +76,5 @@ def reranker(settings: FoundrySettings) -> ClientV2:
     return ClientV2(
         api_key=api_key(settings, COHERE_ROUTE_SCOPE),
         base_url=cohere_base_url(settings),
+        max_retries=RERANK_MAX_RETRIES,
     )

@@ -12,6 +12,7 @@ from dispute_casework.foundry import (
     chat_model,
     cohere_base_url,
     embeddings,
+    reranker,
 )
 
 ENDPOINT = "https://ai-test-eus2.cognitiveservices.azure.com"
@@ -65,6 +66,11 @@ def test_cohere_base_url_is_the_provider_route() -> None:
         cohere_base_url(FoundrySettings(endpoint=ENDPOINT))
         == "https://ai-test-eus2.cognitiveservices.azure.com/providers/cohere"
     )
+
+
+def test_reranker_retries_seven_times() -> None:
+    client = reranker(FoundrySettings(endpoint=ENDPOINT, key="k"))
+    assert client._client_wrapper.httpx_client.base_max_retries == 7
 
 
 def test_deepseek_uses_chat_completions_and_openai_models_use_responses() -> None:
