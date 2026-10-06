@@ -47,15 +47,6 @@ def without_rate_limit_responses(response: dict[str, Any]) -> dict[str, Any] | N
     return None if response["status"]["code"] == 429 else response
 
 
-def content_type_only(response: dict[str, Any]) -> dict[str, Any]:
-    response["headers"] = {
-        name: value
-        for name, value in response["headers"].items()
-        if name.lower() == "content-type"
-    }
-    return response
-
-
 @pytest.fixture(scope="session")
 def vcr_config() -> dict[str, Any]:
     return {
@@ -72,7 +63,7 @@ def vcr_config() -> dict[str, Any]:
             "x-fern-runtime",
         ],
         "before_record_request": body_as_hash,
-        "before_record_response": [without_rate_limit_responses, content_type_only],
+        "before_record_response": without_rate_limit_responses,
         "decode_compressed_response": True,
     }
 
