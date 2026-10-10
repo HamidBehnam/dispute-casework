@@ -42,7 +42,7 @@ Readback on 2026-10-01 (`infra/foundry/readback.sh`) and smoke calls (`dispute_c
 
 ## Consequences
 
-- Capacity changes go through Terraform. If error 715-123420 recurs, the change is made in the Foundry portal and mirrored in the deployment map in `infra/foundry/main.tf`, so that `terraform plan` shows no changes; its cause can be investigated only through a technical support request, which the Basic plan does not include.
+- Capacity changes go through Terraform. If error 715-123420 recurs, the change is made in the Foundry portal and mirrored in the deployment map in `infra/foundry/main.tf`, so that `terraform plan` shows no changes; according to support, its cause can be investigated only through a technical support request, which the Basic plan does not include.
 - The Cohere deployment cannot grow past capacity 20 unless a quota increase is requested and granted.
 - Local authentication is turned off in a later step once the application runs under a managed identity; that change supersedes the corresponding line here.
 - Any deployment version change is a deliberate edit to the deployment map and a new eval baseline.
