@@ -67,7 +67,7 @@ jobs:
         run: |
           test -n "$BANNED_PHRASES" || { echo "BANNED_PHRASES secret is empty"; exit 1; }
           printf '%s\n' "$BANNED_PHRASES" | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases"
-          # corpus/ holds vendored regulation text and is left out of this scan; gitleaks covers it.
+          # corpus/ holds vendored regulation text and is left out of this scan; the secret scan above still reads it.
           hits=$({ git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus' || true
                    git log --all --format='%H%n%B' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
                    git log --all -p --format= -- . ':(exclude)corpus' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
