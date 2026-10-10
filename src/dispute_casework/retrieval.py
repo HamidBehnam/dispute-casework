@@ -71,7 +71,8 @@ def retrieve(
 ) -> list[Document]:
     if not keywords.strip():
         # With an empty fts_query langchain-postgres 0.0.18 skips the keyword leg
-        # and the fusion, and returns the dense leg's rows instead of k.
+        # and the fusion, and returns the dense leg's rows instead of k. With a
+        # blank one the keyword leg runs a query with no terms and returns no rows.
         raise ValueError("retrieve needs a keyword string for the keyword leg")
     return store.similarity_search_by_vector(
         embedding, k=CANDIDATES, hybrid_search_config=hybrid_config(keywords)
