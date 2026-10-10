@@ -1,0 +1,14 @@
+services:
+  postgres:
+    # pgvector 0.8.2 on PostgreSQL 17, the versions Azure Database for PostgreSQL offers.
+    image: pgvector/pgvector:0.8.2-pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      # Over TCP: during first-start initialisation the server listens on the socket only.
+      test: ["CMD", "pg_isready", "--host", "127.0.0.1", "--username", "postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

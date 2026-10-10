@@ -1,6 +1,6 @@
 # ADR 0003: Foundry model access
 
-Status: Accepted
+Status: Superseded by 0006
 
 ## Context
 

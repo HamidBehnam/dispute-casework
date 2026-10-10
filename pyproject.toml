@@ -7,17 +7,30 @@ license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     "azure-identity>=1.25.3",
+    "beautifulsoup4>=4.15.0",
     "cohere>=7.2.0",
-    "langchain>=1.4.3",
+    "httpx>=0.28.1",
     "langchain-azure-ai>=1.2.10",
+    "langchain-core>=1.6.6",
+    "langchain-postgres==0.0.18",
+    "numpy>=2.5.3",
+    # Imported nowhere: SQLAlchemy loads the driver named by the postgresql+psycopg URL.
+    "psycopg[binary]>=3.3.6",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
 ]
 
 [dependency-groups]
 dev = [
+    "deepeval==4.2.8",
+    "ir-measures==0.4.3",
     "mypy==2.3.1",
     "pip-audit==2.10.1",
     "pytest==9.1.1",
+    "pytest-recording==0.13.4",
     "ruff==0.16.9",
+    "scipy==1.18.1",
+    "vcrpy==8.3.0",
 ]
 
 [build-system]
@@ -30,9 +43,16 @@ required-version = "==0.12.21"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/conftest.py" = ["E402"]
+
+[tool.pytest.ini_options]
+addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerunfailures -p no:xdist -p no:xdist.looponfail"
+
 [tool.mypy]
 strict = true
 files = ["src"]
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = ["langchain_azure_ai.*"]
