@@ -70,7 +70,7 @@ jobs:
           # corpus/ holds vendored regulation text and is left out of this scan; the secret scan above still reads it.
           hits=$({ git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus' || true
                    git log --all --format='%H%n%B' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
-                   git log --all -p --format= -- . ':(exclude)corpus' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
+                   git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
                    git tag -l --format='%(refname) %(contents)' | grep -i -F -f "$RUNNER_TEMP/phrases" || true
                  } | wc -l)
           [ "$hits" -eq 0 ] || { echo "$hits banned-phrase hit(s)"; exit 1; }
