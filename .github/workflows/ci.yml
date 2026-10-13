@@ -62,18 +62,25 @@ jobs:
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
           git --redact --no-banner --exit-code 1 .
       - name: banned-phrase scan
+        shell: bash
         env:
           BANNED_PHRASES: ${{ secrets.BANNED_PHRASES }}
         run: |
           test -n "$BANNED_PHRASES" || { echo "BANNED_PHRASES secret is empty"; exit 1; }
-          printf '%s\n' "$BANNED_PHRASES" | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases" || { echo "BANNED_PHRASES secret holds no phrase"; exit 1; }
+          status=0
+          printf '%s\n' "$BANNED_PHRASES" | tr -d '\r' | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases" || status=$?
+          case $status in
+            1) echo "BANNED_PHRASES secret holds no phrase"; exit 1 ;;
+            0) ;;
+            *) echo "banned-phrase scan: grep exited $status while reading the secret" >&2; exit 2 ;;
+          esac
           # grep exits 1 when nothing matches; any higher code is a failure of the scan itself, not a clean tree.
-          scan() { "$@" && return; local status=$?; [ "$status" -eq 1 ] || { echo "banned-phrase scan: $1 exited $status" >&2; exit 2; }; }
+          scan() { "$@" >> "$RUNNER_TEMP/hits" && return; local status=$?; [ "$status" -eq 1 ] || { echo "banned-phrase scan: $1 exited $status" >&2; exit 2; }; return 1; }
+          git log --all --format='%H%n%B' > "$RUNNER_TEMP/messages"
+          git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' > "$RUNNER_TEMP/patches"
+          git tag -l --format='%(refname) %(contents)' > "$RUNNER_TEMP/tags"
+          found=0
           # corpus/ holds vendored regulation text and is left out of this scan; the secret scan above still reads it.
-          { scan git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus'
-            git log --all --format='%H%n%B' | scan grep -I -i -F -f "$RUNNER_TEMP/phrases"
-            git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' | scan grep -I -i -F -f "$RUNNER_TEMP/phrases"
-            git tag -l --format='%(refname) %(contents)' | scan grep -i -F -f "$RUNNER_TEMP/phrases"
-          } > "$RUNNER_TEMP/hits"
-          hits=$(wc -l < "$RUNNER_TEMP/hits")
-          [ "$hits" -eq 0 ] || { echo "$hits banned-phrase hit(s)"; exit 1; }
+          scan git grep -a -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus' && found=1
+          scan grep -a -i -F -f "$RUNNER_TEMP/phrases" "$RUNNER_TEMP/messages" "$RUNNER_TEMP/patches" "$RUNNER_TEMP/tags" && found=1
+          [ "$found" -eq 0 ] || { echo "$(wc -l < "$RUNNER_TEMP/hits") banned-phrase hit(s)"; exit 1; }
