@@ -77,7 +77,7 @@ jobs:
           # grep exits 1 when nothing matches; any higher code is a failure of the scan itself, not a clean tree.
           scan() { "$@" >> "$RUNNER_TEMP/hits" && return; local status=$?; [ "$status" -eq 1 ] || { echo "banned-phrase scan: $1 exited $status" >&2; exit 2; }; return 1; }
           git log --all --format='%H%n%B' > "$RUNNER_TEMP/messages"
-          git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' > "$RUNNER_TEMP/patches"
+          git log --all -p --text --diff-merges=first-parent --format= -- . ':(exclude)corpus' > "$RUNNER_TEMP/patches"
           git tag -l --format='%(refname) %(contents)' > "$RUNNER_TEMP/tags"
           found=0
           # corpus/ holds vendored regulation text and is left out of this scan; the secret scan above still reads it.
