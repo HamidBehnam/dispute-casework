@@ -42,9 +42,8 @@ CUTOFFS = {
 }
 RERANK_OF = {"dense_rerank": "dense", "hybrid_keyword_rerank": "hybrid_keyword"}
 GATE_D_NOT_MET = (
-    "ADR 0004: gate d is not met in the recorded run. On the gate strata the mean "
-    "recall@5 after rerank is 0.84 (22/26 expected IDs), under the 0.85 threshold "
-    "and under the fused top 5 at 0.88 (23/26)."
+    "ADR 0004: gate d is not met in the recorded run; the figures are in "
+    "docs/results/0004-exit-run.json."
 )
 
 
@@ -271,7 +270,10 @@ def stratum_results(outcomes: list[Outcome]) -> dict[str, Any]:
 
 
 def results(outcomes: list[Outcome]) -> dict[str, Any]:
-    """Every published figure of the run, as the results file holds it."""
+    """The results file: the method and the library versions; per stratum and
+    arm the recall cells, the keyword-leg counts, the rescued and lost IDs and
+    the rerank comparison; per query the keyword-leg row counts and the rank of
+    each expected ID; and the expected IDs missed after rerank."""
     strata = {
         stratum: [outcome for outcome in outcomes if outcome.query.stratum == stratum]
         for stratum in ("citation", "exact-term", "paraphrased")
