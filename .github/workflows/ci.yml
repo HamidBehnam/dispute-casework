@@ -66,11 +66,14 @@ jobs:
           BANNED_PHRASES: ${{ secrets.BANNED_PHRASES }}
         run: |
           test -n "$BANNED_PHRASES" || { echo "BANNED_PHRASES secret is empty"; exit 1; }
-          printf '%s\n' "$BANNED_PHRASES" | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases"
+          printf '%s\n' "$BANNED_PHRASES" | grep -v '^[[:space:]]*$' > "$RUNNER_TEMP/phrases" || { echo "BANNED_PHRASES secret holds no phrase"; exit 1; }
+          # grep exits 1 when nothing matches; any higher code is a failure of the scan itself, not a clean tree.
+          scan() { "$@" && return; local status=$?; [ "$status" -eq 1 ] || { echo "banned-phrase scan: $1 exited $status" >&2; exit 2; }; }
           # corpus/ holds vendored regulation text and is left out of this scan; the secret scan above still reads it.
-          hits=$({ git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus' || true
-                   git log --all --format='%H%n%B' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
-                   git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' | grep -I -i -F -f "$RUNNER_TEMP/phrases" || true
-                   git tag -l --format='%(refname) %(contents)' | grep -i -F -f "$RUNNER_TEMP/phrases" || true
-                 } | wc -l)
+          { scan git grep -I -i -F -f "$RUNNER_TEMP/phrases" -- . ':(exclude)corpus'
+            git log --all --format='%H%n%B' | scan grep -I -i -F -f "$RUNNER_TEMP/phrases"
+            git log --all -p --diff-merges=first-parent --format= -- . ':(exclude)corpus' | scan grep -I -i -F -f "$RUNNER_TEMP/phrases"
+            git tag -l --format='%(refname) %(contents)' | scan grep -i -F -f "$RUNNER_TEMP/phrases"
+          } > "$RUNNER_TEMP/hits"
+          hits=$(wc -l < "$RUNNER_TEMP/hits")
           [ "$hits" -eq 0 ] || { echo "$hits banned-phrase hit(s)"; exit 1; }
