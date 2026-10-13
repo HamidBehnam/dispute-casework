@@ -94,6 +94,21 @@ def test_load_rejects_a_file_the_manifest_does_not_list(
     assert engine.mock_calls == []
 
 
+@pytest.mark.parametrize(
+    "missing", ["part-1005.xml", "part-1005.html", "chunks.jsonl", "embeddings.npy"]
+)
+def test_load_rejects_a_listed_file_missing_on_disk(
+    tmp_path: Path, missing: str
+) -> None:
+    directory = tmp_path / "snapshot"
+    shutil.copytree(SNAPSHOT_DIR, directory)
+    (directory / missing).unlink()
+    engine = Mock()
+    with pytest.raises(FileNotFoundError, match=missing):
+        load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
+    assert engine.mock_calls == []
+
+
 def test_loaded_table_holds_every_chunk_with_its_metadata(store: PGVectorStore) -> None:
     manifest, chunks, _ = read_corpus(SNAPSHOT_DIR)
     rows = store.get(where={"paragraph_id": "1005.11(c)-3"})
