@@ -28,6 +28,7 @@ In each of `infra/bootstrap` and `infra/foundry`:
 - Documentation states the current rule. The history of what changed belongs in the commit message.
 - AI capabilities are vendor or framework components. Cosine similarity, vector stores, BM25, rerankers and fusion are never implemented here, including during a simplification pass. Application code, glue and instrumentation are written here.
 - Seams are plain functions with one implementation each and no interfaces: parse_token, authorize and allowed_labels, guard, embed, retrieve, rerank, call_model, compute_deadlines.
+- Code is written here only where no vendor or framework component does the unit's whole job. Each such unit is listed in the step's ADR under "Code written here", and the list is disclosed and approved before a unit is written.
 - Minimum acceptable beats complete and clever. Legibility and defensibility come first.
 
 ## Strip list
@@ -60,7 +61,7 @@ Never remove:
 
 ## Dependencies
 
-- A dependency enters only after its version, license, purpose, required accounts and preconditions have been disclosed and approved. A component outside the agreed design is a stop-and-ask.
+- A dependency enters only after its version, license, purpose, required accounts and preconditions have been disclosed and approved. A component outside the agreed design, or a unit of own code that is not on the approved list, is a stop-and-ask.
 - Tools are pinned exactly in `pyproject.toml`. `uv.lock` is committed and CI runs `uv sync --locked`. Upgrades land through Dependabot pull requests or an explicit `uv lock --upgrade-package` commit.
 - GitHub Actions are pinned by commit SHA with the version in a comment.
 
