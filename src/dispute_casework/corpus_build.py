@@ -9,7 +9,6 @@ embed and load need FOUNDRY_ENDPOINT.
 
 import argparse
 import json
-import os
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -17,6 +16,8 @@ from pathlib import Path
 import httpx
 import numpy as np
 from langchain_postgres import PGEngine
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from dispute_casework.corpus import (
     CHUNKS,
@@ -48,6 +49,16 @@ PIN_REASON = (
     "(May 9, 2025) disapproved before they took effect."
 )
 EMBEDDING_DEPLOYMENT_VERSION = "1"
+
+
+class DatabaseSettings(BaseSettings):
+    """DATABASE_URL, from the environment."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="DATABASE_", env_ignore_empty=True, frozen=True
+    )
+
+    url: SecretStr
 
 
 def fetch(directory: Path) -> None:
@@ -140,7 +151,9 @@ def main() -> None:
         case "embed":
             embed_corpus(SNAPSHOT_DIR, FoundrySettings())
         case "load":
-            engine = PGEngine.from_connection_string(os.environ["DATABASE_URL"])
+            engine = PGEngine.from_connection_string(
+                DatabaseSettings().url.get_secret_value()
+            )
             load(engine, SNAPSHOT_DIR, FoundrySettings())
 
 
