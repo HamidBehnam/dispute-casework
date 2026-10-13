@@ -72,6 +72,7 @@ Never remove:
 - Commits carry a single human author. Author and committer are the repository's configured identity; no co-author trailers and no tool attribution in commit messages or tag bodies.
 - Conventional commit messages. Commits stay local until the run report has been reviewed.
 - Hooks are never bypassed; `--no-verify` is not used. Prompts, run reports and session transcripts are never committed. `.claude/` is ignored.
+- File contents, commit messages and tag bodies say nothing about how the system's author studies, practises or gets a job.
 
 ## Phase sequence
 
