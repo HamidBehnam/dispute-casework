@@ -31,10 +31,13 @@ RERANK_DEPLOYMENT = "Cohere-rerank-v4.0-fast"
 def hybrid_config(keywords: str) -> HybridSearchConfig:
     """A new config for one search.
 
-    langchain-postgres 0.0.18 writes the query and fetch_top_k into the config
-    it is given, so a shared instance would carry one search's keyword query
-    into the next (langchain-postgres issue 337). An empty tsv_column makes the
-    vendor recompute to_tsvector per row instead of reading the stored column.
+    langchain-postgres 0.0.18 writes into the config it is given (issue 337):
+    fetch_top_k into its fusion parameters on every hybrid search, and the
+    query text into fts_query on the text-query paths, similarity_search and
+    similarity_search_with_score, when fts_query is empty. retrieve searches
+    by vector, where only fetch_top_k is written. An empty tsv_column makes
+    the vendor recompute to_tsvector per row instead of reading the stored
+    column.
     """
     return HybridSearchConfig(
         tsv_column=TSV_COLUMN,
