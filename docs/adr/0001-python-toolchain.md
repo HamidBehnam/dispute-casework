@@ -4,7 +4,7 @@ Status: Accepted
 
 ## Context
 
-A greenfield Python service built by one engineer. The repository is public from the first commit, so linting, type checking, secret scanning, a banned-phrase scan and a dependency audit run in CI from the first commit, and every tool version is pinned so that local and CI results match.
+A greenfield Python service built by one engineer. The repository is public from the first commit, so linting, type checking, secret scanning and a dependency audit run in CI from the first commit, and every tool version is pinned so that local and CI results match.
 
 ## Decision
 
