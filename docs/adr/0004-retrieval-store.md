@@ -1,6 +1,6 @@
 # ADR 0004: Retrieval store
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
@@ -130,6 +130,12 @@ Each unit is written here because no component does its whole job.
 - **Results generation** (`tests/test_exit.py`): aggregates the library output into the results file, the rank of each expected ID in each arm, rescued and lost IDs, and the counts with their intervals from scipy; no measure of the retrieval-evaluation library gives a rank per expected ID, a rescue or a loss.
 - **Vendor configuration and test code** (`retrieval.hybrid_config`, `retrieval.open_store`, `tests/conftest.py`, `infra/bootstrap`, `infra/foundry`, `.github/workflows/ci.yml`, the fixtures and the test bodies): configures vendor components and tests this repository's own code; there is nothing in them for a component to replace.
 - **The smoke script with its dimension check, the readback script and the command lines** (`foundry_smoke.py`, `infra/foundry/readback.sh`, `corpus_build.main`, `foundry_smoke.main`): the smoke script makes one live call per deployment through this project's clients and checks the embedding dimensions, which no vendor command does; the readback is four Azure CLI calls and the command lines are the standard library's argument parser.
+
+## Rationale
+
+- **What it does.** Retrieval runs the vendor's hybrid search in the application's Postgres — pgvector cosine distance on one leg, a stored tsvector column on the other, fused by reciprocal rank fusion into a fixed candidate set — and a Cohere reranker orders that set and keeps the top five. Each candidate is one paragraph of Regulation E or its official interpretation under its citation ID, so that the citation check of a later step can hold every citation to a retrieved ID.
+- **What it changed and cost.** The step added a pinned, hash-verified eCFR snapshot with its own paragraph parser, one committed embedding run, an exit test that replays recorded model responses in CI, and a per-call hybrid-search configuration that works around the config mutation in the pinned langchain-postgres release. It cost one embedding session and one rerank-recording session under the deployments' rate limits, and it leaves gate d unmet: recall@5 after rerank is under its threshold and under the fused top five, as recorded in `docs/results/0004-exit-run.json`.
+- **Why this over the alternative.** PostgreSQL with pgvector stays because the flip trigger fixed before the run did not fire — hybrid search with keyword strings equalled dense search at recall@20 on the exact-term stratum — and no index is needed at this row count. One chunk per eCFR paragraph because the citation unit is the paragraph ID, which no splitter or partitioner preserves; the reranker stays as the designed second stage, with its effect on the gate strata undetermined on this query set and re-measured at the next configuration.
 
 ## Consequences
 
