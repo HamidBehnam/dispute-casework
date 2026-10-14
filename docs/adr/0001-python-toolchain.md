@@ -11,7 +11,7 @@ A greenfield Python service built by one engineer. The repository is public from
 - Python 3.13, pinned by minor in `.python-version`. Python 3.14 was considered and deferred. Checked on 2026-10-09 at commit d7a5135, in a copy outside the repository: every package in `uv.lock` that applies to macOS arm64, grpcio, psycopg-binary and the Azure SDKs among them, installs on Python 3.14.7 from a wheel with no source build; the test suite was not run on 3.14. Python 3.13 receives security fixes until October 2029 (PEP 719).
 - uv 0.12.21 for dependency resolution, the lockfile, interpreter installation and task running, with `uv_build` as the build backend.
 - ruff 0.16.9 for linting and formatting; mypy 2.3.1 in strict mode; pytest 9.1.1; pip-audit 2.10.1.
-- gitleaks 8.30.1: in CI the official image `ghcr.io/gitleaks/gitleaks`, pinned by the digest of its multi-platform index and run over the full history, merge commits included.
+- gitleaks 8.30.1: in CI the official image `ghcr.io/gitleaks/gitleaks`, pinned by the digest of its multi-platform index and run over the full history, merge commits included; it scans file content, not commit messages or tag bodies. GitHub push protection blocks a recognised secret at push; secret scanning and the CI scan detect one after a push.
 - GitHub Actions on `ubuntu-24.04` with actions pinned by commit SHA; Dependabot for the uv and github-actions ecosystems.
 - Tools are pinned exactly in `pyproject.toml`; runtime dependencies use floors, with `uv.lock` as the exact pin. langchain-postgres is the exception and is pinned exactly; ADR 0004 decides that pin.
 
@@ -21,7 +21,7 @@ A greenfield Python service built by one engineer. The repository is public from
 - ruff over flake8 with black and isort: one tool, one configuration.
 - mypy over pyright: strict mode with no Node runtime, and the widest use in Python-only CI.
 - pytest: the standard runner.
-- gitleaks over trufflehog: a single static binary with a staged-diff mode and a built-in ruleset.
+- gitleaks over trufflehog: an official pinned image, a built-in ruleset and a history mode that takes git log options.
 - pip-audit over safety: maintained by the PyPA, Apache-licensed, and usable without an account.
 - GitHub Actions over Azure Pipelines: native to the repository, and Dependabot maintains the action pins.
 - `uv_build` over hatchling or setuptools: no additional dependency.
