@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        root: [infra/bootstrap, infra/foundry]
+        root: [infra/bootstrap, infra/foundry, infra/postgres]
     defaults:
       run:
         working-directory: ${{ matrix.root }}
