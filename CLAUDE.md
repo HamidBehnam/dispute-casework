@@ -15,7 +15,7 @@ Casework service for a fictional bank's dispute-operations team. A preparer open
     uv run pytest
     uv run pip-audit
 
-In each of `infra/bootstrap` and `infra/foundry`:
+In each root under `infra/`:
 
     terraform fmt -check -recursive
     terraform init -backend=false
