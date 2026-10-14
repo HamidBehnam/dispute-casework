@@ -1,7 +1,15 @@
 data "azurerm_client_config" "current" {}
 
+data "azuread_client_config" "current" {}
+
 data "azurerm_resource_group" "dcw" {
   name = "rg-dcw-eus2"
+}
+
+resource "azuread_group" "postgres_administrators" {
+  display_name     = "psql-dcw-eus2-administrators"
+  security_enabled = true
+  members          = [data.azuread_client_config.current.object_id]
 }
 
 resource "azurerm_postgresql_flexible_server" "dcw" {
@@ -18,29 +26,38 @@ resource "azurerm_postgresql_flexible_server" "dcw" {
     password_auth_enabled         = false
     tenant_id                     = data.azurerm_client_config.current.tenant_id
   }
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [zone]
+  }
 }
 
-resource "azurerm_postgresql_flexible_server_active_directory_administrator" "signed_in" {
+resource "azurerm_postgresql_flexible_server_active_directory_administrator" "administrators" {
   server_name         = azurerm_postgresql_flexible_server.dcw.name
   resource_group_name = data.azurerm_resource_group.dcw.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
-  object_id           = data.azurerm_client_config.current.object_id
-  principal_name      = var.entra_administrator_name
-  principal_type      = "User"
+  object_id           = azuread_group.postgres_administrators.object_id
+  principal_name      = azuread_group.postgres_administrators.display_name
+  principal_type      = "Group"
 }
 
 resource "azurerm_postgresql_flexible_server_configuration" "extensions" {
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.dcw.id
-  value     = "VECTOR"
+  value     = "vector"
 }
 
-# Created after Entra authentication is on, so that an Entra principal can own it.
+# Created only after the Entra administrator exists on the server.
 resource "azurerm_postgresql_flexible_server_database" "dcw" {
   name      = "dcw"
   server_id = azurerm_postgresql_flexible_server.dcw.id
 
-  depends_on = [azurerm_postgresql_flexible_server_active_directory_administrator.signed_in]
+  depends_on = [azurerm_postgresql_flexible_server_active_directory_administrator.administrators]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "developer" {
