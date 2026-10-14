@@ -71,7 +71,7 @@ Never remove:
 - Each step ends with an annotated tag, `step/NN-name` for build steps and `rung/N-name` for measured configurations, with a one-line body. The tag is placed last and never moved; later fixes land on `main`.
 - Commits carry a single human author. Author and committer are the repository's configured identity; no co-author trailers and no tool attribution in commit messages or tag bodies.
 - Conventional commit messages. Commits stay local until the run report has been reviewed.
-- Hooks are never bypassed; `--no-verify` is not used. Prompts, run reports and session transcripts are never committed. `.claude/` is ignored.
+- Secrets are blocked by GitHub push protection and by gitleaks in CI. Prompts, run reports and session transcripts are never committed. `.claude/` is ignored.
 - File contents, commit messages and tag bodies describe the system and its decisions only.
 
 ## Phase sequence
