@@ -7,9 +7,17 @@ data "azurerm_resource_group" "dcw" {
 }
 
 resource "azuread_group" "postgres_administrators" {
-  display_name     = "psql-dcw-eus2-administrators"
-  security_enabled = true
-  members          = [data.azuread_client_config.current.object_id]
+  display_name            = "psql-dcw-eus2-administrators"
+  security_enabled        = true
+  prevent_duplicate_names = true
+  owners                  = [data.azuread_client_config.current.object_id]
+  members                 = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_user" "test" {
+  user_principal_name = var.test_user_principal_name
+  display_name        = var.test_user_display_name
+  password            = var.test_user_password
 }
 
 resource "azurerm_postgresql_flexible_server" "dcw" {
