@@ -23,3 +23,7 @@ updates:
     directory: /infra/foundry
     schedule:
       interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/postgres
+    schedule:
+      interval: weekly
