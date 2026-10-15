@@ -171,7 +171,7 @@ def loader_grant(
     @contextmanager
     def granted() -> Iterator[None]:
         with psycopg.connect(url(RUNNER), autocommit=True) as runner:
-            runner.execute(f"GRANT {LOADER} TO {APPLICATION}")
+            runner.execute(f"GRANT {LOADER} TO {APPLICATION} WITH INHERIT FALSE")
             try:
                 yield
             finally:
