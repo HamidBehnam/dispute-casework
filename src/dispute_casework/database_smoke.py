@@ -14,13 +14,12 @@ async def check(settings: DatabaseSettings, tier: str) -> str:
         settings.url.get_secret_value(), options=f"-c role={tier}", **keywords
     ) as connection:
         cursor = await connection.execute(
-            "SELECT current_user, current_setting('role'),"
-            " (SELECT count(*) FROM corpus.chunks)"
+            "SELECT session_user, current_user, (SELECT count(*) FROM corpus.chunks)"
         )
         row = await cursor.fetchone()
     assert row is not None
-    user, role, chunks = row
-    return f"login {user}; role {role}; {chunks} chunks visible"
+    login, role, chunks = row
+    return f"login {login}; role {role}; {chunks} chunks visible"
 
 
 def main() -> None:
