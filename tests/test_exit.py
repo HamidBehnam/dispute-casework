@@ -11,12 +11,12 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
 from statistics import fmean
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import ir_measures
 import pytest
-from deepeval import evaluate
+from deepeval.evaluate import evaluate
 from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig
 from deepeval.metrics import BaseMetric
 from deepeval.test_case import LLMTestCase
@@ -71,7 +71,7 @@ QUERIES = [
 ]
 
 
-class RecallAtK(BaseMetric):
+class RecallAtK(BaseMetric):  # type: ignore[no-untyped-call]
     """Share of a query's expected paragraph IDs among its first k results."""
 
     def __init__(self, k: int) -> None:
@@ -84,12 +84,15 @@ class RecallAtK(BaseMetric):
         return f"citation-ID recall@{self.k}"
 
     def measure(self, test_case: LLMTestCase, *args: Any, **kwargs: Any) -> float:
-        qrels = [Qrel("query", paragraph_id, 1) for paragraph_id in test_case.context]
+        # scores() builds every test case from two lists of paragraph IDs.
+        expected = cast(list[str], test_case.context)
+        ranked = cast(list[str], test_case.retrieval_context)
+        qrels = [Qrel("query", paragraph_id, 1) for paragraph_id in expected]
         # trec_eval ranks by score and breaks ties by document ID, so the
         # scores fall with the position.
         run = [
             ScoredDoc("query", paragraph_id, -position)
-            for position, paragraph_id in enumerate(test_case.retrieval_context)
+            for position, paragraph_id in enumerate(ranked)
         ]
         self.score = ir_measures.calc_aggregate([R @ self.k], qrels, run)[R @ self.k]
         return self.score
@@ -147,6 +150,7 @@ def measure(
 
 def scores(outcomes: list[Outcome], arm: str, k: int) -> list[float]:
     """Recall@k of each query, in the order of the outcomes."""
+    metrics: list[BaseMetric] = [RecallAtK(k)]
     evaluation = evaluate(
         [
             LLMTestCase(
@@ -156,14 +160,18 @@ def scores(outcomes: list[Outcome], arm: str, k: int) -> list[float]:
             )
             for outcome in outcomes
         ],
-        [RecallAtK(k)],
+        metrics,
         async_config=AsyncConfig(run_async=False),
         display_config=DisplayConfig(
             show_indicator=False, print_results=False, inspect_after_run=False
         ),
         cache_config=CacheConfig(write_cache=False),
     )
-    return [result.metrics_data[0].score for result in evaluation.test_results]
+    recalls = []
+    for result in evaluation.test_results:
+        assert result.metrics_data and result.metrics_data[0].score is not None
+        recalls.append(result.metrics_data[0].score)
+    return recalls
 
 
 def recall(outcomes: list[Outcome], arm: str, k: int) -> float:
