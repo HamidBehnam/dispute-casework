@@ -5,6 +5,7 @@ embeddings.npy (float32, row-aligned with chunks.jsonl) and manifest.json,
 which records the sha256 of the other four.
 """
 
+import asyncio
 import hashlib
 import json
 import uuid
@@ -14,17 +15,11 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from langchain_postgres import Column, PGEngine, PGVectorStore
 
+from dispute_casework.database import LOADER, DatabaseSettings, connect, engine
 from dispute_casework.ecfr import Paragraph
-from dispute_casework.foundry import EMBEDDING_DIMENSIONS, FoundrySettings
-from dispute_casework.retrieval import (
-    ID_COLUMN,
-    METADATA_COLUMNS,
-    TABLE,
-    hybrid_config,
-    open_store,
-)
+from dispute_casework.foundry import FoundrySettings
+from dispute_casework.retrieval import METADATA_COLUMNS, SCHEMA, TABLE, open_store
 
 SNAPSHOT = "2023-04-19"
 PART = "1005"
@@ -72,29 +67,21 @@ def read_corpus(
     return manifest, chunks, np.load(directory / EMBEDDINGS)
 
 
-def load(engine: PGEngine, directory: Path, settings: FoundrySettings) -> PGVectorStore:
-    """Rebuilds the chunk table from the snapshot files."""
+def load(
+    database: DatabaseSettings, directory: Path, settings: FoundrySettings
+) -> None:
+    """Replaces the rows of the chunk table with the snapshot's, as the loader role."""
     manifest, chunks, vectors = read_corpus(directory)
     snapshot = manifest["snapshot"]
-    engine.init_vectorstore_table(
-        TABLE,
-        EMBEDDING_DIMENSIONS,
-        id_column=ID_COLUMN,
-        metadata_columns=[
-            Column(name, "DATE" if name == "snapshot" else "TEXT", nullable=False)
-            for name in METADATA_COLUMNS
-        ],
-        store_metadata=False,
-        overwrite_existing=True,
-        hybrid_search_config=hybrid_config(""),
-    )
-    store = open_store(engine, settings)
-    store.add_embeddings(
+    with connect(database, options=f"-c role={LOADER}", autocommit=True) as connection:
+        connection.execute(f"TRUNCATE {SCHEMA}.{TABLE}")
+    loader = engine(database, pool_size=1, max_overflow=0, options=f"-c role={LOADER}")
+    open_store(loader, settings).add_embeddings(
         texts=[chunk["content"] for chunk in chunks],
         embeddings=vectors.tolist(),
         metadatas=[
-            {name: chunk[name] for name in METADATA_COLUMNS if name != "snapshot"}
-            | {"snapshot": date.fromisoformat(snapshot)}
+            {name: chunk[name] for name in METADATA_COLUMNS if name in chunk}
+            | {"snapshot": date.fromisoformat(snapshot), "access_label": "public"}
             for chunk in chunks
         ],
         ids=[
@@ -102,4 +89,4 @@ def load(engine: PGEngine, directory: Path, settings: FoundrySettings) -> PGVect
             for chunk in chunks
         ],
     )
-    return store
+    asyncio.run(loader.close())

@@ -10,6 +10,7 @@ from langchain_postgres.v2.indexes import DistanceStrategy
 
 from dispute_casework.foundry import FoundrySettings, embeddings, reranker
 
+SCHEMA = "corpus"
 TABLE = "chunks"
 ID_COLUMN = "chunk_id"
 METADATA_COLUMNS = [
@@ -19,6 +20,7 @@ METADATA_COLUMNS = [
     "source",
     "legal_status",
     "snapshot",
+    "access_label",
 ]
 TSV_COLUMN = "content_tsv"
 TSV_LANG = "pg_catalog.english"
@@ -57,6 +59,7 @@ def open_store(engine: PGEngine, settings: FoundrySettings) -> PGVectorStore:
         engine,
         embeddings(settings),
         TABLE,
+        schema_name=SCHEMA,
         id_column=ID_COLUMN,
         metadata_columns=METADATA_COLUMNS,
         distance_strategy=DistanceStrategy.COSINE_DISTANCE,
