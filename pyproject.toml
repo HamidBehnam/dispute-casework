@@ -44,6 +44,9 @@ build-backend = "uv_build"
 [tool.uv]
 required-version = "==0.12.21"
 
+[tool.alembic]
+script_location = "%(here)s/migrations"
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
