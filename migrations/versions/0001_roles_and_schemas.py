@@ -35,7 +35,7 @@ def upgrade(
     # granted again so that the runner inherits them and can set them.
     op.execute("GRANT corpus_owner, lg_owner, bank_owner, app_owner TO CURRENT_USER")
     # A login holding dcw_service has no privilege until it sets one of these
-    # roles at connect, and can set no other.
+    # roles at connect; they are the only roles it can set.
     op.execute("GRANT tier_public, tier_full, lg_app TO dcw_service WITH INHERIT FALSE")
     op.execute("CREATE SCHEMA corpus AUTHORIZATION corpus_owner")
     op.execute("CREATE SCHEMA lg AUTHORIZATION lg_owner")
