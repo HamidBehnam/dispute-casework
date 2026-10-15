@@ -38,3 +38,7 @@ resource "azurerm_role_assignment" "tfstate_writer" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = data.azurerm_client_config.current.object_id
 }
+
+resource "azurerm_resource_provider_registration" "postgresql" {
+  name = "Microsoft.DBforPostgreSQL"
+}
