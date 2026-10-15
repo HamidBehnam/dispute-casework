@@ -12,7 +12,8 @@ from typing import Any
 from langchain_postgres import PGEngine
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg import Connection
-from psycopg.rows import dict_row
+
+from dispute_casework.database import CHECKPOINTER_CONNECTION
 
 revision = "0003"
 down_revision = "0002"
@@ -26,9 +27,6 @@ def upgrade(
     # The vendor's setup runs CREATE INDEX CONCURRENTLY, which needs autocommit,
     # on a connection bound to lg_owner so that lg_owner owns every table.
     with connect(
-        options="-c role=lg_owner -c search_path=lg",
-        autocommit=True,
-        prepare_threshold=0,
-        row_factory=dict_row,
+        options="-c role=lg_owner -c search_path=lg", **CHECKPOINTER_CONNECTION
     ) as connection:
         PostgresSaver(connection).setup()

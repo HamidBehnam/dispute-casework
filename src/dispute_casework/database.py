@@ -30,6 +30,11 @@ TIER_POOL_SIZE = 2
 TIER_MAX_OVERFLOW = 2
 LOADER = "corpus_loader"
 CHECKPOINTER_OPTIONS = "-c role=lg_app -c search_path=lg"
+CHECKPOINTER_CONNECTION: dict[str, Any] = {
+    "autocommit": True,
+    "prepare_threshold": 0,
+    "row_factory": dict_row,
+}
 CHECKPOINTER_POOL_SIZE = 4
 
 
@@ -130,6 +135,7 @@ def engine(
 
 
 def tier_engines(settings: DatabaseSettings) -> dict[str, PGEngine]:
+    check_pool_budget()
     return {
         tier: engine(
             settings, TIER_POOL_SIZE, TIER_MAX_OVERFLOW, options=f"-c role={tier}"
@@ -141,17 +147,12 @@ def tier_engines(settings: DatabaseSettings) -> dict[str, PGEngine]:
 def checkpointer_pool(
     settings: DatabaseSettings,
 ) -> AsyncConnectionPool[AsyncConnection[DictRow]]:
+    check_pool_budget()
     connection_class, keywords = async_connection(settings)
     return AsyncConnectionPool(
         settings.url.get_secret_value(),
         connection_class=connection_class,
-        kwargs=keywords
-        | {
-            "options": CHECKPOINTER_OPTIONS,
-            "autocommit": True,
-            "prepare_threshold": 0,
-            "row_factory": dict_row,
-        },
+        kwargs=keywords | CHECKPOINTER_CONNECTION | {"options": CHECKPOINTER_OPTIONS},
         reset=reset_role,
         min_size=1,
         max_size=CHECKPOINTER_POOL_SIZE,
