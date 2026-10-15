@@ -25,7 +25,7 @@ resource "azurerm_postgresql_flexible_server" "dcw" {
   resource_group_name           = data.azurerm_resource_group.dcw.name
   location                      = data.azurerm_resource_group.dcw.location
   version                       = "17"
-  sku_name                      = "B_Standard_B1ms"
+  sku_name                      = "B_Standard_B2s"
   storage_mb                    = 32768
   public_network_access_enabled = true
 
