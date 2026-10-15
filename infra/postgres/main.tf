@@ -21,9 +21,9 @@ resource "azuread_user" "test" {
 }
 
 resource "azurerm_postgresql_flexible_server" "dcw" {
-  name                          = "psql-dcw-eus2"
+  name                          = "psql-dcw-cus"
   resource_group_name           = data.azurerm_resource_group.dcw.name
-  location                      = data.azurerm_resource_group.dcw.location
+  location                      = "centralus"
   version                       = "17"
   sku_name                      = "B_Standard_B1ms"
   storage_mb                    = 32768
