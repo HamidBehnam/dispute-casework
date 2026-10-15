@@ -56,7 +56,9 @@ def test_put_and_get_through_the_lg_app_pool(database: DatabaseSettings) -> None
     assert stored.checkpoint["channel_values"] == {"chunk_ids": CHUNK_IDS}
 
 
-def test_checkpoint_rows_contain_no_token(database: DatabaseSettings) -> None:
+def test_a_configurable_value_lands_in_checkpoint_metadata_and_nowhere_else(
+    database: DatabaseSettings,
+) -> None:
     """A value in config["configurable"] is copied into checkpoints.metadata.
 
     The state carries chunk IDs, never the token; the token travels in the
