@@ -13,9 +13,9 @@ Correctness that can look like complexity. Each item is backed by the named test
 | A rate-limit response is never stored in a cassette | `tests/test_recording.py::test_a_rate_limit_response_is_never_stored` |
 | The published results file is what the recorded run produces | `tests/test_exit.py::test_results_file_is_current` |
 | DeepEval is switched off before it is imported (no telemetry, no `.env` or key file read, read-only file system), its pytest plugin is not loaded and it reports no Confident AI login | `tests/test_deepeval_quiet.py::test_deepeval_is_switched_off_before_import_and_kept_out_of_pytest` |
-| No checkpoint row holds a token | pending, step 14: `tests/test_graph.py::test_checkpoint_rows_contain_no_token` |
+| No checkpoint row holds a token | `tests/test_checkpointer.py::test_checkpoint_rows_contain_no_token`, first version: the checkpointer copies every value of `config["configurable"]` into `checkpoints.metadata`, so the token travels in neither the configurable nor the state; re-asserted over a graph run in step 14: `tests/test_graph.py::test_checkpoint_rows_contain_no_token` |
 | The token ledger fails closed, including when usage is missing from the response | pending, step 13: `tests/test_ledger.py::test_reserve_denies_without_row`, `tests/test_ledger.py::test_settle_without_usage_fails_closed` |
-| `FORCE ROW LEVEL SECURITY` is set on every protected table | pending, step 3: `tests/test_rls.py::test_force_rls_on_protected_tables`; re-asserted in step 7 |
+| `FORCE ROW LEVEL SECURITY` is set on every protected table | `tests/test_rls.py::test_force_rls_on_protected_tables`; re-asserted in step 7 |
 | Cerbos runs with `strictEvaluation` and schema rejection on | pending, step 11: `tests/test_policy.py::test_unknown_attribute_rejected` |
 | Every cited paragraph ID is checked against the supplied context set; a miss escalates to the human | pending, step 14: `tests/test_citations.py::test_uncited_paragraph_id_escalates` |
 | `stream_usage` is enabled on the chat model | pending, step 14: `tests/test_models.py::test_chat_model_sets_stream_usage` |
