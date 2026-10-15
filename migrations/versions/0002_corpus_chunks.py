@@ -12,9 +12,8 @@ from typing import Any
 
 from alembic import op
 from langchain_postgres import Column, PGEngine
+from langchain_postgres.v2.hybrid_search_config import HybridSearchConfig
 from psycopg import Connection
-
-from dispute_casework.retrieval import hybrid_config
 
 revision = "0002"
 down_revision = "0001"
@@ -45,7 +44,7 @@ def upgrade(
             ],
             store_metadata=False,
             overwrite_existing=False,
-            hybrid_search_config=hybrid_config(""),
+            hybrid_search_config=HybridSearchConfig(tsv_column="content_tsv"),
         )
         asyncio.run(engine.close())
     op.execute("ALTER TABLE corpus.chunks ENABLE ROW LEVEL SECURITY")
@@ -58,14 +57,16 @@ def upgrade(
         "CREATE POLICY tier_full ON corpus.chunks FOR SELECT TO tier_full"
         " USING (access_label = ANY(ARRAY['public', 'restricted']))"
     )
-    # The loader owns the table and reads and writes every row through its own
-    # policy; no role carries BYPASSRLS, which the Azure administrator cannot grant.
+    # The loader writes every row through its own policy and never owns the
+    # table: an owner can switch row security off, and no role carries
+    # BYPASSRLS, which the Azure administrator cannot grant.
     op.execute(
         "CREATE POLICY corpus_loader ON corpus.chunks FOR ALL TO corpus_loader"
         " USING (true) WITH CHECK (true)"
     )
+    op.execute("ALTER TABLE corpus.chunks OWNER TO corpus_owner")
     op.execute("GRANT USAGE ON SCHEMA corpus TO tier_public, tier_full, corpus_loader")
-    # The new owner of a table needs CREATE on its schema.
-    op.execute("GRANT CREATE ON SCHEMA corpus TO corpus_loader")
-    op.execute("ALTER TABLE corpus.chunks OWNER TO corpus_loader")
+    op.execute(
+        "GRANT SELECT, INSERT, UPDATE, TRUNCATE ON corpus.chunks TO corpus_loader"
+    )
     op.execute("GRANT SELECT ON corpus.chunks TO tier_public, tier_full")

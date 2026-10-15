@@ -158,6 +158,11 @@ def database() -> DatabaseSettings:
 
 
 @pytest.fixture(scope="session")
+def runner(database: DatabaseSettings) -> DatabaseSettings:
+    return DatabaseSettings(url=url(RUNNER))
+
+
+@pytest.fixture(scope="session")
 def loader_grant(
     database: DatabaseSettings,
 ) -> Callable[[], AbstractContextManager[None]]:

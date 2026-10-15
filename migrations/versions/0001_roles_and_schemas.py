@@ -33,10 +33,7 @@ def upgrade(
     op.execute("CREATE ROLE dcw_service NOLOGIN")
     # CREATE ROLE leaves its creator with ADMIN OPTION only; the owners are
     # granted again so that the runner inherits them and can set them.
-    op.execute(
-        "GRANT corpus_owner, lg_owner, bank_owner, app_owner, corpus_loader"
-        " TO CURRENT_USER"
-    )
+    op.execute("GRANT corpus_owner, lg_owner, bank_owner, app_owner TO CURRENT_USER")
     # A login holding dcw_service has no privilege until it sets one of these
     # roles at connect, and can set no other.
     op.execute("GRANT tier_public, tier_full, lg_app TO dcw_service WITH INHERIT FALSE")
