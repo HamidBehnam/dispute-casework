@@ -45,7 +45,8 @@ def rows(
         for paragraph_id, label in labelled
     ]
     with loader_grant():
-        with connect(database, options=f"-c role={LOADER}", autocommit=True) as loader:
+        # Rolled back at the end: the module's fixture rows stay.
+        with connect(database, options=f"-c role={LOADER}") as loader:
             loader.execute("TRUNCATE corpus.chunks")
         loader_engine = engine(database, 1, 0, options=f"-c role={LOADER}")
         open_store(loader_engine, settings).add_embeddings(
@@ -124,6 +125,36 @@ def test_corpus_owner_owns_the_chunks_table_and_the_loader_cannot_alter_it(
         assert owner == ("corpus_owner",)
         with pytest.raises(psycopg.errors.InsufficientPrivilege, match="owner"):
             loader.execute("ALTER TABLE corpus.chunks NO FORCE ROW LEVEL SECURITY")
+
+
+def test_the_login_holds_no_corpus_privilege_without_a_role_while_granted_the_loader(
+    database: DatabaseSettings,
+    loader_grant: Callable[[], AbstractContextManager[None]],
+) -> None:
+    with loader_grant():
+        with connect(database) as connection:
+            inherits = connection.execute(
+                "SELECT pg_has_role(current_user, %s, 'USAGE')", (LOADER,)
+            ).fetchone()
+            assert inherits == (False,)
+            with pytest.raises(
+                psycopg.errors.InsufficientPrivilege, match="schema corpus"
+            ):
+                connection.execute("SELECT count(*) FROM corpus.chunks")
+        # Rolled back at the end: the module's fixture rows stay.
+        with connect(database, options=f"-c role={LOADER}") as loader:
+            loader.execute("TRUNCATE corpus.chunks")
+            loader.execute(
+                "INSERT INTO corpus.chunks (chunk_id, content, embedding, content_tsv,"
+                " paragraph_id, part, section, source, legal_status, snapshot,"
+                " access_label) VALUES (gen_random_uuid(), 'probe', %s,"
+                " to_tsvector('pg_catalog.english', 'probe'), 'probe', 'fixture',"
+                " 'fixture', 'procedure', 'procedure', '2026-01-01', 'public')",
+                (str([0.0] * 1536),),
+            )
+            rows = loader.execute("SELECT count(*) FROM corpus.chunks").fetchone()
+            assert rows == (1,)
+            loader.rollback()
 
 
 def test_the_login_can_set_exactly_the_roles_dcw_service_holds(
