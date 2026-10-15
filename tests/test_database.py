@@ -9,25 +9,19 @@ import pytest
 from azure.core.credentials import AccessToken
 from azure.identity import (
     AzureCliCredential,
-    ChainedTokenCredential,
+    DefaultAzureCredential,
     ManagedIdentityCredential,
     aio,
 )
+from azure_postgresql_auth.psycopg3 import AsyncEntraConnection, EntraConnection
 from psycopg import AsyncConnection, Connection
 
 from dispute_casework import database
-from dispute_casework.database import (
-    DatabaseSettings,
-    async_connection,
-    async_credential,
-    connect,
-    credential,
-)
+from dispute_casework.database import DatabaseSettings, async_connection, connect
 
-AZURE_URL = "postgresql://psql-dcw-eus2.postgres.database.azure.com/dcw?sslmode=require"
+AZURE_URL = "postgresql://psql-dcw-cus.postgres.database.azure.com/dcw?sslmode=require"
 LOCAL_URL = "postgresql://dcw_app:dcw_app@127.0.0.1:5432/dcw"
 UPN = "service@example.test"
-CLIENT_ID = "00000000-0000-0000-0000-000000000000"
 TOKEN = ".".join(
     base64.urlsafe_b64encode(json.dumps(part).encode()).rstrip(b"=").decode()
     for part in ({"alg": "none"}, {"upn": UPN})
@@ -35,11 +29,23 @@ TOKEN = ".".join(
 
 
 class FakeCredential:
+    def __init__(self, *, require_envvar: bool) -> None:
+        pass
+
     def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
         return AccessToken(TOKEN, 0)
 
+    def __enter__(self) -> "FakeCredential":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        pass
+
 
 class FakeAsyncCredential:
+    def __init__(self, *, require_envvar: bool) -> None:
+        pass
+
     async def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
         return AccessToken(TOKEN, 0)
 
@@ -58,16 +64,32 @@ def connected(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     """The keyword arguments the next connect, sync or async, hands to psycopg."""
     received: dict[str, Any] = {}
 
-    def record(cls: type, conninfo: str, **kwargs: Any) -> None:
+    def record(cls: type[Any], conninfo: str, /, **kwargs: Any) -> None:
         received.update(kwargs, conninfo=conninfo, cls=cls)
 
-    async def record_async(cls: type, conninfo: str, **kwargs: Any) -> None:
+    async def record_async(cls: type[Any], conninfo: str, /, **kwargs: Any) -> None:
         received.update(kwargs, conninfo=conninfo, cls=cls)
 
     monkeypatch.setattr(Connection, "connect", classmethod(record))
     monkeypatch.setattr(AsyncConnection, "connect", classmethod(record_async))
-    monkeypatch.setattr(database, "AzureCliCredential", FakeCredential)
-    monkeypatch.setattr(database, "AsyncAzureCliCredential", FakeAsyncCredential)
+    monkeypatch.setattr(database, "DefaultAzureCredential", FakeCredential)
+    monkeypatch.setattr(database, "AsyncDefaultAzureCredential", FakeAsyncCredential)
+    return received
+
+
+@pytest.fixture
+def handed(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """The keyword arguments the next connect, sync or async, hands to the vendor."""
+    received: dict[str, Any] = {}
+
+    def record(cls: type[Any], conninfo: str, /, **kwargs: Any) -> None:
+        received.update(kwargs)
+
+    async def record_async(cls: type[Any], conninfo: str, /, **kwargs: Any) -> None:
+        received.update(kwargs)
+
+    monkeypatch.setattr(EntraConnection, "connect", classmethod(record))
+    monkeypatch.setattr(AsyncEntraConnection, "connect", classmethod(record_async))
     return received
 
 
@@ -76,32 +98,44 @@ def test_a_url_without_a_password_signs_in_with_entra() -> None:
     assert not DatabaseSettings(url=LOCAL_URL).entra
 
 
-def test_the_cli_login_signs_in_until_a_managed_identity_is_configured(
+@pytest.mark.parametrize(
+    ("selection", "sync_link", "async_link"),
+    [
+        ("azureclicredential", AzureCliCredential, aio.AzureCliCredential),
+        (
+            "managedidentitycredential",
+            ManagedIdentityCredential,
+            aio.ManagedIdentityCredential,
+        ),
+    ],
+)
+def test_the_environment_selects_the_one_credential_handed_to_the_vendor(
     monkeypatch: pytest.MonkeyPatch,
+    handed: dict[str, Any],
+    selection: str,
+    sync_link: type[Any],
+    async_link: type[Any],
 ) -> None:
-    monkeypatch.delenv("AZURE_CLIENT_ID", raising=False)
-    assert isinstance(credential(DatabaseSettings(url=AZURE_URL)), AzureCliCredential)
-    assert isinstance(
-        async_credential(DatabaseSettings(url=AZURE_URL)), aio.AzureCliCredential
-    )
+    monkeypatch.setenv("AZURE_TOKEN_CREDENTIALS", selection)
+    connect(DatabaseSettings(url=AZURE_URL))
+    assert type(handed["credential"]) is DefaultAzureCredential
+    assert [type(link) for link in handed["credential"].credentials] == [sync_link]
+    connection_class, keywords = async_connection(DatabaseSettings(url=AZURE_URL))
+    asyncio.run(connection_class.connect(AZURE_URL, **keywords))
+    assert type(handed["credential"]) is aio.DefaultAzureCredential
+    assert [type(link) for link in handed["credential"].credentials] == [async_link]
 
 
-def test_a_configured_managed_identity_is_tried_before_the_cli_login(
-    monkeypatch: pytest.MonkeyPatch,
+def test_sign_in_refuses_to_guess_a_credential(
+    monkeypatch: pytest.MonkeyPatch, handed: dict[str, Any]
 ) -> None:
-    monkeypatch.setenv("AZURE_CLIENT_ID", CLIENT_ID)
-    chain = credential(DatabaseSettings(url=AZURE_URL))
-    assert isinstance(chain, ChainedTokenCredential)
-    assert [type(link) for link in chain.credentials] == [
-        ManagedIdentityCredential,
-        AzureCliCredential,
-    ]
-    async_chain = async_credential(DatabaseSettings(url=AZURE_URL))
-    assert isinstance(async_chain, aio.ChainedTokenCredential)
-    assert [type(link) for link in async_chain.credentials] == [
-        aio.ManagedIdentityCredential,
-        aio.AzureCliCredential,
-    ]
+    monkeypatch.delenv("AZURE_TOKEN_CREDENTIALS", raising=False)
+    with pytest.raises(ValueError, match="AZURE_TOKEN_CREDENTIALS"):
+        connect(DatabaseSettings(url=AZURE_URL))
+    connection_class, keywords = async_connection(DatabaseSettings(url=AZURE_URL))
+    with pytest.raises(ValueError, match="AZURE_TOKEN_CREDENTIALS"):
+        asyncio.run(connection_class.connect(AZURE_URL, **keywords))
+    assert handed == {}
 
 
 def test_entra_connect_takes_user_and_password_from_the_token(
@@ -109,7 +143,7 @@ def test_entra_connect_takes_user_and_password_from_the_token(
 ) -> None:
     connect(DatabaseSettings(url=AZURE_URL), options="-c role=tier_full")
     assert connected == {
-        "cls": database.EntraConnection,
+        "cls": EntraConnection,
         "conninfo": AZURE_URL,
         "user": UPN,
         "password": TOKEN,
@@ -126,7 +160,7 @@ def test_a_user_named_in_the_url_reaches_psycopg_as_a_keyword(
     assert connected["user"] == group
     assert connected["password"] == TOKEN
     _, keywords = async_connection(DatabaseSettings(url=url))
-    assert keywords["user"] == group
+    assert keywords == {"user": group}
 
 
 def test_password_connect_passes_the_url_through(connected: dict[str, Any]) -> None:
@@ -141,12 +175,12 @@ def test_password_connect_passes_the_url_through(connected: dict[str, Any]) -> N
 def test_entra_creator_takes_user_and_password_from_the_token(
     connected: dict[str, Any],
 ) -> None:
-    connection_class, credential = async_connection(DatabaseSettings(url=AZURE_URL))
+    connection_class, keywords = async_connection(DatabaseSettings(url=AZURE_URL))
     asyncio.run(
-        connection_class.connect(AZURE_URL, options="-c role=lg_app", **credential)
+        connection_class.connect(AZURE_URL, options="-c role=lg_app", **keywords)
     )
     assert connected == {
-        "cls": database.AsyncEntraConnection,
+        "cls": database.AsyncTokenConnection,
         "conninfo": AZURE_URL,
         "user": UPN,
         "password": TOKEN,
