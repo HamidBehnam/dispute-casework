@@ -1,6 +1,6 @@
 # ADR 0002: Terraform toolchain
 
-Status: Accepted
+Status: Accepted. Superseded in part by 0005.
 
 ## Context
 
