@@ -75,19 +75,35 @@ def async_credential(settings: DatabaseSettings) -> AsyncTokenCredential:
     )
 
 
+def named_user(url: str) -> dict[str, Any]:
+    """The user of the URL as a keyword; the vendor otherwise takes the token's.
+
+    A member signing in as an Entra group presents the group's name, which no
+    claim of the member's token carries.
+    """
+    user = conninfo_to_dict(url).get("user")
+    return {"user": user} if user else {}
+
+
 def connect(settings: DatabaseSettings, **kwargs: Any) -> Connection[Any]:
     url = settings.url.get_secret_value()
     if settings.entra:
-        return EntraConnection.connect(url, credential=credential(settings), **kwargs)
+        return EntraConnection.connect(
+            url, credential=credential(settings), **named_user(url) | kwargs
+        )
     return Connection.connect(url, **kwargs)
 
 
 def async_connection(
     settings: DatabaseSettings,
 ) -> tuple[type[AsyncConnection[Any]], dict[str, Any]]:
-    """The connection class and its credential keyword, for a creator or a pool."""
+    """The connection class and its keyword arguments, for a creator or a pool."""
     if settings.entra:
-        return AsyncEntraConnection, {"credential": async_credential(settings)}
+        url = settings.url.get_secret_value()
+        return AsyncEntraConnection, {
+            "credential": async_credential(settings),
+            **named_user(url),
+        }
     return AsyncConnection, {}
 
 

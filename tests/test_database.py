@@ -117,6 +117,18 @@ def test_entra_connect_takes_user_and_password_from_the_token(
     }
 
 
+def test_a_user_named_in_the_url_reaches_psycopg_as_a_keyword(
+    connected: dict[str, Any],
+) -> None:
+    group = "psql-dcw-eus2-administrators"
+    url = AZURE_URL.replace("://", f"://{group}@")
+    connect(DatabaseSettings(url=url))
+    assert connected["user"] == group
+    assert connected["password"] == TOKEN
+    _, keywords = async_connection(DatabaseSettings(url=url))
+    assert keywords["user"] == group
+
+
 def test_password_connect_passes_the_url_through(connected: dict[str, Any]) -> None:
     connect(DatabaseSettings(url=LOCAL_URL), options="-c role=tier_full")
     assert connected == {
