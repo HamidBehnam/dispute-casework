@@ -71,10 +71,10 @@ def test_load_rejects_manifest_mismatch(tmp_path: Path) -> None:
     shutil.copytree(SNAPSHOT_DIR, directory)
     with (directory / "embeddings.npy").open("ab") as embeddings:
         embeddings.write(b"\0")
-    engine = Mock()
+    database = Mock()
     with pytest.raises(ValueError, match="embeddings.npy does not match"):
-        load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
-    assert engine.mock_calls == []
+        load(database, directory, FoundrySettings(endpoint="https://unused", key="k"))
+    assert database.mock_calls == []
 
 
 @pytest.mark.parametrize(
@@ -88,10 +88,10 @@ def test_load_rejects_a_file_the_manifest_does_not_list(
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     del manifest["files"][unlisted]
     (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
-    engine = Mock()
+    database = Mock()
     with pytest.raises(ValueError, match=f"{unlisted} has no sha256"):
-        load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
-    assert engine.mock_calls == []
+        load(database, directory, FoundrySettings(endpoint="https://unused", key="k"))
+    assert database.mock_calls == []
 
 
 @pytest.mark.parametrize(
@@ -103,10 +103,10 @@ def test_load_rejects_a_listed_file_missing_on_disk(
     directory = tmp_path / "snapshot"
     shutil.copytree(SNAPSHOT_DIR, directory)
     (directory / missing).unlink()
-    engine = Mock()
+    database = Mock()
     with pytest.raises(FileNotFoundError, match=missing):
-        load(engine, directory, FoundrySettings(endpoint="https://unused", key="k"))
-    assert engine.mock_calls == []
+        load(database, directory, FoundrySettings(endpoint="https://unused", key="k"))
+    assert database.mock_calls == []
 
 
 def test_loaded_table_holds_every_chunk_with_its_metadata(store: PGVectorStore) -> None:
@@ -121,3 +121,4 @@ def test_loaded_table_holds_every_chunk_with_its_metadata(store: PGVectorStore) 
     assert metadata["legal_status"] == "official_interpretation"
     assert metadata["section"] == "1005.11"
     assert metadata["snapshot"].isoformat() == manifest["snapshot"]
+    assert metadata["access_label"] == "public"

@@ -12,16 +12,47 @@ os.environ.pop("CONFIDENT_API_KEY", None)
 
 import hashlib
 import json
+import subprocess
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
+from pathlib import Path
 from typing import Any
 
+import psycopg
 import pytest
 from langchain_postgres import PGEngine, PGVectorStore
 
 from dispute_casework.corpus import SNAPSHOT_DIR, load
+from dispute_casework.database import (
+    CONNECTION_LIMIT,
+    LOADER,
+    DatabaseSettings,
+    tier_engines,
+)
 from dispute_casework.foundry import FoundrySettings
+from dispute_casework.retrieval import open_store
 
-DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
+DATABASE = "dcw"
+SUPERUSER = "postgres"
+RUNNER = "dcw_runner"
+APPLICATION = "dcw_app"
+MIGRATION_ROLES = [
+    "corpus_loader",
+    "tier_public",
+    "tier_full",
+    "lg_app",
+    "corpus_owner",
+    "lg_owner",
+    "bank_owner",
+    "app_owner",
+    "dcw_service",
+]
 RECORDED_ENDPOINT = "https://ai-dcw-eus2.cognitiveservices.azure.com"
+
+
+def url(login: str) -> str:
+    """The compose database; every local login's password is its name."""
+    return f"postgresql://{login}:{login}@127.0.0.1:5432/{DATABASE}"
 
 
 def body_as_hash(request: Any) -> Any:
@@ -92,10 +123,70 @@ def no_foundry_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(scope="session")
-def engine() -> PGEngine:
-    return PGEngine.from_connection_string(DATABASE_URL)
+def database() -> DatabaseSettings:
+    """A fresh database migrated by the runner; the application login holds dcw_service.
+
+    The runner carries the attributes of the Azure administrator, the
+    application login the CONNECTION LIMIT of the Azure test user.
+    """
+    with psycopg.connect(url(SUPERUSER), dbname="postgres", autocommit=True) as root:
+        root.execute(f"DROP DATABASE IF EXISTS {DATABASE} WITH (FORCE)")
+        # The runner last: the memberships it granted depend on it as grantor.
+        for role in (*MIGRATION_ROLES, APPLICATION, RUNNER):
+            root.execute(f"DROP ROLE IF EXISTS {role}")
+        root.execute(
+            f"CREATE ROLE {RUNNER} LOGIN PASSWORD '{RUNNER}'"
+            " NOSUPERUSER CREATEROLE CREATEDB INHERIT BYPASSRLS"
+        )
+        root.execute(
+            f"CREATE ROLE {APPLICATION} LOGIN PASSWORD '{APPLICATION}'"
+            f" CONNECTION LIMIT {CONNECTION_LIMIT}"
+        )
+        root.execute(f"CREATE DATABASE {DATABASE} OWNER {RUNNER}")
+    with psycopg.connect(url(SUPERUSER), autocommit=True) as root:
+        root.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        env=os.environ | {"DATABASE_URL": url(RUNNER)},
+        cwd=Path(__file__).parents[1],
+        check=True,
+    )
+    with psycopg.connect(url(RUNNER), autocommit=True) as runner:
+        runner.execute(f"GRANT dcw_service TO {APPLICATION}")
+    return DatabaseSettings(url=url(APPLICATION))
 
 
 @pytest.fixture(scope="session")
-def store(engine: PGEngine, settings: FoundrySettings) -> PGVectorStore:
-    return load(engine, SNAPSHOT_DIR, settings)
+def loader_grant(
+    database: DatabaseSettings,
+) -> Callable[[], AbstractContextManager[None]]:
+    """A grant of corpus_loader to the application login, for one load only."""
+
+    @contextmanager
+    def granted() -> Iterator[None]:
+        with psycopg.connect(url(RUNNER), autocommit=True) as runner:
+            runner.execute(f"GRANT {LOADER} TO {APPLICATION}")
+            try:
+                yield
+            finally:
+                runner.execute(f"REVOKE {LOADER} FROM {APPLICATION}")
+
+    return granted
+
+
+@pytest.fixture(scope="session")
+def engines(database: DatabaseSettings) -> dict[str, PGEngine]:
+    return tier_engines(database)
+
+
+@pytest.fixture(scope="session")
+def store(
+    database: DatabaseSettings,
+    loader_grant: Callable[[], AbstractContextManager[None]],
+    engines: dict[str, PGEngine],
+    settings: FoundrySettings,
+) -> PGVectorStore:
+    """The corpus loaded by the application login, read through tier_full."""
+    with loader_grant():
+        load(database, SNAPSHOT_DIR, settings)
+    return open_store(engines["tier_full"], settings)

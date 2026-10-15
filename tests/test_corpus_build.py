@@ -9,7 +9,8 @@ import pytest
 
 from dispute_casework import corpus_build
 from dispute_casework.corpus import SNAPSHOT_DIR, verified_manifest
-from dispute_casework.corpus_build import DatabaseSettings, embed_corpus, fetch
+from dispute_casework.corpus_build import embed_corpus, fetch
+from dispute_casework.database import DatabaseSettings
 from dispute_casework.foundry import FoundrySettings
 
 
@@ -72,18 +73,15 @@ def test_interrupted_embed_leaves_the_snapshot_matching_its_manifest(
 def test_load_command_reads_database_url_from_the_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    url = "postgresql+psycopg://casework:secret@db:5432/casework"
+    url = "postgresql://casework:secret@db:5432/casework"
     monkeypatch.setenv("DATABASE_URL", url)
     monkeypatch.setenv("FOUNDRY_ENDPOINT", "https://unused")
     monkeypatch.setattr(sys, "argv", ["corpus_build", "load"])
-    engine = Mock()
-    monkeypatch.setattr(
-        corpus_build.PGEngine, "from_connection_string", Mock(return_value=engine)
-    )
     monkeypatch.setattr(corpus_build, "load", Mock())
     corpus_build.main()
-    corpus_build.PGEngine.from_connection_string.assert_called_once_with(url)
     corpus_build.load.assert_called_once_with(
-        engine, SNAPSHOT_DIR, FoundrySettings(endpoint="https://unused")
+        DatabaseSettings(url=url),
+        SNAPSHOT_DIR,
+        FoundrySettings(endpoint="https://unused"),
     )
     assert repr(DatabaseSettings(url=url)).count("secret") == 0
