@@ -95,13 +95,54 @@ def test_force_rls_on_protected_tables(database: DatabaseSettings) -> None:
     assert row == (True, True)
 
 
-def test_no_role_bypasses_rls(database: DatabaseSettings) -> None:
+def test_no_role_bypasses_rls(
+    database: DatabaseSettings, runner: DatabaseSettings
+) -> None:
     with connect(database) as connection:
         bypassing = connection.execute(
             "SELECT rolname FROM pg_roles"
-            " WHERE rolbypassrls AND NOT rolcanlogin AND rolname NOT LIKE 'pg\\_%'"
+            " WHERE rolbypassrls AND NOT rolsuper AND rolname NOT LIKE 'pg\\_%'"
         ).fetchall()
     assert bypassing == []
+    for login in (database, runner):
+        with connect(login) as connection:
+            row = connection.execute(
+                "SELECT rolbypassrls FROM pg_roles WHERE rolname = session_user"
+            ).fetchone()
+        assert row == (False,)
+
+
+def test_corpus_owner_owns_the_chunks_table_and_the_loader_cannot_alter_it(
+    database: DatabaseSettings,
+    loader_grant: Callable[[], AbstractContextManager[None]],
+) -> None:
+    with loader_grant(), connect(database, options=f"-c role={LOADER}") as loader:
+        owner = loader.execute(
+            "SELECT tableowner FROM pg_tables"
+            " WHERE schemaname = 'corpus' AND tablename = 'chunks'"
+        ).fetchone()
+        assert owner == ("corpus_owner",)
+        with pytest.raises(psycopg.errors.InsufficientPrivilege, match="owner"):
+            loader.execute("ALTER TABLE corpus.chunks NO FORCE ROW LEVEL SECURITY")
+
+
+def test_the_login_can_set_exactly_the_roles_dcw_service_holds(
+    database: DatabaseSettings,
+) -> None:
+    with connect(database) as connection:
+        memberships = connection.execute(
+            "SELECT member::regrole::text, roleid::regrole::text,"
+            " inherit_option, set_option FROM pg_auth_members"
+            " WHERE member IN (session_user::regrole, 'dcw_service'::regrole)"
+            " ORDER BY 1, 2"
+        ).fetchall()
+        login = connection.info.user
+    assert memberships == [
+        (login, "dcw_service", True, True),
+        ("dcw_service", "lg_app", False, True),
+        ("dcw_service", "tier_full", False, True),
+        ("dcw_service", "tier_public", False, True),
+    ]
 
 
 def test_the_login_without_a_role_cannot_read_the_corpus(
