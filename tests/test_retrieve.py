@@ -13,6 +13,7 @@ from dispute_casework.retrieval import (
     CANDIDATES,
     ID_COLUMN,
     METADATA_COLUMNS,
+    SCHEMA,
     TABLE,
     embed,
     hybrid_config,
@@ -84,12 +85,13 @@ def test_sequential_searches_use_their_own_keyword_query(
 
 @pytest.mark.usefixtures("store")
 def test_langchain_postgres_still_writes_the_query_into_a_shared_config(
-    engine: PGEngine,
+    engines: dict[str, PGEngine],
 ) -> None:
     text_search_store = PGVectorStore.create_sync(
-        engine,
+        engines["tier_full"],
         DeterministicFakeEmbedding(size=1536),
         TABLE,
+        schema_name=SCHEMA,
         id_column=ID_COLUMN,
         metadata_columns=METADATA_COLUMNS,
     )
