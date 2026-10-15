@@ -58,9 +58,9 @@ addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerun
 
 [tool.mypy]
 strict = true
-files = ["src"]
+files = ["src", "migrations", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["langchain_azure_ai.*"]
+module = ["langchain_azure_ai.*", "scipy.*", "vcr.*"]
 ignore_missing_imports = true

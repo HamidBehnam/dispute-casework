@@ -5,6 +5,7 @@ from contextlib import ExitStack
 
 import psycopg
 import pytest
+from psycopg.rows import DictRow
 from sqlalchemy import text
 
 from dispute_casework import database as pools
@@ -56,10 +57,10 @@ def test_a_tier_engine_connection_returns_to_its_bound_role(
             await connection.execute(text("SET ROLE tier_full"))
             await connection.commit()
             switched = await connection.execute(text("SELECT current_user"))
-            switched_to = switched.scalar_one()
+            switched_to: str = switched.scalar_one()
         async with async_engine.connect() as connection:
             returned = await connection.execute(text("SELECT current_user"))
-            returned_to = returned.scalar_one()
+            returned_to: str = returned.scalar_one()
         await async_engine.dispose()
         return switched_to, returned_to
 
@@ -74,10 +75,10 @@ def test_a_checkpointer_connection_returns_to_its_bound_role(
             async with pool.connection() as connection:
                 await connection.execute("SET ROLE tier_full")
                 switched = await connection.execute("SELECT current_user")
-                switched_to = await switched.fetchone()
+                switched_to: DictRow | None = await switched.fetchone()
             async with pool.connection() as connection:
                 returned = await connection.execute("SELECT current_user")
-                returned_to = await returned.fetchone()
+                returned_to: DictRow | None = await returned.fetchone()
         assert switched_to is not None and returned_to is not None
         return switched_to["current_user"], returned_to["current_user"]
 

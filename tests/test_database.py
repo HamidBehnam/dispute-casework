@@ -118,12 +118,14 @@ def test_the_environment_selects_the_one_credential_handed_to_the_vendor(
 ) -> None:
     monkeypatch.setenv("AZURE_TOKEN_CREDENTIALS", selection)
     connect(DatabaseSettings(url=AZURE_URL))
-    assert type(handed["credential"]) is DefaultAzureCredential
-    assert [type(link) for link in handed["credential"].credentials] == [sync_link]
+    sync_credential = handed["credential"]
     connection_class, keywords = async_connection(DatabaseSettings(url=AZURE_URL))
     asyncio.run(connection_class.connect(AZURE_URL, **keywords))
-    assert type(handed["credential"]) is aio.DefaultAzureCredential
-    assert [type(link) for link in handed["credential"].credentials] == [async_link]
+    async_credential = handed["credential"]
+    assert type(sync_credential) is DefaultAzureCredential
+    assert [type(link) for link in sync_credential.credentials] == [sync_link]
+    assert type(async_credential) is aio.DefaultAzureCredential
+    assert [type(link) for link in async_credential.credentials] == [async_link]
 
 
 def test_sign_in_refuses_to_guess_a_credential(

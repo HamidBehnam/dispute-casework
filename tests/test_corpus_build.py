@@ -77,9 +77,10 @@ def test_load_command_reads_database_url_from_the_environment(
     monkeypatch.setenv("DATABASE_URL", url)
     monkeypatch.setenv("FOUNDRY_ENDPOINT", "https://unused")
     monkeypatch.setattr(sys, "argv", ["corpus_build", "load"])
-    monkeypatch.setattr(corpus_build, "load", Mock())
+    load = Mock()
+    monkeypatch.setattr(corpus_build, "load", load)
     corpus_build.main()
-    corpus_build.load.assert_called_once_with(
+    load.assert_called_once_with(
         DatabaseSettings(url=url),
         SNAPSHOT_DIR,
         FoundrySettings(endpoint="https://unused"),

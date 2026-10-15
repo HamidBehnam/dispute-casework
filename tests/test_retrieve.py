@@ -29,7 +29,8 @@ def query_vector() -> list[float]:
     """The corpus embedding of one paragraph: a query vector without a model call."""
     _, chunks, vectors = read_corpus(SNAPSHOT_DIR)
     row = [chunk["paragraph_id"] for chunk in chunks].index(QUERY_VECTOR_OF)
-    return vectors[row].tolist()
+    vector: list[float] = vectors[row].tolist()
+    return vector
 
 
 def test_hybrid_config_names_the_stored_column_and_rrf() -> None:
