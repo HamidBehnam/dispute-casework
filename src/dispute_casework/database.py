@@ -3,33 +3,22 @@
 An application connection binds its role through the libpq startup option
 and is returned to that role whenever a pool takes it back; nothing here
 issues SET ROLE. The migration runner connects with no role option. A
-DATABASE_URL without a password signs in with an Entra token: of the managed
-identity named by AZURE_CLIENT_ID when one is configured, else of the Azure
-CLI login.
+DATABASE_URL without a password signs in with an Entra token from the
+credential that AZURE_TOKEN_CREDENTIALS names.
 """
 
 from functools import partial
-from typing import Any
+from typing import Any, Self, cast
 
-from azure.core.credentials import TokenCredential
-from azure.core.credentials_async import AsyncTokenCredential
-from azure.identity import (
-    AzureCliCredential,
-    ChainedTokenCredential,
-    ManagedIdentityCredential,
-)
-from azure.identity.aio import AzureCliCredential as AsyncAzureCliCredential
-from azure.identity.aio import ChainedTokenCredential as AsyncChainedTokenCredential
-from azure.identity.aio import (
-    ManagedIdentityCredential as AsyncManagedIdentityCredential,
-)
+from azure.identity import DefaultAzureCredential
+from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
 from azure_postgresql_auth.psycopg3 import AsyncEntraConnection, EntraConnection
 from langchain_postgres import PGEngine
 from psycopg import AsyncConnection, Connection
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import DictRow, dict_row
 from psycopg_pool import AsyncConnectionPool
-from pydantic import Field, SecretStr
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import event
 from sqlalchemy.engine.interfaces import DBAPIConnection
@@ -45,38 +34,17 @@ CHECKPOINTER_POOL_SIZE = 4
 
 
 class DatabaseSettings(BaseSettings):
-    """DATABASE_URL as a libpq connection URI and the optional AZURE_CLIENT_ID."""
+    """DATABASE_URL as a libpq connection URI."""
 
     model_config = SettingsConfigDict(
         env_prefix="DATABASE_", env_ignore_empty=True, frozen=True
     )
 
     url: SecretStr
-    managed_identity_client_id: str | None = Field(
-        default=None, validation_alias="AZURE_CLIENT_ID"
-    )
 
     @property
     def entra(self) -> bool:
         return "password" not in conninfo_to_dict(self.url.get_secret_value())
-
-
-def credential(settings: DatabaseSettings) -> TokenCredential:
-    if settings.managed_identity_client_id is None:
-        return AzureCliCredential()
-    return ChainedTokenCredential(
-        ManagedIdentityCredential(client_id=settings.managed_identity_client_id),
-        AzureCliCredential(),
-    )
-
-
-def async_credential(settings: DatabaseSettings) -> AsyncTokenCredential:
-    if settings.managed_identity_client_id is None:
-        return AsyncAzureCliCredential()
-    return AsyncChainedTokenCredential(
-        AsyncManagedIdentityCredential(client_id=settings.managed_identity_client_id),
-        AsyncAzureCliCredential(),
-    )
 
 
 def named_user(url: str) -> dict[str, Any]:
@@ -89,13 +57,25 @@ def named_user(url: str) -> dict[str, Any]:
     return {"user": user} if user else {}
 
 
+class AsyncTokenConnection(AsyncEntraConnection):
+    """An Entra connection whose credential is opened and closed around the connect."""
+
+    @classmethod
+    async def connect(cls, *args: Any, **kwargs: Any) -> Self:
+        async with AsyncDefaultAzureCredential(require_envvar=True) as credential:
+            connection = await super().connect(*args, credential=credential, **kwargs)
+        # The vendor annotates its connect with its own class, not Self.
+        return cast(Self, connection)
+
+
 def connect(settings: DatabaseSettings, **kwargs: Any) -> Connection[Any]:
     url = settings.url.get_secret_value()
-    if settings.entra:
+    if not settings.entra:
+        return Connection.connect(url, **kwargs)
+    with DefaultAzureCredential(require_envvar=True) as credential:
         return EntraConnection.connect(
-            url, credential=credential(settings), **named_user(url) | kwargs
+            url, credential=credential, **named_user(url) | kwargs
         )
-    return Connection.connect(url, **kwargs)
 
 
 def async_connection(
@@ -103,11 +83,7 @@ def async_connection(
 ) -> tuple[type[AsyncConnection[Any]], dict[str, Any]]:
     """The connection class and its keyword arguments, for a creator or a pool."""
     if settings.entra:
-        url = settings.url.get_secret_value()
-        return AsyncEntraConnection, {
-            "credential": async_credential(settings),
-            **named_user(url),
-        }
+        return AsyncTokenConnection, named_user(settings.url.get_secret_value())
     return AsyncConnection, {}
 
 
@@ -136,9 +112,9 @@ async def reset_role(connection: AsyncConnection[Any]) -> None:
 def engine(
     settings: DatabaseSettings, pool_size: int, max_overflow: int, **kwargs: Any
 ) -> PGEngine:
-    connection_class, credential = async_connection(settings)
+    connection_class, keywords = async_connection(settings)
     creator = partial(
-        connection_class.connect, settings.url.get_secret_value(), **credential | kwargs
+        connection_class.connect, settings.url.get_secret_value(), **keywords | kwargs
     )
     # The URL names the dialect only; the creator carries every connection
     # parameter. Autocommit, because a RESET ROLE inside a transaction is undone
@@ -165,11 +141,11 @@ def tier_engines(settings: DatabaseSettings) -> dict[str, PGEngine]:
 def checkpointer_pool(
     settings: DatabaseSettings,
 ) -> AsyncConnectionPool[AsyncConnection[DictRow]]:
-    connection_class, credential = async_connection(settings)
+    connection_class, keywords = async_connection(settings)
     return AsyncConnectionPool(
         settings.url.get_secret_value(),
         connection_class=connection_class,
-        kwargs=credential
+        kwargs=keywords
         | {
             "options": CHECKPOINTER_OPTIONS,
             "autocommit": True,

@@ -9,9 +9,9 @@ from dispute_casework.database import TIERS, DatabaseSettings, async_connection
 
 
 async def check(settings: DatabaseSettings, tier: str) -> str:
-    connection_class, credential = async_connection(settings)
+    connection_class, keywords = async_connection(settings)
     async with await connection_class.connect(
-        settings.url.get_secret_value(), options=f"-c role={tier}", **credential
+        settings.url.get_secret_value(), options=f"-c role={tier}", **keywords
     ) as connection:
         cursor = await connection.execute(
             "SELECT current_user, current_setting('role'),"
