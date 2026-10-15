@@ -2,22 +2,33 @@
 
 Every connection binds its role through the libpq startup option, so the
 application never issues SET ROLE and a reset of the session returns to the
-bound role. A DATABASE_URL without a password signs in with an Entra token
+bound role. A DATABASE_URL without a password signs in with an Entra token:
+of the managed identity named by AZURE_CLIENT_ID when one is configured, else
 of the Azure CLI login.
 """
 
 from functools import partial
 from typing import Any
 
-from azure.identity import AzureCliCredential
+from azure.core.credentials import TokenCredential
+from azure.core.credentials_async import AsyncTokenCredential
+from azure.identity import (
+    AzureCliCredential,
+    ChainedTokenCredential,
+    ManagedIdentityCredential,
+)
 from azure.identity.aio import AzureCliCredential as AsyncAzureCliCredential
+from azure.identity.aio import ChainedTokenCredential as AsyncChainedTokenCredential
+from azure.identity.aio import (
+    ManagedIdentityCredential as AsyncManagedIdentityCredential,
+)
 from azure_postgresql_auth.psycopg3 import AsyncEntraConnection, EntraConnection
 from langchain_postgres import PGEngine
 from psycopg import AsyncConnection, Connection
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import DictRow, dict_row
 from psycopg_pool import AsyncConnectionPool
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CONNECTION_LIMIT = 16
@@ -30,23 +41,44 @@ CHECKPOINTER_POOL_SIZE = 4
 
 
 class DatabaseSettings(BaseSettings):
-    """DATABASE_URL, from the environment, as a libpq connection URI."""
+    """DATABASE_URL as a libpq connection URI and the optional AZURE_CLIENT_ID."""
 
     model_config = SettingsConfigDict(
         env_prefix="DATABASE_", env_ignore_empty=True, frozen=True
     )
 
     url: SecretStr
+    managed_identity_client_id: str | None = Field(
+        default=None, validation_alias="AZURE_CLIENT_ID"
+    )
 
     @property
     def entra(self) -> bool:
         return "password" not in conninfo_to_dict(self.url.get_secret_value())
 
 
+def credential(settings: DatabaseSettings) -> TokenCredential:
+    if settings.managed_identity_client_id is None:
+        return AzureCliCredential()
+    return ChainedTokenCredential(
+        ManagedIdentityCredential(client_id=settings.managed_identity_client_id),
+        AzureCliCredential(),
+    )
+
+
+def async_credential(settings: DatabaseSettings) -> AsyncTokenCredential:
+    if settings.managed_identity_client_id is None:
+        return AsyncAzureCliCredential()
+    return AsyncChainedTokenCredential(
+        AsyncManagedIdentityCredential(client_id=settings.managed_identity_client_id),
+        AsyncAzureCliCredential(),
+    )
+
+
 def connect(settings: DatabaseSettings, **kwargs: Any) -> Connection[Any]:
     url = settings.url.get_secret_value()
     if settings.entra:
-        return EntraConnection.connect(url, credential=AzureCliCredential(), **kwargs)
+        return EntraConnection.connect(url, credential=credential(settings), **kwargs)
     return Connection.connect(url, **kwargs)
 
 
@@ -55,7 +87,7 @@ def async_connection(
 ) -> tuple[type[AsyncConnection[Any]], dict[str, Any]]:
     """The connection class and its credential keyword, for a creator or a pool."""
     if settings.entra:
-        return AsyncEntraConnection, {"credential": AsyncAzureCliCredential()}
+        return AsyncEntraConnection, {"credential": async_credential(settings)}
     return AsyncConnection, {}
 
 
