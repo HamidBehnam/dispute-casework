@@ -2,7 +2,7 @@
 
 fetch    download the part as XML and as rendered HTML and start manifest.json
 embed    parse both, write chunks.jsonl and embeddings.npy, complete the manifest
-load     rebuild the chunk table in the database named by DATABASE_URL
+load     replace the chunk rows in the database named by DATABASE_URL
 
 embed and load need FOUNDRY_ENDPOINT.
 """
@@ -15,9 +15,6 @@ from pathlib import Path
 
 import httpx
 import numpy as np
-from langchain_postgres import PGEngine
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from dispute_casework.corpus import (
     CHUNKS,
@@ -34,6 +31,7 @@ from dispute_casework.corpus import (
     sha256,
     verified_manifest,
 )
+from dispute_casework.database import DatabaseSettings
 from dispute_casework.ecfr import PARSER_VERSION, parse_part
 from dispute_casework.foundry import (
     EMBEDDING_DEPLOYMENT,
@@ -49,16 +47,6 @@ PIN_REASON = (
     "(May 9, 2025) disapproved before they took effect."
 )
 EMBEDDING_DEPLOYMENT_VERSION = "1"
-
-
-class DatabaseSettings(BaseSettings):
-    """DATABASE_URL, from the environment."""
-
-    model_config = SettingsConfigDict(
-        env_prefix="DATABASE_", env_ignore_empty=True, frozen=True
-    )
-
-    url: SecretStr
 
 
 def fetch(directory: Path) -> None:
@@ -151,10 +139,7 @@ def main() -> None:
         case "embed":
             embed_corpus(SNAPSHOT_DIR, FoundrySettings())
         case "load":
-            engine = PGEngine.from_connection_string(
-                DatabaseSettings().url.get_secret_value()
-            )
-            load(engine, SNAPSHOT_DIR, FoundrySettings())
+            load(DatabaseSettings(), SNAPSHOT_DIR, FoundrySettings())
 
 
 if __name__ == "__main__":
