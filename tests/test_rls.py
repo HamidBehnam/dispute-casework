@@ -95,13 +95,13 @@ def test_force_rls_on_protected_tables(database: DatabaseSettings) -> None:
     assert row == (True, True)
 
 
-def test_only_the_loader_bypasses_rls(database: DatabaseSettings) -> None:
+def test_no_role_bypasses_rls(database: DatabaseSettings) -> None:
     with connect(database) as connection:
         bypassing = connection.execute(
             "SELECT rolname FROM pg_roles"
             " WHERE rolbypassrls AND NOT rolcanlogin AND rolname NOT LIKE 'pg\\_%'"
         ).fetchall()
-    assert bypassing == [(LOADER,)]
+    assert bypassing == []
 
 
 def test_the_login_without_a_role_cannot_read_the_corpus(

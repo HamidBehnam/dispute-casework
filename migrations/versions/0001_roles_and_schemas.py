@@ -22,7 +22,7 @@ depends_on = None
 def upgrade(
     make_engine: Callable[[], PGEngine], connect: Callable[..., Connection[Any]]
 ) -> None:
-    op.execute("CREATE ROLE corpus_loader NOLOGIN BYPASSRLS")
+    op.execute("CREATE ROLE corpus_loader NOLOGIN")
     op.execute("CREATE ROLE tier_public NOLOGIN")
     op.execute("CREATE ROLE tier_full NOLOGIN")
     op.execute("CREATE ROLE lg_app NOLOGIN")
@@ -33,7 +33,10 @@ def upgrade(
     op.execute("CREATE ROLE dcw_service NOLOGIN")
     # CREATE ROLE leaves its creator with ADMIN OPTION only; the owners are
     # granted again so that the runner inherits them and can set them.
-    op.execute("GRANT corpus_owner, lg_owner, bank_owner, app_owner TO CURRENT_USER")
+    op.execute(
+        "GRANT corpus_owner, lg_owner, bank_owner, app_owner, corpus_loader"
+        " TO CURRENT_USER"
+    )
     # A login holding dcw_service has no privilege until it sets one of these
     # roles at connect, and can set no other.
     op.execute("GRANT tier_public, tier_full, lg_app TO dcw_service WITH INHERIT FALSE")

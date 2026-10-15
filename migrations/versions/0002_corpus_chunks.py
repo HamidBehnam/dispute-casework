@@ -58,10 +58,14 @@ def upgrade(
         "CREATE POLICY tier_full ON corpus.chunks FOR SELECT TO tier_full"
         " USING (access_label = ANY(ARRAY['public', 'restricted']))"
     )
-    op.execute("ALTER TABLE corpus.chunks OWNER TO corpus_owner")
-    op.execute("GRANT USAGE ON SCHEMA corpus TO tier_public, tier_full, corpus_loader")
-    op.execute("GRANT SELECT ON corpus.chunks TO tier_public, tier_full")
-    # UPDATE because the vendor's insert is an upsert.
+    # The loader owns the table and reads and writes every row through its own
+    # policy; no role carries BYPASSRLS, which the Azure administrator cannot grant.
     op.execute(
-        "GRANT SELECT, INSERT, UPDATE, TRUNCATE ON corpus.chunks TO corpus_loader"
+        "CREATE POLICY corpus_loader ON corpus.chunks FOR ALL TO corpus_loader"
+        " USING (true) WITH CHECK (true)"
     )
+    op.execute("GRANT USAGE ON SCHEMA corpus TO tier_public, tier_full, corpus_loader")
+    # The new owner of a table needs CREATE on its schema.
+    op.execute("GRANT CREATE ON SCHEMA corpus TO corpus_loader")
+    op.execute("ALTER TABLE corpus.chunks OWNER TO corpus_loader")
+    op.execute("GRANT SELECT ON corpus.chunks TO tier_public, tier_full")

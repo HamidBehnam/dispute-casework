@@ -126,8 +126,9 @@ def no_foundry_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 def database() -> DatabaseSettings:
     """A fresh database migrated by the runner; the application login holds dcw_service.
 
-    The runner carries the attributes of the Azure administrator, the
-    application login the CONNECTION LIMIT of the Azure test user.
+    The runner carries the attributes of the Azure administrator, which cannot
+    grant BYPASSRLS; the application login carries the CONNECTION LIMIT of the
+    Azure test user.
     """
     with psycopg.connect(url(SUPERUSER), dbname="postgres", autocommit=True) as root:
         root.execute(f"DROP DATABASE IF EXISTS {DATABASE} WITH (FORCE)")
@@ -136,7 +137,7 @@ def database() -> DatabaseSettings:
             root.execute(f"DROP ROLE IF EXISTS {role}")
         root.execute(
             f"CREATE ROLE {RUNNER} LOGIN PASSWORD '{RUNNER}'"
-            " NOSUPERUSER CREATEROLE CREATEDB INHERIT BYPASSRLS"
+            " NOSUPERUSER CREATEROLE CREATEDB INHERIT"
         )
         root.execute(
             f"CREATE ROLE {APPLICATION} LOGIN PASSWORD '{APPLICATION}'"
