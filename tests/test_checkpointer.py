@@ -62,7 +62,7 @@ def test_put_and_get_through_the_lg_app_pool(database: DatabaseSettings) -> None
 
 
 @pytest.mark.parametrize("location", ["configurable", "metadata"])
-def test_a_configurable_value_lands_in_checkpoint_metadata_and_nowhere_else(
+def test_a_config_value_lands_in_checkpoint_metadata_and_nowhere_else(
     database: DatabaseSettings, location: str
 ) -> None:
     """A value in config["configurable"] or config["metadata"] is copied into
