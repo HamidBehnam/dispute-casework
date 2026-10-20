@@ -3,6 +3,7 @@
 import asyncio
 from typing import Any
 
+import pytest
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import CheckpointTuple, empty_checkpoint
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -34,6 +35,10 @@ async def put_through_the_pool(
             {"source": "input", "step": 0},
             checkpoint["channel_versions"],
         )
+        # The same config, now carrying the checkpoint id the writes need.
+        writes_config = config.copy()
+        writes_config["configurable"] = config["configurable"] | stored["configurable"]
+        await saver.aput_writes(writes_config, [("chunk_ids", CHUNK_IDS)], "task-1")
         return await saver.aget_tuple(stored)
 
 
@@ -56,19 +61,26 @@ def test_put_and_get_through_the_lg_app_pool(database: DatabaseSettings) -> None
     assert stored.checkpoint["channel_values"] == {"chunk_ids": CHUNK_IDS}
 
 
+@pytest.mark.parametrize("location", ["configurable", "metadata"])
 def test_a_configurable_value_lands_in_checkpoint_metadata_and_nowhere_else(
-    database: DatabaseSettings,
+    database: DatabaseSettings, location: str
 ) -> None:
-    """A value in config["configurable"] is copied into checkpoints.metadata.
+    """A value in config["configurable"] or config["metadata"] is copied into
+    checkpoints.metadata.
 
-    The state carries chunk IDs, never the token; the token travels in the
-    configurable, and the vendor copies every configurable value into the
-    metadata column. The positive control is the sentinel found there; the
-    guarantee is its absence from the checkpoint, the blobs and the writes.
+    The state carries chunk IDs, never the token; the vendor copies the string,
+    number and boolean values of both config locations into the metadata
+    column. The positive control is the sentinel found there; the guarantee is
+    its absence from the checkpoint, the blobs and the writes.
     """
+    thread = f"case-{location}"
     config: RunnableConfig = {
-        "configurable": {"thread_id": "case-2", "checkpoint_ns": "", "token": SENTINEL}
+        "configurable": {"thread_id": thread, "checkpoint_ns": ""}
     }
+    if location == "metadata":
+        config["metadata"] = {"token": SENTINEL}
+    else:
+        config["configurable"]["token"] = SENTINEL
     stored = asyncio.run(
         put_through_the_pool(database, config, {"chunk_ids": CHUNK_IDS})
     )
@@ -86,14 +98,15 @@ def test_a_configurable_value_lands_in_checkpoint_metadata_and_nowhere_else(
                 for kind, value in connection.execute(
                     f'SELECT {"type" if column == "blob" else "NULL"}, "{column}"'
                     f" FROM {table} WHERE thread_id = %s",
-                    ("case-2",),
+                    (thread,),
                 ).fetchall()
             ]
             for table, column in columns
             if table != "checkpoint_migrations"
         }
     holding_sentinel = {
-        location for location, values in cells.items() if SENTINEL in repr(values)
+        cell for cell, values in cells.items() if SENTINEL in repr(values)
     }
     assert holding_sentinel == {("checkpoints", "metadata")}
     assert CHUNK_IDS in cells["checkpoint_blobs", "blob"]
+    assert CHUNK_IDS in cells["checkpoint_writes", "blob"]
