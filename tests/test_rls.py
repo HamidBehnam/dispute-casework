@@ -46,7 +46,6 @@ def rows(
         for paragraph_id, label in labelled
     ]
     with loader_grant():
-        # Rolled back at the end: the module's fixture rows stay.
         with connect(database, options=f"-c role={LOADER}") as loader:
             loader.execute("TRUNCATE corpus.chunks")
         loader_engine = engine(database, 1, 0, options=f"-c role={LOADER}")
