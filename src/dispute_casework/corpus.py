@@ -76,17 +76,23 @@ def load(
     with connect(database, options=f"-c role={LOADER}", autocommit=True) as connection:
         connection.execute(f"TRUNCATE {SCHEMA}.{TABLE}")
     loader = engine(database, pool_size=1, max_overflow=0, options=f"-c role={LOADER}")
-    open_store(loader, settings).add_embeddings(
-        texts=[chunk["content"] for chunk in chunks],
-        embeddings=vectors.tolist(),
-        metadatas=[
-            {name: chunk[name] for name in METADATA_COLUMNS if name in chunk}
-            | {"snapshot": date.fromisoformat(snapshot), "access_label": "public"}
-            for chunk in chunks
-        ],
-        ids=[
-            str(uuid.uuid5(uuid.NAMESPACE_URL, f"{snapshot}:{chunk['paragraph_id']}"))
-            for chunk in chunks
-        ],
-    )
-    asyncio.run(loader.close())
+    try:
+        open_store(loader, settings).add_embeddings(
+            texts=[chunk["content"] for chunk in chunks],
+            embeddings=vectors.tolist(),
+            metadatas=[
+                {name: chunk[name] for name in METADATA_COLUMNS if name in chunk}
+                | {"snapshot": date.fromisoformat(snapshot), "access_label": "public"}
+                for chunk in chunks
+            ],
+            ids=[
+                str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL, f"{snapshot}:{chunk['paragraph_id']}"
+                    )
+                )
+                for chunk in chunks
+            ],
+        )
+    finally:
+        asyncio.run(loader.close())

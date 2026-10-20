@@ -1,5 +1,6 @@
 """Row-level security on corpus.chunks, per tier role bound at connect."""
 
+import asyncio
 import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -49,23 +50,26 @@ def rows(
         with connect(database, options=f"-c role={LOADER}") as loader:
             loader.execute("TRUNCATE corpus.chunks")
         loader_engine = engine(database, 1, 0, options=f"-c role={LOADER}")
-        open_store(loader_engine, settings).add_embeddings(
-            texts=texts,
-            embeddings=EMBEDDING.embed_documents(texts),
-            metadatas=[
-                {
-                    "paragraph_id": paragraph_id,
-                    "part": "fixture",
-                    "section": "fixture",
-                    "source": "procedure",
-                    "legal_status": "procedure",
-                    "snapshot": date(2026, 1, 1),
-                    "access_label": label,
-                }
-                for paragraph_id, label in labelled
-            ],
-            ids=[str(uuid.uuid5(uuid.NAMESPACE_URL, text)) for text in texts],
-        )
+        try:
+            open_store(loader_engine, settings).add_embeddings(
+                texts=texts,
+                embeddings=EMBEDDING.embed_documents(texts),
+                metadatas=[
+                    {
+                        "paragraph_id": paragraph_id,
+                        "part": "fixture",
+                        "section": "fixture",
+                        "source": "procedure",
+                        "legal_status": "procedure",
+                        "snapshot": date(2026, 1, 1),
+                        "access_label": label,
+                    }
+                    for paragraph_id, label in labelled
+                ],
+                ids=[str(uuid.uuid5(uuid.NAMESPACE_URL, text)) for text in texts],
+            )
+        finally:
+            asyncio.run(loader_engine.close())
     yield {
         label: {
             paragraph_id for paragraph_id, row_label in labelled if row_label == label

@@ -1,12 +1,13 @@
 import json
 import shutil
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import numpy as np
 import pytest
 from langchain_postgres import PGVectorStore
 
+from dispute_casework import corpus
 from dispute_casework.corpus import (
     SNAPSHOT,
     SNAPSHOT_DIR,
@@ -107,6 +108,22 @@ def test_load_rejects_a_listed_file_missing_on_disk(
     with pytest.raises(FileNotFoundError, match=missing):
         load(database, directory, FoundrySettings(endpoint="https://unused", key="k"))
     assert database.mock_calls == []
+
+
+def test_load_closes_the_loader_engine_when_the_insert_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loader = Mock(close=AsyncMock())
+    monkeypatch.setattr(corpus, "connect", MagicMock())
+    monkeypatch.setattr(corpus, "engine", Mock(return_value=loader))
+    monkeypatch.setattr(
+        corpus,
+        "open_store",
+        Mock(return_value=Mock(add_embeddings=Mock(side_effect=RuntimeError("lost")))),
+    )
+    with pytest.raises(RuntimeError, match="lost"):
+        load(Mock(), SNAPSHOT_DIR, FoundrySettings(endpoint="https://unused", key="k"))
+    loader.close.assert_awaited_once()
 
 
 def test_loaded_table_holds_every_chunk_with_its_metadata(store: PGVectorStore) -> None:
