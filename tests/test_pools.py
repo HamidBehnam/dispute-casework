@@ -108,8 +108,11 @@ def test_a_tier_engine_connection_returns_to_its_bound_role(
 
 
 def test_a_checkpointer_connection_returns_to_its_bound_role(
-    database: DatabaseSettings,
+    database: DatabaseSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # One connection in the pool, so the second checkout gets the first one back.
+    monkeypatch.setattr(pools, "CHECKPOINTER_POOL_SIZE", 1)
+
     async def switch_then_check_out_again() -> tuple[str, str]:
         async with checkpointer_pool(database) as pool:
             async with pool.connection() as connection:
