@@ -97,8 +97,12 @@ def reset_role_on_return(
     record: ConnectionPoolEntry,
     state: PoolResetState,
 ) -> None:
-    if state.asyncio_safe:
+    # Rolled back, reset and committed here; a connection being invalidated or
+    # garbage collected is not returned to the pool.
+    if state.asyncio_safe and not state.terminate_only:
+        dbapi_connection.rollback()
         dbapi_connection.cursor().execute("RESET ROLE")
+        dbapi_connection.commit()
 
 
 class RoleBoundPool(AsyncAdaptedQueuePool):
@@ -121,16 +125,14 @@ def engine(
     creator = partial(
         connection_class.connect, settings.url.get_secret_value(), **keywords | kwargs
     )
-    # The URL names the dialect only; the creator carries every connection
-    # parameter. Autocommit, because a RESET ROLE inside a transaction is undone
-    # by the rollback that follows it on checkin.
+    # The URL names the dialect only; the creator carries every connection parameter.
     return PGEngine.from_connection_string(
         "postgresql+psycopg://",
         async_creator=creator,
         poolclass=RoleBoundPool,
         pool_size=pool_size,
         max_overflow=max_overflow,
-        isolation_level="AUTOCOMMIT",
+        pool_reset_on_return=None,
     )
 
 

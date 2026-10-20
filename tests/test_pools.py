@@ -40,31 +40,71 @@ def test_the_login_refuses_a_seventeenth_connection(database: DatabaseSettings) 
             connect(database)
 
 
+def backend_states(database: DatabaseSettings, application_name: str) -> list[str]:
+    with connect(database) as connection:
+        rows = connection.execute(
+            "SELECT state FROM pg_stat_activity WHERE application_name = %s",
+            (application_name,),
+        ).fetchall()
+    return [state for (state,) in rows]
+
+
+@pytest.mark.parametrize(
+    "first_checkout_ends_with",
+    [
+        "the commit",
+        "a statement after the commit",
+        "a driver-level statement left open after the commit",
+    ],
+)
 def test_a_tier_engine_connection_returns_to_its_bound_role(
-    database: DatabaseSettings,
+    database: DatabaseSettings, first_checkout_ends_with: str
 ) -> None:
     """One connection in the pool, so the second checkout gets the first one back.
 
     The switch is committed: an uncommitted SET ROLE is undone by the rollback
     at checkin and would prove nothing.
     """
-    bound = engine(database, pool_size=1, max_overflow=0, options="-c role=tier_public")
+    bound = engine(
+        database,
+        pool_size=1,
+        max_overflow=0,
+        options="-c role=tier_public -c application_name=test_pools",
+    )
     # The vendor exposes the AsyncEngine behind a PGEngine as _pool only.
     async_engine = bound._pool
 
-    async def switch_then_check_out_again() -> tuple[str, str]:
+    async def switch_then_check_out_again() -> tuple[str, str, str, list[str]]:
         async with async_engine.connect() as connection:
             await connection.execute(text("SET ROLE tier_full"))
             await connection.commit()
-            switched = await connection.execute(text("SELECT current_user"))
-            switched_to: str = switched.scalar_one()
+            if first_checkout_ends_with == "a statement after the commit":
+                await connection.execute(text("SELECT current_user"))
+            if first_checkout_ends_with.startswith("a driver-level statement"):
+                driver = (await connection.get_raw_connection()).driver_connection
+                assert driver is not None
+                await driver.execute("SET application_name = 'leftover'")
+        states = backend_states(database, "test_pools")
         async with async_engine.connect() as connection:
             returned = await connection.execute(text("SELECT current_user"))
             returned_to: str = returned.scalar_one()
+            await connection.rollback()
+            held = await connection.execute(text("SELECT current_user"))
+            held_after_rollback: str = held.scalar_one()
+            name = await connection.execute(
+                text("SELECT current_setting('application_name')")
+            )
+            application_name: str = name.scalar_one()
+        states += backend_states(database, "test_pools")
         await async_engine.dispose()
-        return switched_to, returned_to
+        return returned_to, held_after_rollback, application_name, states
 
-    assert asyncio.run(switch_then_check_out_again()) == ("tier_full", "tier_public")
+    assert asyncio.run(switch_then_check_out_again()) == (
+        "tier_public",
+        "tier_public",
+        "test_pools",
+        ["idle", "idle"],
+    )
 
 
 def test_a_checkpointer_connection_returns_to_its_bound_role(
