@@ -24,8 +24,10 @@ depends_on = None
 def upgrade(
     make_engine: Callable[[], PGEngine], connect: Callable[..., Connection[Any]]
 ) -> None:
-    # The vendor creates the table on its own connection and commits there;
-    # the autocommit block keeps that outside this revision's transaction.
+    # The vendor creates the table on its own connection, which sees committed
+    # schema only; the block commits the migration transaction before the call
+    # and reopens it after, so this revision does not depend on env.py running
+    # one transaction per migration.
     with op.get_context().autocommit_block():
         engine = make_engine()
         engine.init_vectorstore_table(
