@@ -2,6 +2,7 @@
 
 import asyncio
 from contextlib import ExitStack
+from functools import partial
 
 import psycopg
 import pytest
@@ -15,6 +16,7 @@ from dispute_casework.database import (
     checkpointer_pool,
     connect,
     engine,
+    tier_engines,
 )
 
 
@@ -23,8 +25,14 @@ def test_startup_refuses_pools_over_the_connection_limit(
 ) -> None:
     pools.check_pool_budget()
     monkeypatch.setattr(pools, "CHECKPOINTER_POOL_SIZE", CONNECTION_LIMIT)
-    with pytest.raises(RuntimeError, match=f"allows {CONNECTION_LIMIT}"):
-        pools.check_pool_budget()
+    settings = DatabaseSettings(url="postgresql://unused:unused@127.0.0.1:5432/unused")
+    for start in (
+        pools.check_pool_budget,
+        partial(tier_engines, settings),
+        partial(checkpointer_pool, settings),
+    ):
+        with pytest.raises(RuntimeError, match=f"allows {CONNECTION_LIMIT}"):
+            start()
 
 
 def test_the_login_refuses_a_seventeenth_connection(database: DatabaseSettings) -> None:
