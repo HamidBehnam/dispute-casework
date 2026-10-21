@@ -161,8 +161,12 @@ def test_a_user_named_in_the_url_reaches_psycopg_as_a_keyword(
     connect(DatabaseSettings(url=url))
     assert connected["user"] == group
     assert connected["password"] == TOKEN
-    _, keywords = async_connection(DatabaseSettings(url=url))
+    connection_class, keywords = async_connection(DatabaseSettings(url=url))
     assert keywords == {"user": group}
+    asyncio.run(connection_class.connect(url, **keywords))
+    assert connected["cls"] is database.AsyncTokenConnection
+    assert connected["user"] == group
+    assert connected["password"] == TOKEN
 
 
 def test_password_connect_passes_the_url_through(connected: dict[str, Any]) -> None:
