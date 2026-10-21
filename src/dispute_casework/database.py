@@ -2,7 +2,9 @@
 
 An application connection binds its role through the libpq startup option
 and is returned to that role whenever a pool takes it back; nothing here
-issues SET ROLE. The migration runner connects with no role option. A
+issues SET ROLE. The migrations connect through the same functions as the
+runner login, which holds the owner roles itself and binds one at connect
+only where the objects it creates must be owned by that role. A
 DATABASE_URL without a password signs in with an Entra token from the
 credential that AZURE_TOKEN_CREDENTIALS names.
 """
