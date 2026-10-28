@@ -412,3 +412,18 @@ resource "azurerm_container_app_job" "smoke" {
 
   depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.secrets_user]
 }
+
+resource "azapi_update_resource" "job_identity_lifecycle" {
+  type        = "Microsoft.App/jobs@2025-07-01"
+  resource_id = azurerm_container_app_job.smoke.id
+
+  body = {
+    properties = {
+      configuration = {
+        identitySettings = [
+          { identity = azurerm_user_assigned_identity.platform.id, lifecycle = "None" },
+        ]
+      }
+    }
+  }
+}
