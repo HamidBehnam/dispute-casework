@@ -2,8 +2,7 @@ from collections.abc import Callable
 
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from cohere import ClientV2
-from langchain_azure_ai.chat_models import AzureAIOpenAIApiChatModel
-from langchain_azure_ai.embeddings import AzureAIOpenAIApiEmbeddingsModel
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -45,22 +44,20 @@ def api_key(settings: FoundrySettings, scope: str) -> str | Callable[[], str]:
     return get_bearer_token_provider(AzureCliCredential(), scope)
 
 
-# The model classes take api_key, never credential: given a token credential,
-# langchain-azure-ai 1.2.10 builds the SDK client itself and drops the timeout
-# and retry settings.
-def chat_model(settings: FoundrySettings, deployment: str) -> AzureAIOpenAIApiChatModel:
-    return AzureAIOpenAIApiChatModel(
-        endpoint=f"{settings.endpoint}/openai/v1",
+def chat_model(settings: FoundrySettings, deployment: str) -> ChatOpenAI:
+    return ChatOpenAI(
+        base_url=f"{settings.endpoint}/openai/v1",
         api_key=api_key(settings, OPENAI_ROUTE_SCOPE),
         model=deployment,
         use_responses_api=deployment not in CHAT_COMPLETIONS_ONLY,
+        stream_usage=True,
         timeout=TIMEOUT_SECONDS,
     )
 
 
-def embeddings(settings: FoundrySettings) -> AzureAIOpenAIApiEmbeddingsModel:
-    return AzureAIOpenAIApiEmbeddingsModel(
-        endpoint=f"{settings.endpoint}/openai/v1",
+def embeddings(settings: FoundrySettings) -> OpenAIEmbeddings:
+    return OpenAIEmbeddings(
+        base_url=f"{settings.endpoint}/openai/v1",
         api_key=api_key(settings, OPENAI_ROUTE_SCOPE),
         model=EMBEDDING_DEPLOYMENT,
         dimensions=EMBEDDING_DIMENSIONS,
