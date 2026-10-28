@@ -44,8 +44,9 @@ def api_key(settings: FoundrySettings, scope: str) -> str | Callable[[], str]:
     return get_bearer_token_provider(AzureCliCredential(), scope)
 
 
-# The pydantic mypy plugin types these constructors by field name, so the
-# fields are spelled out rather than their aliases base_url, api_key and timeout.
+# OpenAIEmbeddings forbids extra arguments, so under the pydantic mypy plugin it
+# accepts only field names, not the aliases base_url, api_key and timeout; both
+# clients use the field names.
 def chat_model(settings: FoundrySettings, deployment: str) -> ChatOpenAI:
     return ChatOpenAI(
         openai_api_base=f"{settings.endpoint}/openai/v1",
