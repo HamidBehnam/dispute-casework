@@ -81,6 +81,11 @@ def test_deepseek_uses_chat_completions_and_openai_models_use_responses() -> Non
     assert chat_model(settings, "gpt-5.4-mini").use_responses_api is True
 
 
+def test_chat_model_sets_stream_usage() -> None:
+    settings = FoundrySettings(endpoint=ENDPOINT, key="k")
+    assert chat_model(settings, "gpt-5.4-mini").stream_usage is True
+
+
 def test_embeddings_send_raw_strings_at_1536_dimensions_sixteen_a_request() -> None:
     model = embeddings(FoundrySettings(endpoint=ENDPOINT, key="k"))
     assert model.check_embedding_ctx_length is False
