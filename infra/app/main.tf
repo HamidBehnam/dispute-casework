@@ -377,6 +377,12 @@ resource "azurerm_container_app_job" "smoke" {
     identity = azurerm_user_assigned_identity.platform.id
   }
 
+  secret {
+    name                = "origin-header-secret"
+    identity            = azurerm_user_assigned_identity.platform.id
+    key_vault_secret_id = azurerm_key_vault_secret.origin_header.versionless_id
+  }
+
   template {
     container {
       name    = "smoke"
@@ -397,8 +403,12 @@ resource "azurerm_container_app_job" "smoke" {
         name  = "INTERNAL_URL"
         value = "http://${azurerm_container_app.dcw.name}"
       }
+      env {
+        name        = "ORIGIN_HEADER_SECRET"
+        secret_name = "origin-header-secret"
+      }
     }
   }
 
-  depends_on = [azurerm_role_assignment.acr_pull]
+  depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.secrets_user]
 }
