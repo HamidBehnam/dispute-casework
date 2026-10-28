@@ -1,6 +1,6 @@
 # ADR 0004: Retrieval store
 
-Status: Accepted. Superseded in part by 0005.
+Status: Accepted. Superseded in part by 0005 and 0006.
 
 ## Context
 
