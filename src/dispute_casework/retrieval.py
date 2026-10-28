@@ -33,7 +33,7 @@ RERANK_DEPLOYMENT = "Cohere-rerank-v4.0-fast"
 def hybrid_config(keywords: str) -> HybridSearchConfig:
     """A new config for one search.
 
-    langchain-postgres 0.0.18 writes into the config it is given (issue 337):
+    langchain-postgres 0.0.19 writes into the config it is given (issue 337):
     fetch_top_k into its fusion parameters on every hybrid search, and the
     query text into fts_query on the text-query paths, similarity_search and
     similarity_search_with_score, when fts_query is empty. retrieve searches
@@ -76,7 +76,7 @@ def retrieve(
     store: PGVectorStore, embedding: list[float], keywords: str
 ) -> list[Document]:
     if not keywords.strip():
-        # With an empty fts_query langchain-postgres 0.0.18 skips the keyword leg
+        # With an empty fts_query langchain-postgres 0.0.19 skips the keyword leg
         # and the fusion, and returns the dense leg's rows instead of k. With a
         # blank one the keyword leg runs a query with no terms and returns no rows.
         raise ValueError("retrieve needs a keyword string for the keyword leg")
