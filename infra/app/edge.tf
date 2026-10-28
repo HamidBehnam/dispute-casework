@@ -37,6 +37,12 @@ resource "cloudflare_origin_ca_certificate" "origin" {
   hostnames          = [local.hostname]
   request_type       = "origin-rsa"
   requested_validity = 5475
+
+  # Destroying revokes the certificate; a changed CSR would revoke and reissue.
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [csr]
+  }
 }
 
 resource "cloudflare_ruleset" "origin_header" {

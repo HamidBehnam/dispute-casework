@@ -340,6 +340,10 @@ resource "azurerm_container_app_environment_certificate" "origin" {
     identity            = azurerm_user_assigned_identity.platform.id
     key_vault_secret_id = azurerm_key_vault_certificate.origin.versionless_secret_id
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_container_app_custom_domain" "dcw" {
@@ -349,6 +353,10 @@ resource "azurerm_container_app_custom_domain" "dcw" {
   container_app_id                         = azurerm_container_app.dcw.id
   container_app_environment_certificate_id = azurerm_container_app_environment_certificate.origin[0].id
   certificate_binding_type                 = "SniEnabled"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   depends_on = [cloudflare_dns_record.verification]
 }
