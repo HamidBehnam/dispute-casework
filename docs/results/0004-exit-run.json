@@ -7,7 +7,7 @@
     "versions": {
       "deepeval": "4.2.8",
       "ir-measures": "0.4.3",
-      "langchain-postgres": "0.0.18",
+      "langchain-postgres": "0.0.19",
       "pytrec-eval-terrier": "0.5.10",
       "scipy": "1.18.1"
     }
