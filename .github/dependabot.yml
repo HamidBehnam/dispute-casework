@@ -27,3 +27,7 @@ updates:
     directory: /infra/postgres
     schedule:
       interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/app
+    schedule:
+      interval: weekly
