@@ -42,3 +42,19 @@ resource "azurerm_role_assignment" "tfstate_writer" {
 resource "azurerm_resource_provider_registration" "postgresql" {
   name = "Microsoft.DBforPostgreSQL"
 }
+
+resource "azurerm_resource_provider_registration" "app" {
+  name = "Microsoft.App"
+}
+
+resource "azurerm_resource_provider_registration" "operational_insights" {
+  name = "Microsoft.OperationalInsights"
+}
+
+resource "azurerm_resource_provider_registration" "key_vault" {
+  name = "Microsoft.KeyVault"
+}
+
+resource "azurerm_resource_provider_registration" "container_registry" {
+  name = "Microsoft.ContainerRegistry"
+}
