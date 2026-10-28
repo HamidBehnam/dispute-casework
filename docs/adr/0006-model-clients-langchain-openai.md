@@ -21,7 +21,6 @@ Chat and embedding calls go to the Foundry account's OpenAI v1 route, `<endpoint
 - The cassettes are unchanged: the embeddings request on the v1 route is the same, and the recorded suite passes without a re-recording.
 - Smoke (2026-10-28, `dispute_casework.foundry_smoke` under the Azure CLI identity): all five deployments answered HTTP 200. gpt-5.4-mini and gpt-5.4-nano answered on the Responses API and DeepSeek-V4-Pro on chat completions, each with usage returned; text-embedding-3-large returned 1536 dimensions; Cohere-rerank-v4.0-fast returned a ranking.
 - The invariants "model clients carry the explicit timeout under a key and under a token credential" and "`stream_usage` is enabled on the chat model" are backed by `tests/test_foundry.py`; the second no longer waits for step 14.
-- A Claude deployment, if one is ever added, is a different class and route under either package; this decision does not change that.
 
 ## Code written here
 
