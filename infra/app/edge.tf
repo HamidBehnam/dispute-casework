@@ -68,7 +68,7 @@ resource "cloudflare_ruleset" "rate_limit" {
 
   rules = [{
     description = "Block a client that sends more than 100 requests in 10 seconds"
-    expression  = "(http.host eq \"${local.hostname}\")"
+    expression  = "(starts_with(http.request.uri.path, \"/\"))"
     action      = "block"
     ratelimit = {
       characteristics     = ["cf.colo.id", "ip.src"]
