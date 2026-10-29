@@ -39,6 +39,15 @@ resource "azurerm_role_assignment" "tfstate_writer" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
+resource "azurerm_container_registry" "dcw" {
+  name                = "crdcweus2"
+  location            = azurerm_resource_group.dcw.location
+  resource_group_name = azurerm_resource_group.dcw.name
+  sku                 = "Basic"
+
+  depends_on = [azurerm_resource_provider_registration.container_registry]
+}
+
 resource "azurerm_resource_provider_registration" "postgresql" {
   name = "Microsoft.DBforPostgreSQL"
 }

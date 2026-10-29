@@ -11,7 +11,7 @@ data "azurerm_cognitive_account" "foundry" {
 
 locals {
   hostname      = "${var.subdomain}.${var.domain}"
-  backend_image = "${azurerm_container_registry.dcw.login_server}/dcw-backend:${var.image_tag}"
+  backend_image = "${data.azurerm_container_registry.dcw.login_server}/dcw-backend:${var.image_tag}"
   cerbos_image  = "ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515"
 }
 
@@ -38,15 +38,13 @@ resource "azurerm_user_assigned_identity" "main" {
   resource_group_name = data.azurerm_resource_group.dcw.name
 }
 
-resource "azurerm_container_registry" "dcw" {
+data "azurerm_container_registry" "dcw" {
   name                = "crdcweus2"
-  location            = data.azurerm_resource_group.dcw.location
   resource_group_name = data.azurerm_resource_group.dcw.name
-  sku                 = "Basic"
 }
 
 resource "azurerm_role_assignment" "acr_pull" {
-  scope                = azurerm_container_registry.dcw.id
+  scope                = data.azurerm_container_registry.dcw.id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_user_assigned_identity.platform.principal_id
   principal_type       = "ServicePrincipal"
@@ -163,7 +161,7 @@ resource "azurerm_container_app" "dcw" {
   }
 
   registry {
-    server   = azurerm_container_registry.dcw.login_server
+    server   = data.azurerm_container_registry.dcw.login_server
     identity = azurerm_user_assigned_identity.platform.id
   }
 
@@ -381,7 +379,7 @@ resource "azurerm_container_app_job" "smoke" {
   }
 
   registry {
-    server   = azurerm_container_registry.dcw.login_server
+    server   = data.azurerm_container_registry.dcw.login_server
     identity = azurerm_user_assigned_identity.platform.id
   }
 
