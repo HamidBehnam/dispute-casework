@@ -61,7 +61,9 @@ Pending phase 1.
 
 ## Findings
 
-Pending phase 1.
+Pending phase 1, except the following, recorded as they occurred.
+
+- Claim 4, `claims.sub_quarter_vcpu`: not decided. The first apply of the app on 2026-10-29 was refused by the service with `ContainerAppInvalidCpuResource`: "container 'mcp' cpu '0.125' is invalid" and "must contain a decimal value to no more than two decimal places". That is a precision rule, not a rule on values below 0.25 vCPU, and no sub-0.25 value with two decimals was tried. Deviation from the pre-registration: the fallback allocation was applied without deciding the claim; every container runs at 0.25 vCPU and 0.5Gi, a replica total of 1.0 vCPU and 2.0Gi, with the idle-floor consequence under `projections.idle_floor_usd_per_month`.
 
 ## Consequences
 

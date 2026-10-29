@@ -6,7 +6,7 @@
     "environment_meter": "pending the cost read",
     "ingress_timeout": "pending",
     "prevent_destroy_on_count": "pending",
-    "sub_quarter_vcpu": "pending"
+    "sub_quarter_vcpu": "not decided: the apply of 2026-10-29 refused the container 'mcp' with ContainerAppInvalidCpuResource, \"container 'mcp' cpu '0.125' is invalid\", \"must contain a decimal value to no more than two decimal places\"; the pre-registered fallback of 0.25 vCPU and 0.5Gi per container (replica total 1.0 vCPU, 2.0Gi) was applied, and no sub-0.25 value with two decimals was tried"
   },
   "cold_start": [],
   "cold_start_summary": {
