@@ -141,6 +141,7 @@ resource "azurerm_container_app" "dcw" {
   name                         = "ca-dcw-eus2"
   container_app_environment_id = azurerm_container_app_environment.dcw.id
   resource_group_name          = data.azurerm_resource_group.dcw.name
+  workload_profile_name        = "Consumption"
   revision_mode                = "Single"
 
   identity {
@@ -353,6 +354,7 @@ resource "azurerm_container_app_job" "smoke" {
   name                         = "caj-dcw-smoke-eus2"
   location                     = data.azurerm_resource_group.dcw.location
   resource_group_name          = data.azurerm_resource_group.dcw.name
+  workload_profile_name        = "Consumption"
   container_app_environment_id = azurerm_container_app_environment.dcw.id
   replica_timeout_in_seconds   = 900
   replica_retry_limit          = 0
