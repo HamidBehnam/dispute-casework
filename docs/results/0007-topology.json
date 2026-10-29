@@ -1,0 +1,23 @@
+{
+  "claims": {
+    "cerbos_empty_policies": "pending",
+    "cloudflare_timeout": "pending",
+    "custom_domain_binding": "pending",
+    "environment_meter": "pending the cost read",
+    "ingress_timeout": "pending",
+    "prevent_destroy_on_count": "pending",
+    "sub_quarter_vcpu": "pending"
+  },
+  "cold_start": [],
+  "cold_start_summary": {
+    "median_t_first_chunk_s": null,
+    "median_t_headers_s": null,
+    "n": 0,
+    "valid_k": 0
+  },
+  "cost": [],
+  "gates": {},
+  "projections": {},
+  "stream": [],
+  "warm_replica_usd_per_month": null
+}
