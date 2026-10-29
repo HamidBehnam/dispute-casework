@@ -23,7 +23,9 @@ provider "azurerm" {
   features {}
 }
 
-provider "azapi" {}
+provider "azapi" {
+  skip_provider_registration = true
+}
 
 # Authenticates with CLOUDFLARE_API_TOKEN from the environment.
 provider "cloudflare" {}

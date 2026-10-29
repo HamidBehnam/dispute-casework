@@ -19,4 +19,6 @@ provider "azurerm" {
   features {}
 }
 
-provider "azapi" {}
+provider "azapi" {
+  skip_provider_registration = true
+}
