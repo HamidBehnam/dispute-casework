@@ -1,6 +1,6 @@
 {
   "claims": {
-    "cerbos_empty_policies": "pending",
+    "cerbos_empty_policies": "yes: at the first activation of the app on 2026-10-29 the cerbos container logged at 04:41:25Z \"Initializing disk store from /policies\", \"Found 0 executable policies\", \"Watching directory for changes\" (dir /policies) and \"Starting HTTP server at :3592\"; the system log attributes no probe failure to cerbos",
     "cloudflare_timeout": "pending",
     "custom_domain_binding": "pending",
     "environment_meter": "pending the cost read",
