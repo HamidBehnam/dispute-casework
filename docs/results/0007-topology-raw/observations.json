@@ -1,5 +1,14 @@
 {
   "sub_quarter_vcpu": "not decided: the apply of 2026-10-29 refused the container 'mcp' with ContainerAppInvalidCpuResource, \"container 'mcp' cpu '0.125' is invalid\", \"must contain a decimal value to no more than two decimal places\"; the pre-registered fallback of 0.25 vCPU and 0.5Gi per container (replica total 1.0 vCPU, 2.0Gi) was applied, and no sub-0.25 value with two decimals was tried",
   "cerbos_empty_policies": "yes: at the first activation of the app on 2026-10-29 the cerbos container logged at 04:41:25Z \"Initializing disk store from /policies\", \"Found 0 executable policies\", \"Watching directory for changes\" (dir /policies) and \"Starting HTTP server at :3592\"; the system log attributes no probe failure to cerbos",
-  "prevent_destroy_on_count": "yes: on 2026-10-29, after the Origin CA certificate was issued and before the issued flag was committed, a plan with infra/app/origin.csr moved aside and origin_certificate_issued false planned \"cloudflare_origin_ca_certificate.origin[0] will be destroyed (because index [0] is out of range for count)\" and exited 1 with \"Error: Instance cannot be destroyed\" \u2014 \"Resource cloudflare_origin_ca_certificate.origin[0] has lifecycle.prevent_destroy set, but the plan calls for this resource to be destroyed.\"; no revoke was planned"
+  "prevent_destroy_on_count": "yes: on 2026-10-29, after the Origin CA certificate was issued and before the issued flag was committed, a plan with infra/app/origin.csr moved aside and origin_certificate_issued false planned \"cloudflare_origin_ca_certificate.origin[0] will be destroyed (because index [0] is out of range for count)\" and exited 1 with \"Error: Instance cannot be destroyed\" \u2014 \"Resource cloudflare_origin_ca_certificate.origin[0] has lifecycle.prevent_destroy set, but the plan calls for this resource to be destroyed.\"; no revoke was planned",
+  "custom_domain_binding": "yes: on 2026-10-29 the custom domain was bound by one apply with the proxied A record in place and the asuid TXT record; `az containerapp hostname list` reads bindingType SniEnabled with the certificate bound, and the environment certificate origin-certificate reads Succeeded, issuer CloudFlare Origin SSL Certificate Authority, expiring 2041-10-25; no DNS-only window was needed",
+  "edge_checks": {
+    "read": "2026-10-29",
+    "zone_ssl_setting": "strict",
+    "through_edge_without_header_status": 200,
+    "through_edge_with_header_status": 200,
+    "edge_server_header": "cloudflare",
+    "note": "the transform rule adds the origin header at the edge for every request to the host, so a request through Cloudflare never reaches the origin without it; the origin's own refusal (403) is read on the Ingress leg from the allowed developer address"
+  }
 }
