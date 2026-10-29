@@ -261,6 +261,11 @@ resource "azurerm_container_app" "dcw" {
       memory = "0.5Gi"
       args   = ["--port", "8001"]
 
+      env {
+        name        = "ORIGIN_HEADER_SECRET"
+        secret_name = "origin-header-secret"
+      }
+
       liveness_probe {
         transport = "TCP"
         port      = 8001
@@ -277,6 +282,11 @@ resource "azurerm_container_app" "dcw" {
       cpu    = 0.25
       memory = "0.5Gi"
       args   = ["--port", "8002"]
+
+      env {
+        name        = "ORIGIN_HEADER_SECRET"
+        secret_name = "origin-header-secret"
+      }
 
       liveness_probe {
         transport = "TCP"
