@@ -25,14 +25,8 @@ variable "origin_header_secret" {
   sensitive   = true
 }
 
-variable "origin_csr" {
-  type        = string
-  description = "PEM certificate signing request exported from the Key Vault certificate after the first apply; Cloudflare's Origin CA signs it. Supplied through TF_VAR_origin_csr; empty until the request exists."
-  default     = ""
-}
-
 variable "origin_certificate_issued" {
   type        = bool
-  description = "True once the signed Origin CA certificate has been merged into the Key Vault certificate, which lets the environment import it and bind the custom domain."
+  description = "True once the signed Origin CA certificate has been merged into the Key Vault certificate, which lets the environment import it and bind the custom domain. Changed in the tree, not in the shell."
   default     = false
 }

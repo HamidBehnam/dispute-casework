@@ -30,10 +30,16 @@ resource "cloudflare_dns_record" "verification" {
   ttl     = 1
 }
 
-resource "cloudflare_origin_ca_certificate" "origin" {
-  count = var.origin_csr == "" ? 0 : 1
+# origin.csr is the public signing request exported from the Key Vault
+# certificate after the first apply and committed beside this file.
+locals {
+  origin_csr = fileexists("${path.module}/origin.csr") ? file("${path.module}/origin.csr") : ""
+}
 
-  csr                = var.origin_csr
+resource "cloudflare_origin_ca_certificate" "origin" {
+  count = local.origin_csr == "" ? 0 : 1
+
+  csr                = local.origin_csr
   hostnames          = [local.hostname]
   request_type       = "origin-rsa"
   requested_validity = 5475
