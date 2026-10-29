@@ -15,8 +15,8 @@ variable "image_tag" {
 
 variable "min_replicas" {
   type        = number
-  description = "Minimum replicas of the application: 1 keeps one warm replica, 0 lets it scale to zero for the cold-start measurement."
-  default     = 1
+  description = "Minimum replicas of the application: 0 scales to zero between demos and for the cold-start measurement, 1 keeps one warm replica."
+  default     = 0
 }
 
 variable "developer_ip_addresses" {
