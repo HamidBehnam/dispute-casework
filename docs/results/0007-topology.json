@@ -16,8 +16,503 @@
     "valid_k": 0
   },
   "cost": [],
-  "gates": {},
+  "gates": {
+    "cloudflare": {
+      "k": 3,
+      "n": 5,
+      "percent": 60
+    }
+  },
   "projections": {},
-  "stream": [],
+  "stream": [
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 927,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.199
+        },
+        {
+          "bytes": 13,
+          "t": 15.199
+        },
+        {
+          "bytes": 77,
+          "t": 30.199
+        },
+        {
+          "bytes": 13,
+          "t": 45.204
+        },
+        {
+          "bytes": 64,
+          "t": 60.206
+        },
+        {
+          "bytes": 13,
+          "t": 75.205
+        },
+        {
+          "bytes": 64,
+          "t": 90.205
+        },
+        {
+          "bytes": 13,
+          "t": 105.206
+        },
+        {
+          "bytes": 65,
+          "t": 120.207
+        },
+        {
+          "bytes": 13,
+          "t": 135.209
+        },
+        {
+          "bytes": 65,
+          "t": 150.226
+        },
+        {
+          "bytes": 13,
+          "t": 165.21
+        },
+        {
+          "bytes": 65,
+          "t": 180.209
+        },
+        {
+          "bytes": 13,
+          "t": 195.209
+        },
+        {
+          "bytes": 65,
+          "t": 210.226
+        },
+        {
+          "bytes": 13,
+          "t": 225.211
+        },
+        {
+          "bytes": 65,
+          "t": 240.21
+        },
+        {
+          "bytes": 13,
+          "t": 255.212
+        },
+        {
+          "bytes": 65,
+          "t": 270.236
+        },
+        {
+          "bytes": 13,
+          "t": 285.213
+        },
+        {
+          "bytes": 71,
+          "t": 300.219
+        }
+      ],
+      "duration_s": 300.22,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.024,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:19:12+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.199,
+      "t_headers_s": 0.199,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "unattributed",
+      "bytes": 375,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.294
+        },
+        {
+          "bytes": 13,
+          "t": 15.315
+        },
+        {
+          "bytes": 64,
+          "t": 30.292
+        },
+        {
+          "bytes": 13,
+          "t": 45.293
+        },
+        {
+          "bytes": 77,
+          "t": 60.291
+        },
+        {
+          "bytes": 13,
+          "t": 75.295
+        },
+        {
+          "bytes": 64,
+          "t": 90.294
+        }
+      ],
+      "duration_s": 90.327,
+      "ended_by": "reset",
+      "leg": "cloudflare",
+      "max_gap_s": 15.021,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:24:13+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.294,
+      "t_headers_s": 0.294,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 953,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.213
+        },
+        {
+          "bytes": 13,
+          "t": 15.215
+        },
+        {
+          "bytes": 64,
+          "t": 30.215
+        },
+        {
+          "bytes": 13,
+          "t": 45.216
+        },
+        {
+          "bytes": 64,
+          "t": 60.282
+        },
+        {
+          "bytes": 13,
+          "t": 75.219
+        },
+        {
+          "bytes": 64,
+          "t": 90.217
+        },
+        {
+          "bytes": 13,
+          "t": 105.218
+        },
+        {
+          "bytes": 78,
+          "t": 120.219
+        },
+        {
+          "bytes": 13,
+          "t": 135.219
+        },
+        {
+          "bytes": 65,
+          "t": 150.294
+        },
+        {
+          "bytes": 13,
+          "t": 165.246
+        },
+        {
+          "bytes": 78,
+          "t": 180.221
+        },
+        {
+          "bytes": 13,
+          "t": 195.223
+        },
+        {
+          "bytes": 78,
+          "t": 210.224
+        },
+        {
+          "bytes": 13,
+          "t": 225.246
+        },
+        {
+          "bytes": 65,
+          "t": 240.224
+        },
+        {
+          "bytes": 13,
+          "t": 255.224
+        },
+        {
+          "bytes": 65,
+          "t": 270.225
+        },
+        {
+          "bytes": 13,
+          "t": 285.225
+        },
+        {
+          "bytes": 71,
+          "t": 300.226
+        }
+      ],
+      "duration_s": 300.227,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.075,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:25:43+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.213,
+      "t_headers_s": 0.213,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 953,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.287
+        },
+        {
+          "bytes": 13,
+          "t": 15.288
+        },
+        {
+          "bytes": 64,
+          "t": 30.289
+        },
+        {
+          "bytes": 13,
+          "t": 45.289
+        },
+        {
+          "bytes": 77,
+          "t": 60.379
+        },
+        {
+          "bytes": 13,
+          "t": 75.289
+        },
+        {
+          "bytes": 64,
+          "t": 90.29
+        },
+        {
+          "bytes": 13,
+          "t": 105.29
+        },
+        {
+          "bytes": 78,
+          "t": 120.291
+        },
+        {
+          "bytes": 13,
+          "t": 135.294
+        },
+        {
+          "bytes": 65,
+          "t": 150.391
+        },
+        {
+          "bytes": 13,
+          "t": 165.292
+        },
+        {
+          "bytes": 78,
+          "t": 180.293
+        },
+        {
+          "bytes": 13,
+          "t": 195.294
+        },
+        {
+          "bytes": 65,
+          "t": 210.294
+        },
+        {
+          "bytes": 13,
+          "t": 225.296
+        },
+        {
+          "bytes": 65,
+          "t": 240.294
+        },
+        {
+          "bytes": 13,
+          "t": 255.295
+        },
+        {
+          "bytes": 78,
+          "t": 270.296
+        },
+        {
+          "bytes": 13,
+          "t": 285.297
+        },
+        {
+          "bytes": 58,
+          "t": 300.401
+        }
+      ],
+      "duration_s": 300.402,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.104,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:30:44+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.287,
+      "t_headers_s": 0.287,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "unattributed",
+      "bytes": 609,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.239
+        },
+        {
+          "bytes": 13,
+          "t": 15.206
+        },
+        {
+          "bytes": 77,
+          "t": 30.207
+        },
+        {
+          "bytes": 13,
+          "t": 45.249
+        },
+        {
+          "bytes": 64,
+          "t": 60.207
+        },
+        {
+          "bytes": 13,
+          "t": 75.25
+        },
+        {
+          "bytes": 64,
+          "t": 90.304
+        },
+        {
+          "bytes": 13,
+          "t": 105.207
+        },
+        {
+          "bytes": 65,
+          "t": 120.207
+        },
+        {
+          "bytes": 13,
+          "t": 135.208
+        },
+        {
+          "bytes": 65,
+          "t": 150.208
+        },
+        {
+          "bytes": 13,
+          "t": 165.212
+        },
+        {
+          "bytes": 65,
+          "t": 180.211
+        }
+      ],
+      "duration_s": 180.238,
+      "ended_by": "reset",
+      "leg": "cloudflare",
+      "max_gap_s": 15.054,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:35:45+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.239,
+      "t_headers_s": 0.239,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "cloudflare",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.26
+        }
+      ],
+      "duration_s": 125.27,
+      "ended_by": "reset",
+      "leg": "cloudflare",
+      "max_gap_s": -0.0,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:38:45+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.26,
+      "t_headers_s": 0.26,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "cloudflare",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.19
+        }
+      ],
+      "duration_s": 125.201,
+      "ended_by": "reset",
+      "leg": "cloudflare",
+      "max_gap_s": 0.0,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:40:51+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.19,
+      "t_headers_s": 0.19,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "cloudflare",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.164
+        }
+      ],
+      "duration_s": 125.175,
+      "ended_by": "reset",
+      "leg": "cloudflare",
+      "max_gap_s": -0.0,
+      "seconds": 300,
+      "started_at": "2026-10-29T05:42:56+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.164,
+      "t_headers_s": 0.164,
+      "url_env": "PUBLIC_URL"
+    }
+  ],
   "warm_replica_usd_per_month": null
 }

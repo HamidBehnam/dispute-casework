@@ -1,0 +1,71 @@
+{
+  "leg": "cloudflare",
+  "url_env": "PUBLIC_URL",
+  "run": 5,
+  "idle_window_s": null,
+  "replicas_before": null,
+  "arm": "heartbeat",
+  "seconds": 300,
+  "started_at": "2026-10-29T05:35:45+00:00",
+  "status": 200,
+  "t_headers_s": 0.239,
+  "t_first_chunk_s": 0.239,
+  "duration_s": 180.238,
+  "bytes": 609,
+  "chunks": [
+    {
+      "t": 0.239,
+      "bytes": 131
+    },
+    {
+      "t": 15.206,
+      "bytes": 13
+    },
+    {
+      "t": 30.207,
+      "bytes": 77
+    },
+    {
+      "t": 45.249,
+      "bytes": 13
+    },
+    {
+      "t": 60.207,
+      "bytes": 64
+    },
+    {
+      "t": 75.25,
+      "bytes": 13
+    },
+    {
+      "t": 90.304,
+      "bytes": 64
+    },
+    {
+      "t": 105.207,
+      "bytes": 13
+    },
+    {
+      "t": 120.207,
+      "bytes": 65
+    },
+    {
+      "t": 135.208,
+      "bytes": 13
+    },
+    {
+      "t": 150.208,
+      "bytes": 65
+    },
+    {
+      "t": 165.212,
+      "bytes": 13
+    },
+    {
+      "t": 180.211,
+      "bytes": 65
+    }
+  ],
+  "max_gap_s": 15.054,
+  "ended_by": "reset"
+}
