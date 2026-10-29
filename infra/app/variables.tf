@@ -19,6 +19,12 @@ variable "min_replicas" {
   default     = 1
 }
 
+variable "developer_ip_addresses" {
+  type        = set(string)
+  description = "IPv4 addresses allowed through the ingress beside Cloudflare's ranges while a measurement runs directly against it. Supplied through TF_VAR_developer_ip_addresses; empty otherwise."
+  default     = []
+}
+
 variable "origin_header_secret" {
   type        = string
   description = "Value Cloudflare adds in the origin request header and the origin verifies. Supplied through TF_VAR_origin_header_secret, never committed; stored in Key Vault and in the Cloudflare rule."

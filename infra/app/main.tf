@@ -176,6 +176,15 @@ resource "azurerm_container_app" "dcw" {
         action           = "Allow"
       }
     }
+
+    dynamic "ip_security_restriction" {
+      for_each = var.developer_ip_addresses
+      content {
+        name             = "developer-${replace(ip_security_restriction.value, ".", "-")}"
+        ip_address_range = "${ip_security_restriction.value}/32"
+        action           = "Allow"
+      }
+    }
   }
 
   template {
