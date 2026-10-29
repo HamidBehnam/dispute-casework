@@ -1,0 +1,13 @@
+.venv
+.git
+.github
+.claude
+.mypy_cache
+.ruff_cache
+.pytest_cache
+__pycache__
+corpus
+docs
+infra
+migrations
+tests
