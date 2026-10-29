@@ -355,8 +355,7 @@ resource "azurerm_container_app_job" "smoke" {
   replica_timeout_in_seconds   = 900
   replica_retry_limit          = 0
 
-  schedule_trigger_config {
-    cron_expression          = "0 12 * * *"
+  manual_trigger_config {
     parallelism              = 1
     replica_completion_count = 1
   }
