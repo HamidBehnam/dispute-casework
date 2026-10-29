@@ -34,5 +34,5 @@ variable "origin_header_secret" {
 variable "origin_certificate_issued" {
   type        = bool
   description = "True once the signed Origin CA certificate has been merged into the Key Vault certificate, which lets the environment import it and bind the custom domain. Changed in the tree, not in the shell."
-  default     = false
+  default     = true
 }
