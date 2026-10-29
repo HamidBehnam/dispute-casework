@@ -202,19 +202,16 @@ resource "azurerm_container_app" "dcw" {
       }
 
       startup_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8000
-        path      = "/healthz"
       }
       liveness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8000
-        path      = "/healthz"
       }
       readiness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8000
-        path      = "/healthz"
       }
     }
 
@@ -255,14 +252,12 @@ resource "azurerm_container_app" "dcw" {
       args   = ["--port", "8001"]
 
       liveness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8001
-        path      = "/healthz"
       }
       readiness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8001
-        path      = "/healthz"
       }
     }
 
@@ -274,14 +269,12 @@ resource "azurerm_container_app" "dcw" {
       args   = ["--port", "8002"]
 
       liveness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8002
-        path      = "/healthz"
       }
       readiness_probe {
-        transport = "HTTP"
+        transport = "TCP"
         port      = 8002
-        path      = "/healthz"
       }
     }
 
