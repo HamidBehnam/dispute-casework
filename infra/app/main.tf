@@ -4,11 +4,6 @@ data "azurerm_resource_group" "dcw" {
   name = "rg-dcw-eus2"
 }
 
-data "azurerm_cognitive_account" "foundry" {
-  name                = "ai-dcw-eus2"
-  resource_group_name = data.azurerm_resource_group.dcw.name
-}
-
 locals {
   hostname      = "${var.subdomain}.${var.domain}"
   backend_image = "${data.azurerm_container_registry.dcw.login_server}/dcw-backend:${var.image_tag}"
@@ -31,7 +26,7 @@ resource "azurerm_user_assigned_identity" "platform" {
   resource_group_name = data.azurerm_resource_group.dcw.name
 }
 
-# The application's own identity (lifecycle Main): Foundry and Postgres sign-ins.
+# The application's own identity (lifecycle Main).
 resource "azurerm_user_assigned_identity" "main" {
   name                = "id-dcw-main-eus2"
   location            = data.azurerm_resource_group.dcw.location
@@ -47,13 +42,6 @@ resource "azurerm_role_assignment" "acr_pull" {
   scope                = data.azurerm_container_registry.dcw.id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_user_assigned_identity.platform.principal_id
-  principal_type       = "ServicePrincipal"
-}
-
-resource "azurerm_role_assignment" "foundry_user" {
-  scope                = data.azurerm_cognitive_account.foundry.id
-  role_definition_name = "Foundry User"
-  principal_id         = azurerm_user_assigned_identity.main.principal_id
   principal_type       = "ServicePrincipal"
 }
 
