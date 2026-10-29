@@ -256,8 +256,8 @@ resource "azurerm_container_app" "dcw" {
     container {
       name   = "mcp"
       image  = local.backend_image
-      cpu    = 0.125
-      memory = "0.25Gi"
+      cpu    = 0.25
+      memory = "0.5Gi"
       args   = ["--port", "8001"]
 
       liveness_probe {
@@ -273,8 +273,8 @@ resource "azurerm_container_app" "dcw" {
     container {
       name   = "mockbank"
       image  = local.backend_image
-      cpu    = 0.125
-      memory = "0.25Gi"
+      cpu    = 0.25
+      memory = "0.5Gi"
       args   = ["--port", "8002"]
 
       liveness_probe {
