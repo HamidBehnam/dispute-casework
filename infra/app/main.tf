@@ -304,8 +304,10 @@ resource "azurerm_container_app" "dcw" {
 
 # azurerm 5.11.0 has no argument for identitySettings.
 resource "azapi_update_resource" "identity_lifecycle" {
-  type        = "Microsoft.App/containerApps@2025-07-01"
-  resource_id = azurerm_container_app.dcw.id
+  type                    = "Microsoft.App/containerApps@2025-07-01"
+  resource_id             = azurerm_container_app.dcw.id
+  ignore_casing           = true
+  list_unique_id_property = { "properties.configuration.identitySettings" = "lifecycle" }
 
   body = {
     properties = {
@@ -411,8 +413,10 @@ resource "azurerm_container_app_job" "smoke" {
 }
 
 resource "azapi_update_resource" "job_identity_lifecycle" {
-  type        = "Microsoft.App/jobs@2025-07-01"
-  resource_id = azurerm_container_app_job.smoke.id
+  type                    = "Microsoft.App/jobs@2025-07-01"
+  resource_id             = azurerm_container_app_job.smoke.id
+  ignore_casing           = true
+  list_unique_id_property = { "properties.configuration.identitySettings" = "lifecycle" }
 
   body = {
     properties = {
