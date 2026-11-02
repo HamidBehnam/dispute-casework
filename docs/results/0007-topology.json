@@ -28,7 +28,13 @@
       "percent": 100
     }
   },
-  "gates_paired": {},
+  "gates_paired": {
+    "cloudflare": {
+      "k": 5,
+      "n": 5,
+      "percent": 100
+    }
+  },
   "projections": {},
   "stream": [
     {
@@ -456,6 +462,542 @@
       "survived": false,
       "t_first_chunk_s": 0.239,
       "t_headers_s": 0.239,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 940,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.29
+        },
+        {
+          "bytes": 13,
+          "t": 15.294
+        },
+        {
+          "bytes": 77,
+          "t": 30.291
+        },
+        {
+          "bytes": 13,
+          "t": 45.293
+        },
+        {
+          "bytes": 64,
+          "t": 60.292
+        },
+        {
+          "bytes": 13,
+          "t": 75.292
+        },
+        {
+          "bytes": 77,
+          "t": 90.292
+        },
+        {
+          "bytes": 13,
+          "t": 105.296
+        },
+        {
+          "bytes": 65,
+          "t": 120.293
+        },
+        {
+          "bytes": 13,
+          "t": 135.295
+        },
+        {
+          "bytes": 65,
+          "t": 150.331
+        },
+        {
+          "bytes": 13,
+          "t": 165.296
+        },
+        {
+          "bytes": 65,
+          "t": 180.295
+        },
+        {
+          "bytes": 13,
+          "t": 195.296
+        },
+        {
+          "bytes": 65,
+          "t": 210.296
+        },
+        {
+          "bytes": 13,
+          "t": 225.296
+        },
+        {
+          "bytes": 65,
+          "t": 240.298
+        },
+        {
+          "bytes": 13,
+          "t": 255.298
+        },
+        {
+          "bytes": 78,
+          "t": 270.298
+        },
+        {
+          "bytes": 13,
+          "t": 285.299
+        },
+        {
+          "bytes": 58,
+          "t": 300.408
+        }
+      ],
+      "duration_s": 300.408,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.109,
+      "run": 1,
+      "seconds": 300,
+      "series": "paired",
+      "started_at": "2026-11-02T20:49:34+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.29,
+      "t_headers_s": 0.29,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 927,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.383
+        },
+        {
+          "bytes": 13,
+          "t": 15.382
+        },
+        {
+          "bytes": 64,
+          "t": 30.387
+        },
+        {
+          "bytes": 13,
+          "t": 45.382
+        },
+        {
+          "bytes": 64,
+          "t": 60.381
+        },
+        {
+          "bytes": 13,
+          "t": 75.382
+        },
+        {
+          "bytes": 77,
+          "t": 90.384
+        },
+        {
+          "bytes": 13,
+          "t": 105.385
+        },
+        {
+          "bytes": 65,
+          "t": 120.385
+        },
+        {
+          "bytes": 13,
+          "t": 135.572
+        },
+        {
+          "bytes": 65,
+          "t": 150.384
+        },
+        {
+          "bytes": 13,
+          "t": 165.386
+        },
+        {
+          "bytes": 65,
+          "t": 180.384
+        },
+        {
+          "bytes": 13,
+          "t": 195.409
+        },
+        {
+          "bytes": 65,
+          "t": 210.388
+        },
+        {
+          "bytes": 13,
+          "t": 225.387
+        },
+        {
+          "bytes": 65,
+          "t": 240.388
+        },
+        {
+          "bytes": 13,
+          "t": 255.389
+        },
+        {
+          "bytes": 78,
+          "t": 270.389
+        },
+        {
+          "bytes": 13,
+          "t": 285.392
+        },
+        {
+          "bytes": 58,
+          "t": 300.389
+        }
+      ],
+      "duration_s": 300.391,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.187,
+      "run": 2,
+      "seconds": 300,
+      "series": "paired",
+      "started_at": "2026-11-02T20:54:34+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.383,
+      "t_headers_s": 0.383,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 901,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.31
+        },
+        {
+          "bytes": 13,
+          "t": 15.397
+        },
+        {
+          "bytes": 64,
+          "t": 30.312
+        },
+        {
+          "bytes": 13,
+          "t": 45.312
+        },
+        {
+          "bytes": 64,
+          "t": 60.312
+        },
+        {
+          "bytes": 13,
+          "t": 75.311
+        },
+        {
+          "bytes": 64,
+          "t": 90.313
+        },
+        {
+          "bytes": 13,
+          "t": 105.312
+        },
+        {
+          "bytes": 65,
+          "t": 120.314
+        },
+        {
+          "bytes": 13,
+          "t": 135.411
+        },
+        {
+          "bytes": 65,
+          "t": 150.314
+        },
+        {
+          "bytes": 13,
+          "t": 165.317
+        },
+        {
+          "bytes": 65,
+          "t": 180.316
+        },
+        {
+          "bytes": 13,
+          "t": 195.318
+        },
+        {
+          "bytes": 65,
+          "t": 210.315
+        },
+        {
+          "bytes": 13,
+          "t": 225.315
+        },
+        {
+          "bytes": 65,
+          "t": 240.318
+        },
+        {
+          "bytes": 13,
+          "t": 255.325
+        },
+        {
+          "bytes": 65,
+          "t": 270.316
+        },
+        {
+          "bytes": 13,
+          "t": 285.317
+        },
+        {
+          "bytes": 44,
+          "t": 300.317
+        },
+        {
+          "bytes": 14,
+          "t": 300.317
+        }
+      ],
+      "duration_s": 300.318,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.097,
+      "run": 3,
+      "seconds": 300,
+      "series": "paired",
+      "started_at": "2026-11-02T20:59:35+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.31,
+      "t_headers_s": 0.31,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 940,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.156
+        },
+        {
+          "bytes": 13,
+          "t": 15.158
+        },
+        {
+          "bytes": 64,
+          "t": 30.158
+        },
+        {
+          "bytes": 13,
+          "t": 45.159
+        },
+        {
+          "bytes": 64,
+          "t": 60.158
+        },
+        {
+          "bytes": 13,
+          "t": 75.159
+        },
+        {
+          "bytes": 64,
+          "t": 90.16
+        },
+        {
+          "bytes": 13,
+          "t": 105.161
+        },
+        {
+          "bytes": 78,
+          "t": 120.257
+        },
+        {
+          "bytes": 13,
+          "t": 135.161
+        },
+        {
+          "bytes": 78,
+          "t": 150.162
+        },
+        {
+          "bytes": 13,
+          "t": 165.163
+        },
+        {
+          "bytes": 65,
+          "t": 180.165
+        },
+        {
+          "bytes": 13,
+          "t": 195.216
+        },
+        {
+          "bytes": 65,
+          "t": 210.164
+        },
+        {
+          "bytes": 13,
+          "t": 225.165
+        },
+        {
+          "bytes": 65,
+          "t": 240.164
+        },
+        {
+          "bytes": 13,
+          "t": 255.225
+        },
+        {
+          "bytes": 65,
+          "t": 270.166
+        },
+        {
+          "bytes": 13,
+          "t": 285.227
+        },
+        {
+          "bytes": 13,
+          "t": 300.18
+        },
+        {
+          "bytes": 44,
+          "t": 300.212
+        },
+        {
+          "bytes": 14,
+          "t": 300.212
+        }
+      ],
+      "duration_s": 300.213,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.096,
+      "run": 4,
+      "seconds": 300,
+      "series": "paired",
+      "started_at": "2026-11-02T21:04:36+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.156,
+      "t_headers_s": 0.156,
+      "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 940,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.345
+        },
+        {
+          "bytes": 13,
+          "t": 15.408
+        },
+        {
+          "bytes": 64,
+          "t": 30.363
+        },
+        {
+          "bytes": 13,
+          "t": 45.346
+        },
+        {
+          "bytes": 77,
+          "t": 60.346
+        },
+        {
+          "bytes": 13,
+          "t": 75.348
+        },
+        {
+          "bytes": 64,
+          "t": 90.36
+        },
+        {
+          "bytes": 13,
+          "t": 105.347
+        },
+        {
+          "bytes": 65,
+          "t": 120.346
+        },
+        {
+          "bytes": 13,
+          "t": 135.347
+        },
+        {
+          "bytes": 13,
+          "t": 150.372
+        },
+        {
+          "bytes": 65,
+          "t": 150.372
+        },
+        {
+          "bytes": 13,
+          "t": 165.352
+        },
+        {
+          "bytes": 65,
+          "t": 180.348
+        },
+        {
+          "bytes": 13,
+          "t": 195.349
+        },
+        {
+          "bytes": 65,
+          "t": 210.349
+        },
+        {
+          "bytes": 13,
+          "t": 225.35
+        },
+        {
+          "bytes": 78,
+          "t": 240.35
+        },
+        {
+          "bytes": 13,
+          "t": 255.365
+        },
+        {
+          "bytes": 65,
+          "t": 270.386
+        },
+        {
+          "bytes": 13,
+          "t": 285.441
+        },
+        {
+          "bytes": 58,
+          "t": 300.391
+        }
+      ],
+      "duration_s": 300.392,
+      "ended_by": "server",
+      "leg": "cloudflare",
+      "max_gap_s": 15.063,
+      "run": 5,
+      "seconds": 300,
+      "series": "paired",
+      "started_at": "2026-11-02T21:09:36+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.345,
+      "t_headers_s": 0.345,
       "url_env": "PUBLIC_URL"
     },
     {
