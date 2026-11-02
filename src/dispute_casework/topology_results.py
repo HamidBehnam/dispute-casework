@@ -8,6 +8,7 @@ rates (rates.json). Every figure in the results file is computed here from them.
 """
 
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -149,10 +150,22 @@ def cloudflare_timeout(stream: list[dict[str, Any]]) -> str:
     return "unattributed"
 
 
+def replicas_the_minute_before(
+    series: list[dict[str, Any]] | None, started_at: str
+) -> float | None:
+    """The Replicas maximum for the minute before the request, if the series has it."""
+    minute = datetime.fromisoformat(started_at).replace(second=0) - timedelta(minutes=1)
+    for point in series or []:
+        if datetime.fromisoformat(point["t"]) == minute:
+            return float(point["replicas"])
+    return None
+
+
 def cold_start(raw: Path) -> list[dict[str, Any]]:
     runs = []
     for record in records(raw / "cold_start"):
         run = record["run"]
+        series = optional_json(raw / "metrics" / f"run-{run}.json")
         runs.append(
             {
                 "run": run,
@@ -160,9 +173,10 @@ def cold_start(raw: Path) -> list[dict[str, Any]]:
                 "replicas_before": record["replicas_before"],
                 "t_headers_s": record["t_headers_s"],
                 "t_first_chunk_s": record["t_first_chunk_s"],
-                "replicas_series": optional_json(raw / "metrics" / f"run-{run}.json"),
+                "replicas_series": series,
                 "system_log_rows": optional_json(raw / "logs" / f"run-{run}.json"),
-                "valid": record["replicas_before"] == 0,
+                "valid": record["replicas_before"] == 0
+                and replicas_the_minute_before(series, record["started_at"]) == 0,
             }
         )
     return runs
