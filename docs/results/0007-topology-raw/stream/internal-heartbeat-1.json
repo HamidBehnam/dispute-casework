@@ -1,0 +1,103 @@
+{
+  "leg": "internal",
+  "url_env": "INTERNAL_URL",
+  "run": 1,
+  "idle_window_s": null,
+  "replicas_before": null,
+  "arm": "heartbeat",
+  "seconds": 300,
+  "started_at": "2026-11-02T21:15:31+00:00",
+  "status": 200,
+  "t_headers_s": 0.099,
+  "t_first_chunk_s": 0.099,
+  "duration_s": 300.108,
+  "bytes": 901,
+  "chunks": [
+    {
+      "t": 0.099,
+      "bytes": 131
+    },
+    {
+      "t": 15.1,
+      "bytes": 13
+    },
+    {
+      "t": 30.101,
+      "bytes": 64
+    },
+    {
+      "t": 45.101,
+      "bytes": 13
+    },
+    {
+      "t": 60.102,
+      "bytes": 64
+    },
+    {
+      "t": 75.103,
+      "bytes": 13
+    },
+    {
+      "t": 90.103,
+      "bytes": 64
+    },
+    {
+      "t": 105.105,
+      "bytes": 13
+    },
+    {
+      "t": 120.105,
+      "bytes": 65
+    },
+    {
+      "t": 135.103,
+      "bytes": 13
+    },
+    {
+      "t": 150.103,
+      "bytes": 65
+    },
+    {
+      "t": 165.104,
+      "bytes": 13
+    },
+    {
+      "t": 180.104,
+      "bytes": 65
+    },
+    {
+      "t": 195.105,
+      "bytes": 13
+    },
+    {
+      "t": 210.103,
+      "bytes": 65
+    },
+    {
+      "t": 225.104,
+      "bytes": 13
+    },
+    {
+      "t": 240.104,
+      "bytes": 65
+    },
+    {
+      "t": 255.104,
+      "bytes": 13
+    },
+    {
+      "t": 270.105,
+      "bytes": 65
+    },
+    {
+      "t": 285.108,
+      "bytes": 13
+    },
+    {
+      "t": 300.107,
+      "bytes": 58
+    }
+  ],
+  "max_gap_s": 15.003,
+  "ended_by": "server"
+}
