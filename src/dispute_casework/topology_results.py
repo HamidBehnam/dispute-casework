@@ -82,7 +82,11 @@ def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Survival of every run, then its attribution against its pairs on other legs."""
     for run in stream:
         run["survived"] = survived(run)
-    pairs = {(run["leg"], run["arm"], run["run"]): run for run in stream}
+    pairs = {
+        (run["leg"], run["arm"], run["run"]): run
+        for run in stream
+        if run.get("series") is None
+    }
     for run in stream:
         run["attributed_to"] = attributed_to(
             run,
@@ -92,11 +96,13 @@ def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return stream
 
 
-def gates(stream: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
-    """k of n heartbeat runs that survived, per leg."""
+def gates(
+    stream: list[dict[str, Any]], series: str | None = None
+) -> dict[str, dict[str, int]]:
+    """k of n heartbeat runs that survived, per leg, within one series."""
     counts: dict[str, dict[str, int]] = {}
     for run in stream:
-        if run["arm"] != "heartbeat":
+        if run["arm"] != "heartbeat" or run.get("series") != series:
             continue
         leg = counts.setdefault(run["leg"], {"k": 0, "n": 0})
         leg["n"] += 1
@@ -240,6 +246,7 @@ def results(raw: Path) -> dict[str, Any]:
         "cold_start_summary": cold_start_summary(runs),
         "stream": stream,
         "gates": gates(stream),
+        "gates_paired": gates(stream, "paired"),
         "claims": {
             "environment_meter": observations.get(
                 "environment_meter", "pending the cost read"

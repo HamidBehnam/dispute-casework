@@ -76,6 +76,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url-env", default="INTERNAL_URL")
     parser.add_argument("--leg", default="internal")
+    parser.add_argument(
+        "--series", help="a series outside the pre-registration, kept apart"
+    )
     parser.add_argument("--seconds", type=int, default=300)
     parser.add_argument("--silent", action="store_true")
     parser.add_argument("--run", type=int)
@@ -85,6 +88,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     record = {
         "leg": args.leg,
+        "series": args.series,
         "url_env": args.url_env,
         "run": args.run,
         "idle_window_s": args.idle_window_s,

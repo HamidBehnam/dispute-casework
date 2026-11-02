@@ -87,17 +87,19 @@ def test_a_run_survives_only_within_the_gap_bound_for_its_whole_duration() -> No
     assert not survived(run(status=524))
 
 
-def test_gates_count_heartbeat_runs_per_leg() -> None:
+def test_gates_count_heartbeat_runs_per_leg_within_a_series() -> None:
     stream = [
         run(survived=True),
         run(survived=False),
         run(leg="cloudflare", survived=True),
         run(leg="cloudflare", arm="silent", survived=False),
+        run(leg="cloudflare", series="paired", survived=False),
     ]
     assert gates(stream) == {
         "ingress": {"k": 1, "n": 2, "percent": 50},
         "cloudflare": {"k": 1, "n": 1, "percent": 100},
     }
+    assert gates(stream, "paired") == {"cloudflare": {"k": 0, "n": 1, "percent": 0}}
 
 
 def test_results_file_is_current(tmp_path: Path) -> None:
