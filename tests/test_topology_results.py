@@ -6,6 +6,7 @@ from dispute_casework.topology_results import (
     RESULTS,
     attributed_to,
     gates,
+    replicas_the_minute_before,
     results,
     survived,
 )
@@ -107,3 +108,14 @@ def test_results_file_is_current(tmp_path: Path) -> None:
     regenerated = tmp_path / RESULTS.name
     regenerated.write_text(json.dumps(results(RAW), indent=2, sort_keys=True) + "\n")
     assert RESULTS.read_text() == regenerated.read_text(), f"regenerated: {regenerated}"
+
+
+def test_the_minute_before_the_request_is_read_from_the_replicas_series() -> None:
+    series = [
+        {"t": "2026-11-02T20:05:00Z", "replicas": 0.0},
+        {"t": "2026-11-02T20:06:00Z", "replicas": 1.0},
+    ]
+    assert replicas_the_minute_before(series, "2026-11-02T20:06:41+00:00") == 0
+    assert replicas_the_minute_before(series, "2026-11-02T20:07:41+00:00") == 1
+    assert replicas_the_minute_before(series, "2026-11-02T20:09:41+00:00") is None
+    assert replicas_the_minute_before(None, "2026-11-02T20:06:41+00:00") is None
