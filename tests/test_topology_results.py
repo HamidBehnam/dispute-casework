@@ -15,6 +15,7 @@ def run(**overrides: object) -> dict[str, object]:
     record: dict[str, object] = {
         "leg": "ingress",
         "arm": "heartbeat",
+        "run": 1,
         "seconds": 300,
         "status": 200,
         "duration_s": 300.4,
@@ -24,13 +25,58 @@ def run(**overrides: object) -> dict[str, object]:
     return record | overrides
 
 
-def test_a_silent_run_is_attributed_by_its_end_time() -> None:
-    assert attributed_to(240.0, 300, "reset") == "ingress"
-    assert attributed_to(235.0, 300, "reset") == "ingress"
-    assert attributed_to(250.0, 300, "reset") == "ingress"
-    assert attributed_to(124.0, 300, "reset") == "cloudflare"
-    assert attributed_to(200.0, 300, "reset") == "unattributed"
-    assert attributed_to(300.2, 300, "server") == "none"
+def cut(**overrides: object) -> dict[str, object]:
+    return run(arm="silent", ended_by="reset", max_gap_s=0.0) | overrides
+
+
+def test_an_ingress_run_is_attributed_by_its_end_time() -> None:
+    assert attributed_to(cut(duration_s=240.0), None, None) == "ingress"
+    assert attributed_to(cut(duration_s=235.0), None, None) == "ingress"
+    assert attributed_to(cut(duration_s=250.0), None, None) == "ingress"
+    assert attributed_to(cut(duration_s=124.0), None, None) == "cloudflare"
+    assert attributed_to(cut(duration_s=200.0), None, None) == "unattributed"
+    assert attributed_to(run(duration_s=300.2), None, None) == "none"
+
+
+def test_a_cloudflare_failure_is_attributed_against_the_runs_of_its_order() -> None:
+    silent = cut(leg="cloudflare", duration_s=125.2)
+    assert attributed_to(silent, None, None) == "pending"
+    assert attributed_to(silent, cut(duration_s=240.3), None) == "cloudflare"
+    assert (
+        attributed_to(silent, cut(duration_s=125.1), None) == "ingress or application"
+    )
+    assert (
+        attributed_to(silent, cut(duration_s=125.1), cut(duration_s=300.1)) == "ingress"
+    )
+    assert (
+        attributed_to(silent, cut(duration_s=125.1), cut(duration_s=125.0))
+        == "application"
+    )
+    heartbeat = run(leg="cloudflare", duration_s=90.3, ended_by="reset")
+    assert attributed_to(heartbeat, run(survived=True), None) == "cloudflare"
+    assert attributed_to(heartbeat, run(survived=False, duration_s=200.0), None) == (
+        "ingress or application"
+    )
+
+
+def test_committed_cloudflare_attributions_rest_on_an_ingress_run_that_outlasted() -> (
+    None
+):
+    stream = results(RAW)["stream"]
+    for record in stream:
+        if record["leg"] == "cloudflare" and record["attributed_to"] == "cloudflare":
+            pair = next(
+                (
+                    r
+                    for r in stream
+                    if r["leg"] == "ingress"
+                    and r["arm"] == record["arm"]
+                    and r["run"] == record["run"]
+                ),
+                None,
+            )
+            assert pair is not None, record["started_at"]
+            assert pair["survived"] or pair["duration_s"] > record["duration_s"]
 
 
 def test_a_run_survives_only_within_the_gap_bound_for_its_whole_duration() -> None:

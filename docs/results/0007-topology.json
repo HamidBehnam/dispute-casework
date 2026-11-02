@@ -119,6 +119,7 @@
       "ended_by": "server",
       "leg": "cloudflare",
       "max_gap_s": 15.024,
+      "run": 1,
       "seconds": 300,
       "started_at": "2026-10-29T05:19:12+00:00",
       "status": 200,
@@ -129,7 +130,7 @@
     },
     {
       "arm": "heartbeat",
-      "attributed_to": "unattributed",
+      "attributed_to": "pending",
       "bytes": 375,
       "chunks": [
         {
@@ -165,6 +166,7 @@
       "ended_by": "reset",
       "leg": "cloudflare",
       "max_gap_s": 15.021,
+      "run": 2,
       "seconds": 300,
       "started_at": "2026-10-29T05:24:13+00:00",
       "status": 200,
@@ -267,6 +269,7 @@
       "ended_by": "server",
       "leg": "cloudflare",
       "max_gap_s": 15.075,
+      "run": 3,
       "seconds": 300,
       "started_at": "2026-10-29T05:25:43+00:00",
       "status": 200,
@@ -369,6 +372,7 @@
       "ended_by": "server",
       "leg": "cloudflare",
       "max_gap_s": 15.104,
+      "run": 4,
       "seconds": 300,
       "started_at": "2026-10-29T05:30:44+00:00",
       "status": 200,
@@ -379,7 +383,7 @@
     },
     {
       "arm": "heartbeat",
-      "attributed_to": "unattributed",
+      "attributed_to": "pending",
       "bytes": 609,
       "chunks": [
         {
@@ -439,6 +443,7 @@
       "ended_by": "reset",
       "leg": "cloudflare",
       "max_gap_s": 15.054,
+      "run": 5,
       "seconds": 300,
       "started_at": "2026-10-29T05:35:45+00:00",
       "status": 200,
@@ -449,7 +454,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "cloudflare",
+      "attributed_to": "pending",
       "bytes": 135,
       "chunks": [
         {
@@ -461,6 +466,7 @@
       "ended_by": "reset",
       "leg": "cloudflare",
       "max_gap_s": -0.0,
+      "run": 1,
       "seconds": 300,
       "started_at": "2026-10-29T05:38:45+00:00",
       "status": 200,
@@ -471,7 +477,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "cloudflare",
+      "attributed_to": "pending",
       "bytes": 135,
       "chunks": [
         {
@@ -483,6 +489,7 @@
       "ended_by": "reset",
       "leg": "cloudflare",
       "max_gap_s": 0.0,
+      "run": 2,
       "seconds": 300,
       "started_at": "2026-10-29T05:40:51+00:00",
       "status": 200,
@@ -493,7 +500,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "cloudflare",
+      "attributed_to": "pending",
       "bytes": 135,
       "chunks": [
         {
@@ -505,6 +512,7 @@
       "ended_by": "reset",
       "leg": "cloudflare",
       "max_gap_s": -0.0,
+      "run": 3,
       "seconds": 300,
       "started_at": "2026-10-29T05:42:56+00:00",
       "status": 200,

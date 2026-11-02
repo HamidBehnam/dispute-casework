@@ -21,14 +21,48 @@ GAP_BOUND_S = 20
 SECONDS_PER_MONTH = 730 * 3600
 
 
-def attributed_to(duration_s: float, seconds: int, ended_by: str) -> str:
-    """The timer whose window the end time falls in, or what else ended the run."""
-    if ended_by == "server" and duration_s >= seconds:
-        return "none"
+def timer_window(duration_s: float) -> str | None:
+    """The timer whose window [T - 5 s, T + 10 s] the end time falls in."""
     for timer, limit in TIMERS_S.items():
         if limit - WINDOW_BEFORE_S <= duration_s <= limit + WINDOW_AFTER_S:
             return timer
-    return "unattributed"
+    return None
+
+
+def outlasted(pair: dict[str, Any], run: dict[str, Any]) -> bool:
+    """Whether the run of the same arm and order on another leg got past this run's end.
+
+    The heartbeat arm must survive; the silent arm never meets the gap bound, so
+    for it the pre-registered comparison is lasting longer than the cut.
+    """
+    if run["arm"] == "heartbeat":
+        return bool(pair["survived"])
+    return bool(pair["duration_s"] > run["duration_s"])
+
+
+def attributed_to(
+    run: dict[str, Any],
+    ingress_pair: dict[str, Any] | None,
+    internal_pair: dict[str, Any] | None,
+) -> str:
+    """What ended a run that did not reach its end.
+
+    Off the Cloudflare leg, the timer whose window the end time falls in. On it,
+    Cloudflare only when the Ingress run of the same arm and order outlasted the
+    cut; when both legs failed, the ingress or the application, which the
+    Internal run of the same arm and order decides.
+    """
+    if run["ended_by"] == "server" and run["duration_s"] >= run["seconds"]:
+        return "none"
+    if run["leg"] != "cloudflare":
+        return timer_window(run["duration_s"]) or "unattributed"
+    if ingress_pair is None:
+        return "pending"
+    if outlasted(ingress_pair, run):
+        return "cloudflare"
+    if internal_pair is None:
+        return "ingress or application"
+    return "ingress" if outlasted(internal_pair, run) else "application"
 
 
 def survived(run: dict[str, Any]) -> bool:
@@ -42,6 +76,20 @@ def survived(run: dict[str, Any]) -> bool:
 
 def records(directory: Path) -> list[dict[str, Any]]:
     return [json.loads(path.read_text()) for path in sorted(directory.glob("*.json"))]
+
+
+def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Survival of every run, then its attribution against its pairs on other legs."""
+    for run in stream:
+        run["survived"] = survived(run)
+    pairs = {(run["leg"], run["arm"], run["run"]): run for run in stream}
+    for run in stream:
+        run["attributed_to"] = attributed_to(
+            run,
+            pairs.get(("ingress", run["arm"], run["run"])),
+            pairs.get(("internal", run["arm"], run["run"])),
+        )
+    return stream
 
 
 def gates(stream: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
@@ -75,17 +123,17 @@ def ingress_timeout(stream: list[dict[str, Any]]) -> str:
 
 
 def cloudflare_timeout(stream: list[dict[str, Any]]) -> str:
-    """Claim 3: the silent arm through Cloudflare against the same arm at ingress."""
+    """Claim 3: the silent arm through Cloudflare against its Ingress run."""
     cloudflare = [
         r for r in stream if r["leg"] == "cloudflare" and r["arm"] == "silent"
     ]
     ingress = [r for r in stream if r["leg"] == "ingress" and r["arm"] == "silent"]
     if not cloudflare or not ingress:
         return "pending"
-    paired = zip(cloudflare, ingress, strict=False)
     if all(
-        c["attributed_to"] == "cloudflare" and i["duration_s"] > c["duration_s"]
-        for c, i in paired
+        r["attributed_to"] == "cloudflare"
+        and timer_window(r["duration_s"]) == "cloudflare"
+        for r in cloudflare
     ):
         return "governs body gaps"
     if all(
@@ -174,18 +222,16 @@ def optional_json(path: Path) -> Any:
 
 
 def results(raw: Path) -> dict[str, Any]:
-    stream = []
-    for run in records(raw / "stream"):
-        run = {
-            k: v
-            for k, v in run.items()
-            if k not in {"run", "idle_window_s", "replicas_before"}
-        }
-        run["attributed_to"] = attributed_to(
-            run["duration_s"], run["seconds"], run["ended_by"]
-        )
-        run["survived"] = survived(run)
-        stream.append(run)
+    stream = attribute(
+        [
+            {
+                k: v
+                for k, v in run.items()
+                if k not in {"idle_window_s", "replicas_before"}
+            }
+            for run in records(raw / "stream")
+        ]
+    )
     runs = cold_start(raw)
     rows, warm = cost(raw)
     observations = optional_json(raw / "observations.json") or {}
