@@ -1,0 +1,23 @@
+{
+  "leg": "internal",
+  "url_env": "INTERNAL_URL",
+  "run": 2,
+  "idle_window_s": null,
+  "replicas_before": null,
+  "arm": "silent",
+  "seconds": 300,
+  "started_at": "2026-11-02T21:44:51+00:00",
+  "status": 200,
+  "t_headers_s": 0.088,
+  "t_first_chunk_s": 0.088,
+  "duration_s": 241.084,
+  "bytes": 135,
+  "chunks": [
+    {
+      "t": 0.088,
+      "bytes": 135
+    }
+  ],
+  "max_gap_s": -0.0,
+  "ended_by": "reset"
+}
