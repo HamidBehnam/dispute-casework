@@ -1,10 +1,10 @@
 {
   "claims": {
     "cerbos_empty_policies": "yes: at the first activation of the app on 2026-10-29 the cerbos container logged at 04:41:25Z \"Initializing disk store from /policies\", \"Found 0 executable policies\", \"Watching directory for changes\" (dir /policies) and \"Starting HTTP server at :3592\"; the system log attributes no probe failure to cerbos",
-    "cloudflare_timeout": "pending",
+    "cloudflare_timeout": "governs body gaps",
     "custom_domain_binding": "yes: on 2026-10-29 the custom domain was bound by one apply with the proxied A record in place and the asuid TXT record; `az containerapp hostname list` reads bindingType SniEnabled with the certificate bound, and the environment certificate origin-certificate reads Succeeded, issuer CloudFlare Origin SSL Certificate Authority, expiring 2041-10-25; no DNS-only window was needed",
     "environment_meter": "pending the cost read",
-    "ingress_timeout": "pending",
+    "ingress_timeout": "idle",
     "prevent_destroy_on_count": "yes: on 2026-10-29, after the Origin CA certificate was issued and before the issued flag was committed, a plan with infra/app/origin.csr moved aside and origin_certificate_issued false planned \"cloudflare_origin_ca_certificate.origin[0] will be destroyed (because index [0] is out of range for count)\" and exited 1 with \"Error: Instance cannot be destroyed\" \u2014 \"Resource cloudflare_origin_ca_certificate.origin[0] has lifecycle.prevent_destroy set, but the plan calls for this resource to be destroyed.\"; no revoke was planned",
     "sub_quarter_vcpu": "not decided: the apply of 2026-10-29 refused the container 'mcp' with ContainerAppInvalidCpuResource, \"container 'mcp' cpu '0.125' is invalid\", \"must contain a decimal value to no more than two decimal places\"; the pre-registered fallback of 0.25 vCPU and 0.5Gi per container (replica total 1.0 vCPU, 2.0Gi) was applied, and no sub-0.25 value with two decimals was tried"
   },
@@ -21,6 +21,11 @@
       "k": 3,
       "n": 5,
       "percent": 60
+    },
+    "ingress": {
+      "k": 5,
+      "n": 5,
+      "percent": 100
     }
   },
   "projections": {},
@@ -130,7 +135,7 @@
     },
     {
       "arm": "heartbeat",
-      "attributed_to": "pending",
+      "attributed_to": "cloudflare",
       "bytes": 375,
       "chunks": [
         {
@@ -383,7 +388,7 @@
     },
     {
       "arm": "heartbeat",
-      "attributed_to": "pending",
+      "attributed_to": "cloudflare",
       "bytes": 609,
       "chunks": [
         {
@@ -454,7 +459,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "pending",
+      "attributed_to": "cloudflare",
       "bytes": 135,
       "chunks": [
         {
@@ -477,7 +482,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "pending",
+      "attributed_to": "cloudflare",
       "bytes": 135,
       "chunks": [
         {
@@ -500,7 +505,7 @@
     },
     {
       "arm": "silent",
-      "attributed_to": "pending",
+      "attributed_to": "cloudflare",
       "bytes": 135,
       "chunks": [
         {
@@ -520,6 +525,630 @@
       "t_first_chunk_s": 0.164,
       "t_headers_s": 0.164,
       "url_env": "PUBLIC_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 901,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.182
+        },
+        {
+          "bytes": 13,
+          "t": 15.238
+        },
+        {
+          "bytes": 64,
+          "t": 30.184
+        },
+        {
+          "bytes": 13,
+          "t": 45.184
+        },
+        {
+          "bytes": 64,
+          "t": 60.186
+        },
+        {
+          "bytes": 13,
+          "t": 75.185
+        },
+        {
+          "bytes": 64,
+          "t": 90.187
+        },
+        {
+          "bytes": 13,
+          "t": 105.187
+        },
+        {
+          "bytes": 65,
+          "t": 120.189
+        },
+        {
+          "bytes": 13,
+          "t": 135.253
+        },
+        {
+          "bytes": 65,
+          "t": 150.188
+        },
+        {
+          "bytes": 13,
+          "t": 165.189
+        },
+        {
+          "bytes": 65,
+          "t": 180.188
+        },
+        {
+          "bytes": 13,
+          "t": 195.19
+        },
+        {
+          "bytes": 65,
+          "t": 210.189
+        },
+        {
+          "bytes": 13,
+          "t": 225.192
+        },
+        {
+          "bytes": 65,
+          "t": 240.191
+        },
+        {
+          "bytes": 13,
+          "t": 255.19
+        },
+        {
+          "bytes": 65,
+          "t": 270.192
+        },
+        {
+          "bytes": 13,
+          "t": 285.192
+        },
+        {
+          "bytes": 44,
+          "t": 300.192
+        },
+        {
+          "bytes": 14,
+          "t": 300.192
+        }
+      ],
+      "duration_s": 300.194,
+      "ended_by": "server",
+      "leg": "ingress",
+      "max_gap_s": 15.064,
+      "run": 1,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:11:24+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.182,
+      "t_headers_s": 0.182,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 927,
+      "chunks": [
+        {
+          "bytes": 68,
+          "t": 0.171
+        },
+        {
+          "bytes": 63,
+          "t": 0.171
+        },
+        {
+          "bytes": 13,
+          "t": 15.173
+        },
+        {
+          "bytes": 64,
+          "t": 30.173
+        },
+        {
+          "bytes": 13,
+          "t": 45.174
+        },
+        {
+          "bytes": 64,
+          "t": 60.172
+        },
+        {
+          "bytes": 13,
+          "t": 75.175
+        },
+        {
+          "bytes": 64,
+          "t": 90.173
+        },
+        {
+          "bytes": 13,
+          "t": 105.175
+        },
+        {
+          "bytes": 13,
+          "t": 120.174
+        },
+        {
+          "bytes": 65,
+          "t": 120.174
+        },
+        {
+          "bytes": 13,
+          "t": 135.175
+        },
+        {
+          "bytes": 65,
+          "t": 150.175
+        },
+        {
+          "bytes": 13,
+          "t": 165.175
+        },
+        {
+          "bytes": 13,
+          "t": 180.177
+        },
+        {
+          "bytes": 65,
+          "t": 180.177
+        },
+        {
+          "bytes": 13,
+          "t": 195.178
+        },
+        {
+          "bytes": 65,
+          "t": 210.178
+        },
+        {
+          "bytes": 13,
+          "t": 225.179
+        },
+        {
+          "bytes": 65,
+          "t": 240.179
+        },
+        {
+          "bytes": 13,
+          "t": 255.181
+        },
+        {
+          "bytes": 65,
+          "t": 270.181
+        },
+        {
+          "bytes": 13,
+          "t": 285.19
+        },
+        {
+          "bytes": 58,
+          "t": 300.181
+        }
+      ],
+      "duration_s": 300.181,
+      "ended_by": "server",
+      "leg": "ingress",
+      "max_gap_s": 15.009,
+      "run": 2,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:16:24+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.171,
+      "t_headers_s": 0.171,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 914,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.165
+        },
+        {
+          "bytes": 13,
+          "t": 15.168
+        },
+        {
+          "bytes": 77,
+          "t": 30.168
+        },
+        {
+          "bytes": 13,
+          "t": 45.201
+        },
+        {
+          "bytes": 64,
+          "t": 60.169
+        },
+        {
+          "bytes": 13,
+          "t": 75.205
+        },
+        {
+          "bytes": 64,
+          "t": 90.17
+        },
+        {
+          "bytes": 13,
+          "t": 105.206
+        },
+        {
+          "bytes": 65,
+          "t": 120.17
+        },
+        {
+          "bytes": 13,
+          "t": 135.212
+        },
+        {
+          "bytes": 65,
+          "t": 150.266
+        },
+        {
+          "bytes": 13,
+          "t": 165.174
+        },
+        {
+          "bytes": 65,
+          "t": 180.173
+        },
+        {
+          "bytes": 13,
+          "t": 195.22
+        },
+        {
+          "bytes": 65,
+          "t": 210.174
+        },
+        {
+          "bytes": 13,
+          "t": 225.175
+        },
+        {
+          "bytes": 65,
+          "t": 240.175
+        },
+        {
+          "bytes": 13,
+          "t": 255.177
+        },
+        {
+          "bytes": 65,
+          "t": 270.175
+        },
+        {
+          "bytes": 13,
+          "t": 285.177
+        },
+        {
+          "bytes": 58,
+          "t": 300.177
+        }
+      ],
+      "duration_s": 300.178,
+      "ended_by": "server",
+      "leg": "ingress",
+      "max_gap_s": 15.054,
+      "run": 3,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:21:25+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.165,
+      "t_headers_s": 0.165,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 953,
+      "chunks": [
+        {
+          "bytes": 68,
+          "t": 0.19
+        },
+        {
+          "bytes": 63,
+          "t": 0.19
+        },
+        {
+          "bytes": 13,
+          "t": 15.195
+        },
+        {
+          "bytes": 64,
+          "t": 30.193
+        },
+        {
+          "bytes": 13,
+          "t": 45.193
+        },
+        {
+          "bytes": 13,
+          "t": 60.198
+        },
+        {
+          "bytes": 64,
+          "t": 60.198
+        },
+        {
+          "bytes": 13,
+          "t": 75.197
+        },
+        {
+          "bytes": 64,
+          "t": 90.22
+        },
+        {
+          "bytes": 13,
+          "t": 105.249
+        },
+        {
+          "bytes": 13,
+          "t": 120.196
+        },
+        {
+          "bytes": 65,
+          "t": 120.196
+        },
+        {
+          "bytes": 13,
+          "t": 135.196
+        },
+        {
+          "bytes": 13,
+          "t": 150.208
+        },
+        {
+          "bytes": 65,
+          "t": 150.208
+        },
+        {
+          "bytes": 13,
+          "t": 165.198
+        },
+        {
+          "bytes": 65,
+          "t": 180.199
+        },
+        {
+          "bytes": 13,
+          "t": 195.198
+        },
+        {
+          "bytes": 65,
+          "t": 210.199
+        },
+        {
+          "bytes": 13,
+          "t": 225.201
+        },
+        {
+          "bytes": 65,
+          "t": 240.199
+        },
+        {
+          "bytes": 13,
+          "t": 255.261
+        },
+        {
+          "bytes": 13,
+          "t": 270.202
+        },
+        {
+          "bytes": 65,
+          "t": 270.202
+        },
+        {
+          "bytes": 13,
+          "t": 285.204
+        },
+        {
+          "bytes": 58,
+          "t": 300.228
+        }
+      ],
+      "duration_s": 300.229,
+      "ended_by": "server",
+      "leg": "ingress",
+      "max_gap_s": 15.062,
+      "run": 4,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:26:25+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.19,
+      "t_headers_s": 0.19,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "heartbeat",
+      "attributed_to": "none",
+      "bytes": 914,
+      "chunks": [
+        {
+          "bytes": 131,
+          "t": 0.176
+        },
+        {
+          "bytes": 13,
+          "t": 15.178
+        },
+        {
+          "bytes": 64,
+          "t": 30.178
+        },
+        {
+          "bytes": 13,
+          "t": 45.179
+        },
+        {
+          "bytes": 13,
+          "t": 60.18
+        },
+        {
+          "bytes": 64,
+          "t": 60.18
+        },
+        {
+          "bytes": 13,
+          "t": 75.18
+        },
+        {
+          "bytes": 64,
+          "t": 90.18
+        },
+        {
+          "bytes": 13,
+          "t": 105.179
+        },
+        {
+          "bytes": 65,
+          "t": 120.18
+        },
+        {
+          "bytes": 13,
+          "t": 135.183
+        },
+        {
+          "bytes": 65,
+          "t": 150.2
+        },
+        {
+          "bytes": 13,
+          "t": 165.181
+        },
+        {
+          "bytes": 65,
+          "t": 180.183
+        },
+        {
+          "bytes": 13,
+          "t": 195.182
+        },
+        {
+          "bytes": 65,
+          "t": 210.215
+        },
+        {
+          "bytes": 13,
+          "t": 225.183
+        },
+        {
+          "bytes": 65,
+          "t": 240.217
+        },
+        {
+          "bytes": 13,
+          "t": 255.185
+        },
+        {
+          "bytes": 65,
+          "t": 270.182
+        },
+        {
+          "bytes": 13,
+          "t": 285.184
+        },
+        {
+          "bytes": 58,
+          "t": 300.199
+        }
+      ],
+      "duration_s": 300.2,
+      "ended_by": "server",
+      "leg": "ingress",
+      "max_gap_s": 15.034,
+      "run": 5,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:31:26+00:00",
+      "status": 200,
+      "survived": true,
+      "t_first_chunk_s": 0.176,
+      "t_headers_s": 0.175,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "ingress",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.17
+        }
+      ],
+      "duration_s": 241.179,
+      "ended_by": "reset",
+      "leg": "ingress",
+      "max_gap_s": 0.0,
+      "run": 1,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:36:26+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.17,
+      "t_headers_s": 0.17,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "ingress",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.169
+        }
+      ],
+      "duration_s": 241.176,
+      "ended_by": "reset",
+      "leg": "ingress",
+      "max_gap_s": 0.0,
+      "run": 2,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:40:28+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.169,
+      "t_headers_s": 0.169,
+      "url_env": "INGRESS_URL"
+    },
+    {
+      "arm": "silent",
+      "attributed_to": "ingress",
+      "bytes": 135,
+      "chunks": [
+        {
+          "bytes": 135,
+          "t": 0.165
+        }
+      ],
+      "duration_s": 241.195,
+      "ended_by": "reset",
+      "leg": "ingress",
+      "max_gap_s": 0.0,
+      "run": 3,
+      "seconds": 300,
+      "started_at": "2026-11-02T20:44:29+00:00",
+      "status": 200,
+      "survived": false,
+      "t_first_chunk_s": 0.165,
+      "t_headers_s": 0.165,
+      "url_env": "INGRESS_URL"
     }
   ],
   "warm_replica_usd_per_month": null
