@@ -10,5 +10,12 @@
     "through_edge_with_header_status": 200,
     "edge_server_header": "cloudflare",
     "note": "the transform rule adds the origin header at the edge for every request to the host, so a request through Cloudflare never reaches the origin without it; the origin's own refusal (403) is read on the Ingress leg from the allowed developer address"
+  },
+  "ingress_origin_check": {
+    "read": "2026-11-02",
+    "direct_to_app_fqdn_from_the_allowed_developer_address_without_header_status": 403,
+    "without_header_body": "{\"detail\":\"Forbidden\"}",
+    "direct_to_app_fqdn_from_the_allowed_developer_address_with_header_status": 200,
+    "note": "the 403 is the application's own refusal (the origin header check), not the ingress's allow-list refusal, which reads \"RBAC: access denied\""
   }
 }
