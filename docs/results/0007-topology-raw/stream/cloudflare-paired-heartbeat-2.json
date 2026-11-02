@@ -1,0 +1,104 @@
+{
+  "leg": "cloudflare",
+  "series": "paired",
+  "url_env": "PUBLIC_URL",
+  "run": 2,
+  "idle_window_s": null,
+  "replicas_before": null,
+  "arm": "heartbeat",
+  "seconds": 300,
+  "started_at": "2026-11-02T20:54:34+00:00",
+  "status": 200,
+  "t_headers_s": 0.383,
+  "t_first_chunk_s": 0.383,
+  "duration_s": 300.391,
+  "bytes": 927,
+  "chunks": [
+    {
+      "t": 0.383,
+      "bytes": 131
+    },
+    {
+      "t": 15.382,
+      "bytes": 13
+    },
+    {
+      "t": 30.387,
+      "bytes": 64
+    },
+    {
+      "t": 45.382,
+      "bytes": 13
+    },
+    {
+      "t": 60.381,
+      "bytes": 64
+    },
+    {
+      "t": 75.382,
+      "bytes": 13
+    },
+    {
+      "t": 90.384,
+      "bytes": 77
+    },
+    {
+      "t": 105.385,
+      "bytes": 13
+    },
+    {
+      "t": 120.385,
+      "bytes": 65
+    },
+    {
+      "t": 135.572,
+      "bytes": 13
+    },
+    {
+      "t": 150.384,
+      "bytes": 65
+    },
+    {
+      "t": 165.386,
+      "bytes": 13
+    },
+    {
+      "t": 180.384,
+      "bytes": 65
+    },
+    {
+      "t": 195.409,
+      "bytes": 13
+    },
+    {
+      "t": 210.388,
+      "bytes": 65
+    },
+    {
+      "t": 225.387,
+      "bytes": 13
+    },
+    {
+      "t": 240.388,
+      "bytes": 65
+    },
+    {
+      "t": 255.389,
+      "bytes": 13
+    },
+    {
+      "t": 270.389,
+      "bytes": 78
+    },
+    {
+      "t": 285.392,
+      "bytes": 13
+    },
+    {
+      "t": 300.389,
+      "bytes": 58
+    }
+  ],
+  "max_gap_s": 15.187,
+  "ended_by": "server"
+}
