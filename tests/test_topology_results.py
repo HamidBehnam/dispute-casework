@@ -6,6 +6,7 @@ from dispute_casework.topology_results import (
     RESULTS,
     attributed_to,
     gates,
+    ingress_from_inside,
     replicas_the_minute_before,
     results,
     survived,
@@ -107,6 +108,7 @@ def test_gates_count_heartbeat_runs_per_leg_within_a_series() -> None:
         run(leg="cloudflare", survived=True),
         run(leg="cloudflare", arm="silent", survived=False),
         run(leg="cloudflare", series="paired", survived=False),
+        run(leg="ingress-inside", status=403, survived=False),
     ]
     assert gates(stream) == {
         "ingress": {"k": 1, "n": 2, "percent": 50},
@@ -131,3 +133,12 @@ def test_the_minute_before_the_request_is_read_from_the_replicas_series() -> Non
     assert replicas_the_minute_before(series, "2026-11-02T20:07:41+00:00") == 1
     assert replicas_the_minute_before(series, "2026-11-02T20:09:41+00:00") is None
     assert replicas_the_minute_before(None, "2026-11-02T20:06:41+00:00") is None
+
+
+def test_the_runs_from_inside_are_counted_as_refusals_not_as_a_gate() -> None:
+    stream = [
+        run(leg="ingress-inside", status=403, ended_by="status", survived=False),
+        run(leg="ingress-inside", survived=True),
+    ]
+    assert ingress_from_inside(stream) == {"n": 2, "refused": 1}
+    assert "ingress-inside" not in gates(stream)
