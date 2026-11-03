@@ -26,6 +26,10 @@ The application signs in as one login that holds `dcw_service`, a role with no p
 
 Locally the test session creates the database from scratch: a runner login with the administrator's attributes (`CREATEROLE`, `CREATEDB`, no `BYPASSRLS`) runs the migrations, and an application login with the connection limit runs the tests. On Azure the administrator SQL in `infra/postgres/admin/` creates the Entra login, the extension and the grants.
 
+## Topology
+
+The production topology, provisioned by the root `infra/app` and measured in ADR 0007, is one Azure Container App in a workload-profiles environment on the Consumption profile: four containers in one replica (the backend, the FastMCP server and the mock bank on the backend image, and the Cerbos sidecar), scaled to zero between demo windows and kept at one warm replica during them; two user-assigned identities, one that pulls the image and resolves the Key Vault references and is never available to code, and one that the code selects through `AZURE_TOKEN_CREDENTIALS`; Cloudflare in front of the origin in Full (strict) mode with an Origin CA certificate whose private key stays in Key Vault; the ingress allowing only Cloudflare's published IPv4 ranges; and every request checked for the `X-Origin-Secret` header that Cloudflare's transform rule sets. A job with a manual trigger runs the stream measurement client inside the environment. The streamed response carries assistant-stream's heartbeat every 15 seconds; both proxies on the public path cut a response that stays silent, so the heartbeat is what keeps a five-minute stream open.
+
 ## Exit test
 
 `tests/test_exit.py` replays one recorded run of the five retrieval arms over the 30 queries in `tests/queries.json`. Recall@k of a query is computed by ir-measures inside a DeepEval metric, and the figure for a set of queries is the mean over its queries. The gates on the keyword leg and on recall@20 are asserted. The gate on recall@5 after rerank is not met in the recorded run, 0.84 against a threshold of 0.85 and 0.88 before rerank (ADR 0004); its test is an expected failure that fails the suite once the gate is met.
