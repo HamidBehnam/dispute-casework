@@ -24,5 +24,10 @@
     "direct_to_app_fqdn_from_the_developer_address_with_header_stream_status": 403,
     "body": "RBAC: access denied",
     "note": "the ingress's own refusal: the allow-list (Cloudflare's published IPv4 ranges only) is in force again; the application is not reached"
+  },
+  "warm_window_started_at": {
+    "utc": "2026-11-03T02:20:08Z",
+    "et": "2026-11-02 21:20:08 EST",
+    "read": "az containerapp show --query properties.template.scale.minReplicas read 1 after the apply of min_replicas = 1 (plan app-12); the window ends by the apply that sets it back to 0, instructed separately"
   }
 }
