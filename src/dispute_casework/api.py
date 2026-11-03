@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
         if not secrets.compare_digest(secret.encode(), expected):
             raise HTTPException(status_code=403)
 
-    app = FastAPI(dependencies=[Depends(require_origin_header)])
+    app = FastAPI(dependencies=[Depends(require_origin_header)], openapi_url=None)
 
     @app.get("/stream")
     async def stream(
