@@ -47,6 +47,18 @@ def test_a_cloudflare_failure_is_attributed_against_the_runs_of_its_order() -> N
         attributed_to(silent, cut(duration_s=125.1), None) == "ingress or application"
     )
     assert (
+        attributed_to(
+            cut(leg="cloudflare", duration_s=240.5), cut(duration_s=241.1), None
+        )
+        == "ingress"
+    )
+    assert (
+        attributed_to(
+            cut(leg="cloudflare", duration_s=60.0), cut(duration_s=241.1), None
+        )
+        == "unattributed"
+    )
+    assert (
         attributed_to(silent, cut(duration_s=125.1), cut(duration_s=300.1)) == "ingress"
     )
     assert (

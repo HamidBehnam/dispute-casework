@@ -50,13 +50,16 @@ def attributed_to(
 
     Off the Cloudflare leg, the timer whose window the end time falls in. On it,
     Cloudflare only when the Ingress run of the same arm and order outlasted the
-    cut; when both legs failed, the ingress or the application, which the
-    Internal run of the same arm and order decides.
+    cut, and for the silent arm only inside Cloudflare's window; when both legs
+    failed, the ingress or the application, which the Internal run of the same
+    arm and order decides.
     """
     if run["ended_by"] == "server" and run["duration_s"] >= run["seconds"]:
         return "none"
-    if run["leg"] != "cloudflare":
-        return timer_window(run["duration_s"]) or "unattributed"
+    window = timer_window(run["duration_s"])
+    silent_outside_cloudflare = run["arm"] == "silent" and window != "cloudflare"
+    if run["leg"] != "cloudflare" or silent_outside_cloudflare:
+        return window or "unattributed"
     if ingress_pair is None:
         return "pending"
     if outlasted(ingress_pair, run):
@@ -137,11 +140,7 @@ def cloudflare_timeout(stream: list[dict[str, Any]]) -> str:
     ingress = [r for r in stream if r["leg"] == "ingress" and r["arm"] == "silent"]
     if not cloudflare or not ingress:
         return "pending"
-    if all(
-        r["attributed_to"] == "cloudflare"
-        and timer_window(r["duration_s"]) == "cloudflare"
-        for r in cloudflare
-    ):
+    if all(r["attributed_to"] == "cloudflare" for r in cloudflare):
         return "governs body gaps"
     if all(
         r["duration_s"] > TIMERS_S["cloudflare"] + WINDOW_AFTER_S for r in cloudflare
