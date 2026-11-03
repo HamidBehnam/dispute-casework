@@ -1,0 +1,14 @@
+{
+  "read": "2026-11-03",
+  "source": "Retail Prices API (prices.azure.com/api/retail/prices), serviceName 'Azure Container Apps', armRegionName 'eastus2', priceType 'Consumption'; the free grants from learn.microsoft.com/azure/container-apps/billing (ms.date 2025-12-09)",
+  "vcpu_active_usd_per_second": 2.4e-05,
+  "vcpu_idle_usd_per_second": 3e-06,
+  "gib_usd_per_second": 3e-06,
+  "environment_management_usd_per_hour": 0.1,
+  "free_vcpu_seconds": 180000,
+  "free_gib_seconds": 360000,
+  "allocations": [
+    {"vcpu": 0.75, "gib": 1.5},
+    {"vcpu": 1.0, "gib": 2.0}
+  ]
+}

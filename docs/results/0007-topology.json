@@ -45,7 +45,13 @@
       "percent": 100
     }
   },
-  "projections": {},
+  "projections": {
+    "environment_meter_usd_per_month": 73.0,
+    "idle_floor_usd_per_month": {
+      "0.75/1.5": 16.12,
+      "1.0/2.0": 22.03
+    }
+  },
   "stream": [
     {
       "arm": "heartbeat",
