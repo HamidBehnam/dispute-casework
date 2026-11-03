@@ -2,6 +2,7 @@ import asyncio
 
 import httpx
 import pytest
+from starlette.routing import Route
 
 from dispute_casework import api
 from dispute_casework.api import ORIGIN_HEADER, create_app
@@ -9,13 +10,15 @@ from dispute_casework.api import ORIGIN_HEADER, create_app
 SECRET = "expected-value"
 
 
-def get(params: dict[str, str], headers: dict[str, str]) -> httpx.Response:
+def get(
+    params: dict[str, str], headers: dict[str, str], path: str = "/stream"
+) -> httpx.Response:
     async def request() -> httpx.Response:
         transport = httpx.ASGITransport(app=create_app())
         async with httpx.AsyncClient(
             transport=transport, base_url="http://backend"
         ) as c:
-            return await c.get("/stream", params=params, headers=headers)
+            return await c.get(path, params=params, headers=headers)
 
     return asyncio.run(request())
 
@@ -52,3 +55,11 @@ def test_the_silent_arm_sends_no_heartbeat(monkeypatch: pytest.MonkeyPatch) -> N
     assert response.status_code == 200
     assert ": heartbeat" not in response.text
     assert "start" in response.text and "end" in response.text
+
+
+def test_every_route_refuses_a_request_without_the_origin_header() -> None:
+    app = create_app()
+    paths = [route.path for route in app.routes if isinstance(route, Route)]
+    assert paths == ["/stream"]
+    for path in paths:
+        assert get({"seconds": "1", "silent": "true"}, {}, path).status_code == 403
