@@ -1,0 +1,28 @@
+{
+  "leg": "cloudflare",
+  "series": null,
+  "url_env": "PUBLIC_URL",
+  "run": 3,
+  "idle_window_s": 602,
+  "replicas_before": 0,
+  "arm": "heartbeat",
+  "seconds": 1,
+  "started_at": "2026-11-03T00:49:25+00:00",
+  "status": 200,
+  "t_headers_s": 49.278,
+  "t_first_chunk_s": 49.278,
+  "duration_s": 50.272,
+  "bytes": 189,
+  "chunks": [
+    {
+      "t": 49.278,
+      "bytes": 131
+    },
+    {
+      "t": 50.271,
+      "bytes": 58
+    }
+  ],
+  "max_gap_s": 0.993,
+  "ended_by": "server"
+}

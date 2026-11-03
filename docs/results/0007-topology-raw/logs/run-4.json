@@ -1,0 +1,152 @@
+[
+  {
+    "message": "Replica 'ca-dcw-eus2--0000001-79b89674d-z8rs4' has been scheduled to run on a node.",
+    "reason": "AssigningReplica",
+    "t": "2026-11-03T01:00:18.1350371Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.28s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515'",
+    "reason": "PullingImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515\" in 4.17s. Image size: 31457280 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.28s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.27s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-03T01:00:34.0535579Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'backend'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-03T01:00:36.0821117Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of Readiness failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Started container 'mcp'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'cerbos'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'mockbank'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'backend'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of StartUp failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Created container 'mockbank'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'mcp'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of Readiness failed with status code: ",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Created container 'cerbos'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-03T01:00:37.349975Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of Liveness failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:38.0924952Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of Liveness failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:38.0924952Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of Readiness failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-03T01:00:38.0924952Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Sync with secrets from Azure Key Vault was successful for container app job caj-dcw-smoke-eus2",
+    "reason": "SyncingSecretFromAzureKeyVaultForContainerAppJobSucceeded",
+    "t": "2026-11-03T01:03:26.0331473Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Sync with secrets from Azure Key Vault was successful for container app ca-dcw-eus2",
+    "reason": "SyncingSecretFromAzureKeyVaultForContainerAppSucceeded",
+    "t": "2026-11-03T01:03:26.0331473Z",
+    "type": "Normal"
+  }
+]
