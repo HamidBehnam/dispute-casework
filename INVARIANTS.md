@@ -25,3 +25,5 @@ Correctness that can look like complexity. Each item is backed by the named test
 | Every cited paragraph ID is checked against the supplied context set; a miss escalates to the human | pending, step 14: `tests/test_citations.py::test_uncited_paragraph_id_escalates` |
 | `stream_usage` is enabled on the chat model | `tests/test_foundry.py::test_chat_model_sets_stream_usage` |
 | A holiday falling on Saturday is not observed on Friday in the bank calendar | pending, step 10: `tests/test_calendar.py::test_saturday_holiday_not_observed_friday` |
+| `/stream` carries assistant-stream's heartbeat whenever it is idle for `HEARTBEAT_SECONDS` (15 s); only the silent measurement arm turns it off | `tests/test_api.py::test_the_stream_carries_a_heartbeat_whenever_it_is_idle` |
+| Every route refuses a request whose `X-Origin-Secret` header does not match `ORIGIN_HEADER_SECRET` in a constant-time compare (403); the dependency is declared on the application, so no route is exempt | `tests/test_api.py::test_a_request_without_the_origin_header_is_refused`, `tests/test_api.py::test_a_request_with_a_wrong_origin_header_is_refused` |
