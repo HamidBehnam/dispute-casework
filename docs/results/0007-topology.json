@@ -1860,11 +1860,6 @@
       "n": 5,
       "percent": 100
     },
-    "ingress-inside": {
-      "k": 0,
-      "n": 2,
-      "percent": 0
-    },
     "internal": {
       "k": 3,
       "n": 3,
@@ -1877,6 +1872,10 @@
       "n": 5,
       "percent": 100
     }
+  },
+  "ingress_inside": {
+    "n": 2,
+    "refused": 2
   },
   "projections": {
     "environment_meter_usd_per_month": 73.0,

@@ -19,6 +19,7 @@ TIMERS_S = {"ingress": 240, "cloudflare": 125}
 WINDOW_BEFORE_S = 5
 WINDOW_AFTER_S = 10
 GAP_BOUND_S = 20
+GATE_LEGS = ("cloudflare", "ingress", "internal")
 SECONDS_PER_MONTH = 730 * 3600
 
 
@@ -103,10 +104,14 @@ def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def gates(
     stream: list[dict[str, Any]], series: str | None = None
 ) -> dict[str, dict[str, int]]:
-    """k of n heartbeat runs that survived, per leg, within one series."""
+    """k of n heartbeat runs that survived, per gated leg, within one series."""
     counts: dict[str, dict[str, int]] = {}
     for run in stream:
-        if run["arm"] != "heartbeat" or run.get("series") != series:
+        if (
+            run["arm"] != "heartbeat"
+            or run.get("series") != series
+            or run["leg"] not in GATE_LEGS
+        ):
             continue
         leg = counts.setdefault(run["leg"], {"k": 0, "n": 0})
         leg["n"] += 1
@@ -114,6 +119,12 @@ def gates(
     for leg in counts.values():
         leg["percent"] = round(100 * leg["k"] / leg["n"])
     return counts
+
+
+def ingress_from_inside(stream: list[dict[str, Any]]) -> dict[str, int]:
+    """The job's runs through the app FQDN, which the allow-list should refuse."""
+    runs = [r for r in stream if r["leg"] == "ingress-inside"]
+    return {"n": len(runs), "refused": sum(r["status"] == 403 for r in runs)}
 
 
 def ingress_timeout(stream: list[dict[str, Any]]) -> str:
@@ -260,6 +271,7 @@ def results(raw: Path) -> dict[str, Any]:
         "stream": stream,
         "gates": gates(stream),
         "gates_paired": gates(stream, "paired"),
+        "ingress_inside": ingress_from_inside(stream),
         "claims": {
             "environment_meter": observations.get(
                 "environment_meter", "pending the cost read"
