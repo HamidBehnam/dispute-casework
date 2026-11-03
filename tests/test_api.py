@@ -41,6 +41,7 @@ def test_a_request_with_a_wrong_origin_header_is_refused() -> None:
 def test_the_stream_carries_a_heartbeat_whenever_it_is_idle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    assert api.HEARTBEAT_SECONDS == 15
     # add_keepalive takes the interval in seconds; a short one keeps the test short.
     monkeypatch.setattr(api, "HEARTBEAT_SECONDS", 0.05)
     response = get({"seconds": "1"}, {ORIGIN_HEADER: SECRET})
