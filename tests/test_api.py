@@ -2,12 +2,13 @@ import asyncio
 
 import httpx
 import pytest
+from pydantic import ValidationError
 from starlette.routing import Route
 
 from dispute_casework import api
 from dispute_casework.api import ORIGIN_HEADER, create_app
 
-SECRET = "expected-value"
+SECRET = "expected-value-padded-to-the-minimum-length"
 
 
 def get(
@@ -56,6 +57,17 @@ def test_the_silent_arm_sends_no_heartbeat(monkeypatch: pytest.MonkeyPatch) -> N
     assert response.status_code == 200
     assert ": heartbeat" not in response.text
     assert "start" in response.text and "end" in response.text
+
+
+def test_the_application_does_not_start_on_an_empty_or_short_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for value in ("", "x" * (api.ORIGIN_SECRET_MIN_LENGTH - 1)):
+        monkeypatch.setenv("ORIGIN_HEADER_SECRET", value)
+        with pytest.raises(ValidationError):
+            create_app()
+    monkeypatch.setenv("ORIGIN_HEADER_SECRET", "x" * api.ORIGIN_SECRET_MIN_LENGTH)
+    create_app()
 
 
 def test_every_route_refuses_a_request_without_the_origin_header() -> None:
