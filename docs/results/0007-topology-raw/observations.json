@@ -29,5 +29,10 @@
     "utc": "2026-11-03T02:20:08Z",
     "et": "2026-11-02 21:20:08 EST",
     "read": "az containerapp show --query properties.template.scale.minReplicas read 1 after the apply of min_replicas = 1 (plan app-12); the window ends by the apply that sets it back to 0, instructed separately"
+  },
+  "warm_window_ended_at": {
+    "utc": "2026-11-05T21:57:00Z",
+    "et": "2026-11-05 16:57 EST",
+    "read": "the time of the apply of plan app-13 (min_replicas 1 -> 0), given by the operator to the minute; az containerapp show --query properties.template.scale.minReplicas reads null after it (the API omits a minimum of 0) and the Terraform state reads min_replicas 0"
   }
 }

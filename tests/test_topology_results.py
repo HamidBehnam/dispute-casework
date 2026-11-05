@@ -5,11 +5,13 @@ from dispute_casework.topology_results import (
     RAW,
     RESULTS,
     attributed_to,
+    cost,
     gates,
     ingress_from_inside,
     replicas_the_minute_before,
     results,
     survived,
+    warm_window,
 )
 
 
@@ -142,3 +144,52 @@ def test_the_runs_from_inside_are_counted_as_refusals_not_as_a_gate() -> None:
     ]
     assert ingress_from_inside(stream) == {"n": 2, "refused": 1}
     assert "ingress-inside" not in gates(stream)
+
+
+def test_the_warm_window_is_the_time_between_the_two_applies() -> None:
+    opened = {"warm_window_started_at": {"utc": "2026-11-03T02:20:08Z"}}
+    closed = opened | {"warm_window_ended_at": {"utc": "2026-11-05T21:57:00Z"}}
+    assert warm_window(closed) == {
+        "start": "2026-11-03T02:20:08Z",
+        "end": "2026-11-05T21:57:00Z",
+        "hours": 67.61,
+    }
+    assert warm_window(opened) is None
+    assert warm_window({}) is None
+
+
+def test_the_warm_replicas_month_is_the_window_cost_per_day_of_the_window(
+    tmp_path: Path,
+) -> None:
+    rows = [
+        {
+            "date": "2026-11-02",
+            "resource_type": "microsoft.app/containerapps",
+            "usd": 9,
+        },
+        {
+            "date": "2026-11-03",
+            "resource_type": "microsoft.app/containerapps",
+            "usd": 1,
+        },
+        {
+            "date": "2026-11-04",
+            "resource_type": "microsoft.app/containerapps",
+            "usd": 2,
+        },
+        {"date": "2026-11-04", "resource_type": "microsoft.network/dnszones", "usd": 5},
+        {
+            "date": "2026-11-05",
+            "resource_type": "microsoft.app/containerapps",
+            "usd": 3,
+        },
+    ]
+    (tmp_path / "cost").mkdir()
+    (tmp_path / "cost" / "rows.json").write_text(json.dumps(rows))
+    window = {
+        "start": "2026-11-03T00:00:00Z",
+        "end": "2026-11-05T12:00:00Z",
+        "hours": 60.0,
+    }
+    assert cost(tmp_path, window) == (rows, round(6 / 2.5 * 30.4, 2))
+    assert cost(tmp_path, None) == (rows, None)
