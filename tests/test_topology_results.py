@@ -5,6 +5,7 @@ from dispute_casework.topology_results import (
     RAW,
     RESULTS,
     attributed_to,
+    cold_start,
     cost,
     gates,
     ingress_from_inside,
@@ -23,6 +24,7 @@ def run(**overrides: object) -> dict[str, object]:
         "seconds": 300,
         "status": 200,
         "duration_s": 300.4,
+        "bytes": 927,
         "max_gap_s": 15.2,
         "ended_by": "server",
     }
@@ -101,6 +103,7 @@ def test_a_run_survives_only_within_the_gap_bound_for_its_whole_duration() -> No
     assert not survived(run(duration_s=299.0))
     assert not survived(run(ended_by="reset"))
     assert not survived(run(status=524))
+    assert not survived(run(bytes=0, max_gap_s=None))
 
 
 def test_gates_count_heartbeat_runs_per_leg_within_a_series() -> None:
@@ -124,6 +127,31 @@ def test_results_file_is_current(tmp_path: Path) -> None:
     regenerated = tmp_path / RESULTS.name
     regenerated.write_text(json.dumps(results(RAW), indent=2, sort_keys=True) + "\n")
     assert RESULTS.read_text() == regenerated.read_text(), f"regenerated: {regenerated}"
+
+
+def test_cold_start_runs_are_ordered_by_run_and_valid_only_with_status_200(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "cold_start").mkdir()
+    (tmp_path / "metrics").mkdir()
+    (tmp_path / "logs").mkdir()
+    for run, status in ((1, 200), (10, 200), (2, 524)):
+        record = {
+            "run": run,
+            "idle_window_s": 600,
+            "replicas_before": 0,
+            "started_at": "2026-11-03T00:27:29+00:00",
+            "status": status,
+            "t_headers_s": 50.0,
+            "t_first_chunk_s": 50.0,
+        }
+        (tmp_path / "cold_start" / f"run-{run}.json").write_text(json.dumps(record))
+        (tmp_path / "metrics" / f"run-{run}.json").write_text(
+            json.dumps([{"t": "2026-11-03T00:26:00Z", "replicas": 0.0}])
+        )
+    runs = cold_start(tmp_path)
+    assert [r["run"] for r in runs] == [1, 2, 10]
+    assert [r["valid"] for r in runs] == [True, False, True]
 
 
 def test_the_minute_before_the_request_is_read_from_the_replicas_series() -> None:

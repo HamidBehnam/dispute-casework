@@ -12,6 +12,7 @@ import os
 import sys
 import time
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +28,13 @@ ENDED_BY: dict[type[httpx.HTTPError], str] = {
 }
 
 
-def measure(url: str, secret: str, seconds: int, silent: bool) -> dict[str, Any]:
+def measure(
+    url: str,
+    secret: str,
+    seconds: int,
+    silent: bool,
+    transport: httpx.BaseTransport | None = None,
+) -> dict[str, Any]:
     params = {"seconds": seconds, "silent": "true" if silent else "false"}
     # The silent arm sends nothing for the whole run; the client waits longer.
     timeout = httpx.Timeout(30, read=seconds + 60)
@@ -39,32 +46,32 @@ def measure(url: str, secret: str, seconds: int, silent: bool) -> dict[str, Any]
     ended_by = "server"
     try:
         with (
-            httpx.Client(timeout=timeout) as client,
+            httpx.Client(timeout=timeout, transport=transport) as client,
             client.stream(
                 "GET", f"{url}/stream", params=params, headers={ORIGIN_HEADER: secret}
             ) as response,
         ):
             status = response.status_code
-            t_headers = time.monotonic() - start
+            t_headers = round(time.monotonic() - start, 3)
             if status != 200:
                 ended_by = "status"
             else:
                 for chunk in response.iter_raw():
-                    elapsed = time.monotonic() - start
-                    chunks.append({"t": round(elapsed, 3), "bytes": len(chunk)})
+                    elapsed = round(time.monotonic() - start, 3)
+                    chunks.append({"t": elapsed, "bytes": len(chunk)})
     except httpx.HTTPError as error:
         ended_by = ENDED_BY.get(type(error), f"error:{type(error).__name__}")
-    duration = time.monotonic() - start
-    times = [t for t in (t_headers, *(chunk["t"] for chunk in chunks)) if t is not None]
-    gaps = [later - earlier for earlier, later in zip(times, times[1:], strict=False)]
+    duration = round(time.monotonic() - start, 3)
+    arrivals = [] if t_headers is None else [t_headers, *(c["t"] for c in chunks)]
+    gaps = [later - earlier for earlier, later in pairwise([*arrivals, duration])]
     return {
         "arm": "silent" if silent else "heartbeat",
         "seconds": seconds,
         "started_at": started_at,
         "status": status,
-        "t_headers_s": None if t_headers is None else round(t_headers, 3),
+        "t_headers_s": t_headers,
         "t_first_chunk_s": chunks[0]["t"] if chunks else None,
-        "duration_s": round(duration, 3),
+        "duration_s": duration,
         "bytes": sum(int(chunk["bytes"]) for chunk in chunks),
         "chunks": chunks,
         "max_gap_s": round(max(gaps), 3) if gaps else None,
