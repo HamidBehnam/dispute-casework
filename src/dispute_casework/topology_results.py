@@ -71,11 +71,12 @@ def attributed_to(
 
 
 def survived(run: dict[str, Any]) -> bool:
-    return (
+    return bool(
         run["status"] == 200
         and run["ended_by"] == "server"
         and run["duration_s"] >= run["seconds"]
-        and (run["max_gap_s"] or 0) <= GAP_BOUND_S
+        and run["bytes"] > 0
+        and run["max_gap_s"] <= GAP_BOUND_S
     )
 
 
@@ -173,7 +174,7 @@ def replicas_the_minute_before(
 
 def cold_start(raw: Path) -> list[dict[str, Any]]:
     runs = []
-    for record in records(raw / "cold_start"):
+    for record in sorted(records(raw / "cold_start"), key=lambda r: int(r["run"])):
         run = record["run"]
         series = optional_json(raw / "metrics" / f"run-{run}.json")
         runs.append(
@@ -185,7 +186,8 @@ def cold_start(raw: Path) -> list[dict[str, Any]]:
                 "t_first_chunk_s": record["t_first_chunk_s"],
                 "replicas_series": series,
                 "system_log_rows": optional_json(raw / "logs" / f"run-{run}.json"),
-                "valid": record["replicas_before"] == 0
+                "valid": record["status"] == 200
+                and record["replicas_before"] == 0
                 and replicas_the_minute_before(series, record["started_at"]) == 0,
             }
         )
