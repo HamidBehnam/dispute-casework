@@ -33,6 +33,6 @@
   "warm_window_ended_at": {
     "utc": "2026-11-05T21:57:00Z",
     "et": "2026-11-05 16:57 EST",
-    "read": "the time of the apply of plan app-13 (min_replicas 1 -> 0), given by the operator to the minute; az containerapp show --query properties.template.scale.minReplicas reads null after it (the API omits a minimum of 0) and the Terraform state reads min_replicas 0"
+    "read": "the time of the apply of plan app-13 (min_replicas 1 -> 0), given by the operator to the minute; az containerapp show --query properties.template.scale.minReplicas reads null after it (azurerm 5.11.0 sends no minimum when it is 0 (container_apps.go:1117); the service returns minReplicas null; the documented default minimum is 0 (scale-app)) and the Terraform state reads min_replicas 0"
   }
 }
