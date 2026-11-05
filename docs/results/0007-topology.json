@@ -3945,5 +3945,10 @@
       "url_env": "INTERNAL_URL"
     }
   ],
-  "warm_replica_usd_per_month": null
+  "warm_replica_usd_per_month": null,
+  "warm_window": {
+    "end": "2026-11-05T21:57:00Z",
+    "hours": 67.61,
+    "start": "2026-11-03T02:20:08Z"
+  }
 }

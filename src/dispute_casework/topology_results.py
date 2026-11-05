@@ -227,24 +227,37 @@ def projections(rates: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def cost(raw: Path) -> tuple[list[dict[str, Any]], float | None]:
+def warm_window(observations: dict[str, Any]) -> dict[str, Any] | None:
+    """The warm window between the apply that opened it and the apply that closed it."""
+    if not {"warm_window_started_at", "warm_window_ended_at"} <= observations.keys():
+        return None
+    start = observations["warm_window_started_at"]["utc"]
+    end = observations["warm_window_ended_at"]["utc"]
+    seconds = (
+        datetime.fromisoformat(end) - datetime.fromisoformat(start)
+    ).total_seconds()
+    return {"start": start, "end": end, "hours": round(seconds / 3600, 2)}
+
+
+def cost(
+    raw: Path, window: dict[str, Any] | None
+) -> tuple[list[dict[str, Any]], float | None]:
     """The Cost Management rows, and the warm replica's month from the warm window."""
     rows: list[dict[str, Any]] = [
         row
         for path in sorted((raw / "cost").glob("*.json"))
-        if path.name != "window.json"
         for row in json.loads(path.read_text())
     ]
-    window = optional_json(raw / "cost" / "window.json")
     if window is None or not rows:
         return rows, None
     warm = [
         float(row["usd"])
         for row in rows
-        if window["start"] <= row["date"] <= window["end"]
+        if window["start"][:10] <= row["date"] <= window["end"][:10]
         and row["resource_type"] == "microsoft.app/containerapps"
     ]
-    return rows, round(sum(warm) / window["days"] * 30.4, 2) if warm else None
+    days = window["hours"] / 24
+    return rows, round(sum(warm) / days * 30.4, 2) if warm else None
 
 
 def optional_json(path: Path) -> Any:
@@ -263,8 +276,9 @@ def results(raw: Path) -> dict[str, Any]:
         ]
     )
     runs = cold_start(raw)
-    rows, warm = cost(raw)
     observations = optional_json(raw / "observations.json") or {}
+    window = warm_window(observations)
+    rows, warm = cost(raw, window)
     return {
         "cold_start": runs,
         "cold_start_summary": cold_start_summary(runs),
@@ -291,6 +305,7 @@ def results(raw: Path) -> dict[str, Any]:
         },
         "projections": projections(optional_json(raw / "rates.json")),
         "cost": rows,
+        "warm_window": window,
         "warm_replica_usd_per_month": warm,
     }
 
