@@ -7,10 +7,11 @@ from typing import Annotated
 from assistant_stream import RunController, create_run
 from assistant_stream.serialization import AssistantTransportResponse
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ORIGIN_HEADER = "X-Origin-Secret"
+ORIGIN_SECRET_MIN_LENGTH = 32
 HEARTBEAT_SECONDS = 15
 PAYLOAD_INTERVAL_SECONDS = 30
 DEFAULT_STREAM_SECONDS = 300
@@ -22,7 +23,7 @@ class ApiSettings(BaseSettings):
 
     model_config = SettingsConfigDict(frozen=True)
 
-    origin_header_secret: SecretStr
+    origin_header_secret: SecretStr = Field(min_length=ORIGIN_SECRET_MIN_LENGTH)
 
 
 def create_app() -> FastAPI:

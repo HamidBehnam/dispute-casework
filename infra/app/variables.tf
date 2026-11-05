@@ -29,6 +29,11 @@ variable "origin_header_secret" {
   type        = string
   description = "Value Cloudflare adds in the origin request header and the origin verifies. Supplied through TF_VAR_origin_header_secret, never committed; stored in Key Vault and in the Cloudflare rule."
   sensitive   = true
+
+  validation {
+    condition     = length(var.origin_header_secret) >= 32
+    error_message = "The origin header secret must be at least 32 characters; the origin refuses to start on a shorter one."
+  }
 }
 
 variable "origin_certificate_issued" {
