@@ -12,7 +12,9 @@ from dispute_casework.topology_results import (
     replicas_the_minute_before,
     results,
     survived,
+    warm_replica_month,
     warm_window,
+    warm_window_cost,
 )
 
 
@@ -186,38 +188,143 @@ def test_the_warm_window_is_the_time_between_the_two_applies() -> None:
     assert warm_window({}) is None
 
 
-def test_the_warm_replicas_month_is_the_window_cost_per_day_of_the_window(
+def query_response(rows: list[list[object]]) -> dict[str, object]:
+    """The shape of the Query API's example response (api-version 2025-03-01)."""
+    return {
+        "type": "microsoft.costmanagement/Query",
+        "properties": {
+            "columns": [
+                {"name": "Cost", "type": "Number"},
+                {"name": "UsageQuantity", "type": "Number"},
+                {"name": "UsageDate", "type": "Number"},
+                {"name": "Meter", "type": "String"},
+                {"name": "Currency", "type": "String"},
+            ],
+            "nextLink": None,
+            "rows": rows,
+        },
+    }
+
+
+WINDOW = {
+    "start": "2026-11-03T02:20:08Z",
+    "end": "2026-11-05T21:57:00Z",
+    "hours": 67.61,
+}
+RATES = {"allocations": [{"vcpu": 0.75, "gib": 1.5}, {"vcpu": 1.0, "gib": 2.0}]}
+
+
+def test_cost_rows_are_read_from_the_query_response_as_returned(
     tmp_path: Path,
 ) -> None:
+    (tmp_path / "cost").mkdir()
+    (tmp_path / "cost" / "query.json").write_text(
+        json.dumps(
+            query_response(
+                [
+                    [0.3, 100000.0, 20261103, "Standard vCPU Idle Usage", "USD"],
+                    [2.10333307059661, 5.0, 20261102, "Standard Requests", "USD"],
+                ]
+            )
+        )
+    )
+    assert cost(tmp_path) == [
+        {
+            "date": "2026-11-03",
+            "meter": "Standard vCPU Idle Usage",
+            "quantity": 100000.0,
+            "usd": 0.3,
+        },
+        {
+            "date": "2026-11-02",
+            "meter": "Standard Requests",
+            "quantity": 5.0,
+            "usd": 2.10333307059661,
+        },
+    ]
+
+
+def test_a_response_with_no_rows_yields_no_cost_and_no_month(tmp_path: Path) -> None:
+    (tmp_path / "cost").mkdir()
+    (tmp_path / "cost" / "query.json").write_text(json.dumps(query_response([])))
+    assert cost(tmp_path) == []
+    assert warm_window_cost([], WINDOW) is None
+    assert warm_replica_month(None, RATES) is None
+
+
+def test_the_window_cost_sums_its_whole_days_per_meter_and_the_month_follows() -> None:
     rows = [
         {
             "date": "2026-11-02",
-            "resource_type": "microsoft.app/containerapps",
-            "usd": 9,
+            "meter": "Standard vCPU Idle Usage",
+            "quantity": 9.0,
+            "usd": 9.0,
         },
         {
             "date": "2026-11-03",
-            "resource_type": "microsoft.app/containerapps",
-            "usd": 1,
+            "meter": "Standard vCPU Idle Usage",
+            "quantity": 40000.0,
+            "usd": 0.12,
         },
         {
             "date": "2026-11-04",
-            "resource_type": "microsoft.app/containerapps",
-            "usd": 2,
+            "meter": "Standard vCPU Idle Usage",
+            "quantity": 60000.0,
+            "usd": 0.18,
         },
-        {"date": "2026-11-04", "resource_type": "microsoft.network/dnszones", "usd": 5},
+        {
+            "date": "2026-11-04",
+            "meter": "Standard Memory Idle Usage",
+            "quantity": 200000.0,
+            "usd": 0.6,
+        },
         {
             "date": "2026-11-05",
-            "resource_type": "microsoft.app/containerapps",
-            "usd": 3,
+            "meter": "Standard Requests",
+            "quantity": 0.0,
+            "usd": 0.0,
+        },
+        {
+            "date": "2026-11-06",
+            "meter": "Standard Memory Idle Usage",
+            "quantity": 7.0,
+            "usd": 7.0,
         },
     ]
-    (tmp_path / "cost").mkdir()
-    (tmp_path / "cost" / "rows.json").write_text(json.dumps(rows))
-    window = {
-        "start": "2026-11-03T00:00:00Z",
-        "end": "2026-11-05T12:00:00Z",
-        "hours": 60.0,
+    window_cost = warm_window_cost(rows, WINDOW)
+    assert window_cost == {
+        "from": "2026-11-03",
+        "to": "2026-11-05",
+        "days": "whole calendar days; the boundary days are included whole",
+        "usd": 0.9,
+        "meters": {
+            "Standard Memory Idle Usage": {
+                "quantity": 200000.0,
+                "usd": 0.6,
+                "usd_per_unit": 3e-06,
+            },
+            "Standard Requests": {"quantity": 0.0, "usd": 0.0, "usd_per_unit": None},
+            "Standard vCPU Idle Usage": {
+                "quantity": 100000.0,
+                "usd": 0.3,
+                "usd_per_unit": 3e-06,
+            },
+        },
     }
-    assert cost(tmp_path, window) == (rows, round(6 / 2.5 * 30.4, 2))
-    assert cost(tmp_path, None) == (rows, None)
+    month = warm_replica_month(window_cost, RATES)
+    assert month is not None
+    assert month["by_allocation"] == {"0.75/1.5": 17.74, "1.0/2.0": 23.65}
+    assert set(month["assumptions"]) == {"meters", "free_grant", "month"}
+    assert warm_replica_month(window_cost, None) is None
+
+
+def test_the_month_needs_a_measured_price_for_both_idle_meters() -> None:
+    rows = [
+        {
+            "date": "2026-11-04",
+            "meter": "Standard vCPU Idle Usage",
+            "quantity": 100000.0,
+            "usd": 0.3,
+        },
+    ]
+    assert warm_replica_month(warm_window_cost(rows, WINDOW), RATES) is None

@@ -21,6 +21,14 @@ WINDOW_AFTER_S = 10
 GAP_BOUND_S = 20
 GATE_LEGS = ("cloudflare", "ingress", "internal")
 SECONDS_PER_MONTH = 730 * 3600
+IDLE_METERS = {"vcpu": "Standard vCPU Idle Usage", "gib": "Standard Memory Idle Usage"}
+WARM_MONTH_ASSUMPTIONS = {
+    "meters": "the two idle meters only: a warm replica that serves no request is idle",
+    "free_grant": "not subtracted: the rows are net of the calendar month's free grant "
+    "(free usage does not appear on the bill), and whether the grant falls on "
+    "idle seconds is not established by the rows",
+    "month": "730 hours",
+}
 
 
 def timer_window(duration_s: float) -> str | None:
@@ -241,25 +249,85 @@ def warm_window(observations: dict[str, Any]) -> dict[str, Any] | None:
     return {"start": start, "end": end, "hours": round(seconds / 3600, 2)}
 
 
-def cost(
-    raw: Path, window: dict[str, Any] | None
-) -> tuple[list[dict[str, Any]], float | None]:
-    """The Cost Management rows, and the warm replica's month from the warm window."""
-    rows: list[dict[str, Any]] = [
-        row
-        for path in sorted((raw / "cost").glob("*.json"))
-        for row in json.loads(path.read_text())
-    ]
+def cost(raw: Path) -> list[dict[str, Any]]:
+    """The Query API responses as returned, one row per day and meter.
+
+    The query sums Cost and UsageQuantity per day grouped by the Meter dimension;
+    UsageDate is a number, yyyymmdd.
+    """
+    rows = []
+    for path in sorted((raw / "cost").glob("*.json")):
+        body = json.loads(path.read_text())["properties"]
+        names = [column["name"] for column in body["columns"]]
+        for values in body["rows"]:
+            row = dict(zip(names, values, strict=True))
+            rows.append(
+                {
+                    "date": datetime.strptime(str(row["UsageDate"]), "%Y%m%d")
+                    .date()
+                    .isoformat(),
+                    "meter": row["Meter"],
+                    "quantity": row["UsageQuantity"],
+                    "usd": row["Cost"],
+                }
+            )
+    return rows
+
+
+def warm_window_cost(
+    rows: list[dict[str, Any]], window: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """The window's cost and per-meter quantities over its whole calendar days."""
     if window is None or not rows:
-        return rows, None
-    warm = [
-        float(row["usd"])
-        for row in rows
-        if window["start"][:10] <= row["date"] <= window["end"][:10]
-        and row["resource_type"] == "microsoft.app/containerapps"
-    ]
-    days = window["hours"] / 24
-    return rows, round(sum(warm) / days * 30.4, 2) if warm else None
+        return None
+    first, last = window["start"][:10], window["end"][:10]
+    meters: dict[str, dict[str, float]] = {}
+    for row in rows:
+        if first <= row["date"] <= last:
+            meter = meters.setdefault(row["meter"], {"quantity": 0.0, "usd": 0.0})
+            meter["quantity"] += row["quantity"]
+            meter["usd"] += row["usd"]
+    return {
+        "from": first,
+        "to": last,
+        "days": "whole calendar days; the boundary days are included whole",
+        "usd": round(sum(meter["usd"] for meter in meters.values()), 6),
+        "meters": {
+            name: {
+                "quantity": round(meter["quantity"], 3),
+                "usd": round(meter["usd"], 6),
+                "usd_per_unit": round(meter["usd"] / meter["quantity"], 12)
+                if meter["quantity"]
+                else None,
+            }
+            for name, meter in sorted(meters.items())
+        },
+    }
+
+
+def warm_replica_month(
+    window_cost: dict[str, Any] | None, rates: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """Each allocation's idle month at the measured unit prices of the idle meters."""
+    if window_cost is None or rates is None:
+        return None
+    prices = {
+        key: window_cost["meters"].get(name, {}).get("usd_per_unit")
+        for key, name in IDLE_METERS.items()
+    }
+    if None in prices.values():
+        return None
+    return {
+        "by_allocation": {
+            f"{allocation['vcpu']}/{allocation['gib']}": round(
+                SECONDS_PER_MONTH
+                * sum(allocation[key] * prices[key] for key in IDLE_METERS),
+                2,
+            )
+            for allocation in rates["allocations"]
+        },
+        "assumptions": WARM_MONTH_ASSUMPTIONS,
+    }
 
 
 def optional_json(path: Path) -> Any:
@@ -279,8 +347,10 @@ def results(raw: Path) -> dict[str, Any]:
     )
     runs = cold_start(raw)
     observations = optional_json(raw / "observations.json") or {}
+    rates = optional_json(raw / "rates.json")
+    rows = cost(raw)
     window = warm_window(observations)
-    rows, warm = cost(raw, window)
+    window_cost = warm_window_cost(rows, window)
     return {
         "cold_start": runs,
         "cold_start_summary": cold_start_summary(runs),
@@ -305,10 +375,11 @@ def results(raw: Path) -> dict[str, Any]:
                 "cerbos_empty_policies", "pending"
             ),
         },
-        "projections": projections(optional_json(raw / "rates.json")),
+        "projections": projections(rates),
         "cost": rows,
         "warm_window": window,
-        "warm_replica_usd_per_month": warm,
+        "warm_window_cost": window_cost,
+        "warm_replica_usd_per_month": warm_replica_month(window_cost, rates),
     }
 
 
