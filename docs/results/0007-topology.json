@@ -1903,9 +1903,9 @@
     "valid_k": 0
   },
   "cold_start_summary": {
-    "median_last_container_started_s": 21.5445,
+    "median_last_container_started_s": 21.544,
     "median_scheduled_s": 1.565,
-    "median_started_to_headers_s": 32.091499999999996,
+    "median_started_to_headers_s": 32.091,
     "median_t_first_chunk_s": 53.722,
     "median_t_headers_s": 53.722,
     "n": 10,
