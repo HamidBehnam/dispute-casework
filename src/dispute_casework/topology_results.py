@@ -88,10 +88,6 @@ def survived(run: dict[str, Any]) -> bool:
     )
 
 
-def records(directory: Path) -> list[dict[str, Any]]:
-    return [json.loads(path.read_text()) for path in sorted(directory.glob("*.json"))]
-
-
 def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Survival of every run, then its attribution against its pairs on other legs."""
     for run in stream:
@@ -180,39 +176,85 @@ def replicas_the_minute_before(
     return None
 
 
-def cold_start(raw: Path) -> list[dict[str, Any]]:
+def offsets(
+    started_at: str, rows: list[dict[str, Any]] | None, t_headers_s: float | None
+) -> dict[str, float | None]:
+    """Where a cold start's time goes, from the system log rows' timestamps.
+
+    The platform writes the rows in batches, so a row's time is an upper bound
+    of its event.
+    """
+    t0 = datetime.fromisoformat(started_at)
+
+    def seconds_until(reason: str, last: bool) -> float | None:
+        times = [
+            datetime.fromisoformat(row["t"])
+            for row in rows or []
+            if row["reason"] == reason
+        ]
+        if not times:
+            return None
+        return round(((max if last else min)(times) - t0).total_seconds(), 3)
+
+    scheduled = seconds_until("AssigningReplica", last=False)
+    started = seconds_until("ContainerStarted", last=True)
+    return {
+        "scheduled_s": scheduled,
+        "last_container_started_s": started,
+        "started_to_headers_s": None
+        if started is None or t_headers_s is None
+        else round(t_headers_s - started, 3),
+    }
+
+
+def cold_start(raw: Path, series: str | None = None) -> list[dict[str, Any]]:
+    """The repetitions of one series, each with the vendor readings of its name."""
     runs = []
-    for record in sorted(records(raw / "cold_start"), key=lambda r: int(r["run"])):
-        run = record["run"]
-        series = optional_json(raw / "metrics" / f"run-{run}.json")
+    for path in sorted((raw / "cold_start").glob("*.json")):
+        record = json.loads(path.read_text())
+        if record.get("series") != series:
+            continue
+        metric = optional_json(raw / "metrics" / path.name)
+        rows = optional_json(raw / "logs" / path.name)
         runs.append(
             {
-                "run": run,
+                "run": record["run"],
                 "idle_window_s": record["idle_window_s"],
                 "replicas_before": record["replicas_before"],
                 "t_headers_s": record["t_headers_s"],
                 "t_first_chunk_s": record["t_first_chunk_s"],
-                "replicas_series": series,
-                "system_log_rows": optional_json(raw / "logs" / f"run-{run}.json"),
+                "replicas_series": metric,
+                "system_log_rows": rows,
+                "offsets": offsets(record["started_at"], rows, record["t_headers_s"]),
                 "valid": record["status"] == 200
                 and record["replicas_before"] == 0
-                and replicas_the_minute_before(series, record["started_at"]) == 0,
+                and replicas_the_minute_before(metric, record["started_at"]) == 0,
             }
         )
-    return runs
+    return sorted(runs, key=lambda run: int(run["run"]))
 
 
 def cold_start_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     valid = [run for run in runs if run["valid"]]
+
+    def median_of(key: str, of: str | None = None) -> float | None:
+        values = [
+            value
+            for run in valid
+            if (value := (run[of][key] if of else run[key])) is not None
+        ]
+        return median(values) if values else None
+
     return {
         "valid_k": len(valid),
         "n": len(runs),
-        "median_t_headers_s": median(r["t_headers_s"] for r in valid)
-        if valid
-        else None,
-        "median_t_first_chunk_s": median(r["t_first_chunk_s"] for r in valid)
-        if valid
-        else None,
+        "median_t_headers_s": median_of("t_headers_s"),
+        "median_t_first_chunk_s": median_of("t_first_chunk_s"),
+        "median_scheduled_s": median_of("scheduled_s", "offsets"),
+        "median_last_container_started_s": median_of(
+            "last_container_started_s", "offsets"
+        ),
+        "median_started_to_headers_s": median_of("started_to_headers_s", "offsets"),
     }
 
 
@@ -339,13 +381,14 @@ def results(raw: Path) -> dict[str, Any]:
         [
             {
                 k: v
-                for k, v in run.items()
+                for k, v in json.loads(path.read_text()).items()
                 if k not in {"idle_window_s", "replicas_before"}
             }
-            for run in records(raw / "stream")
+            for path in sorted((raw / "stream").glob("*.json"))
         ]
     )
     runs = cold_start(raw)
+    probes = cold_start(raw, "probes")
     observations = optional_json(raw / "observations.json") or {}
     rates = optional_json(raw / "rates.json")
     rows = cost(raw)
@@ -354,6 +397,8 @@ def results(raw: Path) -> dict[str, Any]:
     return {
         "cold_start": runs,
         "cold_start_summary": cold_start_summary(runs),
+        "cold_start_probes": probes,
+        "cold_start_probes_summary": cold_start_summary(probes),
         "stream": stream,
         "gates": gates(stream),
         "gates_paired": gates(stream, "paired"),

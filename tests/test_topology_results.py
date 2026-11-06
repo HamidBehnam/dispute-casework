@@ -6,9 +6,11 @@ from dispute_casework.topology_results import (
     RESULTS,
     attributed_to,
     cold_start,
+    cold_start_summary,
     cost,
     gates,
     ingress_from_inside,
+    offsets,
     replicas_the_minute_before,
     results,
     survived,
@@ -137,9 +139,15 @@ def test_cold_start_runs_are_ordered_by_run_and_valid_only_with_status_200(
     (tmp_path / "cold_start").mkdir()
     (tmp_path / "metrics").mkdir()
     (tmp_path / "logs").mkdir()
-    for run, status in ((1, 200), (10, 200), (2, 524)):
+    for name, run, status, series in (
+        ("run-1", 1, 200, None),
+        ("run-10", 10, 200, None),
+        ("run-2", 2, 524, None),
+        ("probes-run-1", 1, 200, "probes"),
+    ):
         record = {
             "run": run,
+            "series": series,
             "idle_window_s": 600,
             "replicas_before": 0,
             "started_at": "2026-11-03T00:27:29+00:00",
@@ -147,13 +155,48 @@ def test_cold_start_runs_are_ordered_by_run_and_valid_only_with_status_200(
             "t_headers_s": 50.0,
             "t_first_chunk_s": 50.0,
         }
-        (tmp_path / "cold_start" / f"run-{run}.json").write_text(json.dumps(record))
-        (tmp_path / "metrics" / f"run-{run}.json").write_text(
+        (tmp_path / "cold_start" / f"{name}.json").write_text(json.dumps(record))
+        (tmp_path / "metrics" / f"{name}.json").write_text(
             json.dumps([{"t": "2026-11-03T00:26:00Z", "replicas": 0.0}])
         )
     runs = cold_start(tmp_path)
     assert [r["run"] for r in runs] == [1, 2, 10]
     assert [r["valid"] for r in runs] == [True, False, True]
+    assert runs[0]["offsets"] == {
+        "scheduled_s": None,
+        "last_container_started_s": None,
+        "started_to_headers_s": None,
+    }
+    assert [r["run"] for r in cold_start(tmp_path, "probes")] == [1]
+    assert cold_start_summary(runs) == {
+        "valid_k": 2,
+        "n": 3,
+        "median_t_headers_s": 50.0,
+        "median_t_first_chunk_s": 50.0,
+        "median_scheduled_s": None,
+        "median_last_container_started_s": None,
+        "median_started_to_headers_s": None,
+    }
+
+
+def test_the_offsets_are_read_from_the_scheduling_and_last_start_rows() -> None:
+    rows = [
+        {"reason": "AssigningReplica", "t": "2026-11-03T00:27:31.0227384Z"},
+        {"reason": "PulledImage", "t": "2026-11-03T00:27:53.0240000Z"},
+        {"reason": "ContainerStarted", "t": "2026-11-03T00:27:54.0140000Z"},
+        {"reason": "ContainerStarted", "t": "2026-11-03T00:27:56.0680000Z"},
+        {"reason": "ProbeFailed", "t": "2026-11-03T00:27:57.0320000Z"},
+    ]
+    assert offsets("2026-11-03T00:27:29+00:00", rows, 59.339) == {
+        "scheduled_s": 2.023,
+        "last_container_started_s": 27.068,
+        "started_to_headers_s": 32.271,
+    }
+    assert offsets("2026-11-03T00:27:29+00:00", None, 59.339) == {
+        "scheduled_s": None,
+        "last_container_started_s": None,
+        "started_to_headers_s": None,
+    }
 
 
 def test_the_minute_before_the_request_is_read_from_the_replicas_series() -> None:
