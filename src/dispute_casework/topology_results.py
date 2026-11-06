@@ -2,12 +2,14 @@
 
 The raw readings live under docs/results/0007-topology-raw: the measurement
 client's records (stream/, cold_start/), the Azure Monitor and Log Analytics
-outputs saved per cold-start run (metrics/, logs/), the Cost Management rows
-(cost/), the observations made at apply time (observations.json) and the retail
-rates (rates.json). Every figure in the results file is computed here from them.
+outputs saved per cold-start run (metrics/, logs/), the Cost Management query
+responses (cost/), the observations made at apply time (observations.json) and
+the retail rates (rates.json). Every figure in the results file is computed here
+from them.
 """
 
 import json
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from pathlib import Path
 from statistics import median
@@ -231,30 +233,29 @@ def cold_start(raw: Path, series: str | None = None) -> list[dict[str, Any]]:
                 and replicas_the_minute_before(metric, record["started_at"]) == 0,
             }
         )
-    return sorted(runs, key=lambda run: int(run["run"]))
+    return sorted(runs, key=lambda run: run["run"])
+
+
+def median_of(values: Iterable[float | None]) -> float | None:
+    present = [value for value in values if value is not None]
+    return round(median(present), 3) if present else None
 
 
 def cold_start_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     valid = [run for run in runs if run["valid"]]
-
-    def median_of(key: str, of: str | None = None) -> float | None:
-        values = [
-            value
-            for run in valid
-            if (value := (run[of][key] if of else run[key])) is not None
-        ]
-        return round(median(values), 3) if values else None
-
+    offsets = [run["offsets"] for run in valid]
     return {
         "valid_k": len(valid),
         "n": len(runs),
-        "median_t_headers_s": median_of("t_headers_s"),
-        "median_t_first_chunk_s": median_of("t_first_chunk_s"),
-        "median_scheduled_s": median_of("scheduled_s", "offsets"),
+        "median_t_headers_s": median_of(run["t_headers_s"] for run in valid),
+        "median_t_first_chunk_s": median_of(run["t_first_chunk_s"] for run in valid),
+        "median_scheduled_s": median_of(o["scheduled_s"] for o in offsets),
         "median_last_container_started_s": median_of(
-            "last_container_started_s", "offsets"
+            o["last_container_started_s"] for o in offsets
         ),
-        "median_started_to_headers_s": median_of("started_to_headers_s", "offsets"),
+        "median_started_to_headers_s": median_of(
+            o["started_to_headers_s"] for o in offsets
+        ),
     }
 
 
