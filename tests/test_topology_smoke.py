@@ -31,7 +31,6 @@ def transport(
     chunks: list[tuple[float, bytes]],
     ends_at: float,
     error: Exception | None = None,
-    status: int = 200,
 ) -> httpx.MockTransport:
     def body() -> Iterator[bytes]:
         for at, data in chunks:
@@ -43,7 +42,7 @@ def transport(
 
     def handler(request: httpx.Request) -> httpx.Response:
         clock.now = HEADERS_AT
-        return httpx.Response(status, content=body())
+        return httpx.Response(200, content=body())
 
     return httpx.MockTransport(handler)
 
