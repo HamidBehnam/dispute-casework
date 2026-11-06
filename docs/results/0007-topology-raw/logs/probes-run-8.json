@@ -1,0 +1,134 @@
+[
+  {
+    "message": "Replica 'ca-dcw-eus2--0000004-79d458bccb-ls8jz' has been scheduled to run on a node.",
+    "reason": "AssigningReplica",
+    "t": "2026-11-06T03:39:05.1283376Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.19s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.19s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515\" in 4.17s. Image size: 31457280 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.19s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:39:21.0218669Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'backend'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:39:22.9897047Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'backend'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:39:22.9897047Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'cerbos'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:39:22.9897047Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'cerbos'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:39:22.9897047Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'mcp'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:39:22.9897047Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'mcp'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:39:24.024338Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of StartUp failed with timeout in 1 seconds.",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:39:26.0845785Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of StartUp failed with timeout in 1 seconds.",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:39:26.9665696Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of StartUp failed with timeout in 1 seconds.",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:39:28.0411786Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of StartUp failed with timeout in 1 seconds.",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:39:28.0411786Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Created container 'mockbank'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:39:28.0411786Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'mockbank'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:39:28.0411786Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of StartUp failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:39:28.9986456Z",
+    "type": "Warning"
+  }
+]

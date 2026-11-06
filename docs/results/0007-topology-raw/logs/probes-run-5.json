@@ -1,0 +1,122 @@
+[
+  {
+    "message": "Replica 'ca-dcw-eus2--0000004-79d458bccb-wljjb' has been scheduled to run on a node.",
+    "reason": "AssigningReplica",
+    "t": "2026-11-06T03:07:17.0168888Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:07:33.0772281Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:07:33.0772281Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:07:33.0772281Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Pulling image 'crdcweus2.azurecr.io/dcw-backend:973438e'",
+    "reason": "PullingImage",
+    "t": "2026-11-06T03:07:33.0772281Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.71s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.71s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'backend'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'backend'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515\" in 4.08s. Image size: 31457280 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Successfully pulled image \"crdcweus2.azurecr.io/dcw-backend:973438e\" in 5.71s. Image size: 135266304 bytes.",
+    "reason": "PulledImage",
+    "t": "2026-11-06T03:07:33.9832451Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of StartUp failed with timeout in 1 seconds.",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Created container 'cerbos'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'cerbos'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'mcp'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'mcp'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Created container 'mockbank'",
+    "reason": "ContainerCreated",
+    "t": "2026-11-06T03:07:37.089065Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Started container 'mockbank'",
+    "reason": "ContainerStarted",
+    "t": "2026-11-06T03:07:38.0275825Z",
+    "type": "Normal"
+  },
+  {
+    "message": "Probe of StartUp failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:07:39.1391614Z",
+    "type": "Warning"
+  },
+  {
+    "message": "Probe of StartUp failed with status code: 1",
+    "reason": "ProbeFailed",
+    "t": "2026-11-06T03:07:39.1391614Z",
+    "type": "Warning"
+  }
+]
