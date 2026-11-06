@@ -243,7 +243,7 @@ def cold_start_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
             for run in valid
             if (value := (run[of][key] if of else run[key])) is not None
         ]
-        return median(values) if values else None
+        return round(median(values), 3) if values else None
 
     return {
         "valid_k": len(valid),
