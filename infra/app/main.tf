@@ -195,7 +195,7 @@ resource "azurerm_container_app" "dcw" {
     container {
       name   = "backend"
       image  = local.backend_image
-      cpu    = 0.25
+      cpu    = 0.36
       memory = "0.5Gi"
 
       env {
@@ -212,23 +212,36 @@ resource "azurerm_container_app" "dcw" {
       }
 
       startup_probe {
-        transport = "TCP"
-        port      = 8000
+        transport               = "TCP"
+        port                    = 8000
+        initial_delay           = 1
+        interval_seconds        = 1
+        timeout                 = 3
+        failure_count_threshold = 240
       }
       liveness_probe {
-        transport = "TCP"
-        port      = 8000
+        transport               = "TCP"
+        port                    = 8000
+        initial_delay           = 1
+        interval_seconds        = 10
+        timeout                 = 1
+        failure_count_threshold = 3
       }
       readiness_probe {
-        transport = "TCP"
-        port      = 8000
+        transport               = "TCP"
+        port                    = 8000
+        initial_delay           = 3
+        interval_seconds        = 5
+        timeout                 = 5
+        success_count_threshold = 1
+        failure_count_threshold = 48
       }
     }
 
     container {
       name   = "cerbos"
       image  = local.cerbos_image
-      cpu    = 0.25
+      cpu    = 0.13
       memory = "0.5Gi"
       args = [
         "server",
@@ -237,15 +250,33 @@ resource "azurerm_container_app" "dcw" {
         "--set=schema.enforcement=reject",
       ]
 
+      startup_probe {
+        transport               = "HTTP"
+        port                    = 3592
+        path                    = "/_cerbos/health"
+        initial_delay           = 1
+        interval_seconds        = 1
+        timeout                 = 3
+        failure_count_threshold = 240
+      }
       liveness_probe {
-        transport = "HTTP"
-        port      = 3592
-        path      = "/_cerbos/health"
+        transport               = "HTTP"
+        port                    = 3592
+        path                    = "/_cerbos/health"
+        initial_delay           = 1
+        interval_seconds        = 10
+        timeout                 = 1
+        failure_count_threshold = 3
       }
       readiness_probe {
-        transport = "HTTP"
-        port      = 3592
-        path      = "/_cerbos/health"
+        transport               = "HTTP"
+        port                    = 3592
+        path                    = "/_cerbos/health"
+        initial_delay           = 3
+        interval_seconds        = 5
+        timeout                 = 5
+        success_count_threshold = 1
+        failure_count_threshold = 48
       }
 
       volume_mounts {
@@ -257,8 +288,8 @@ resource "azurerm_container_app" "dcw" {
     container {
       name   = "mcp"
       image  = local.backend_image
-      cpu    = 0.25
-      memory = "0.5Gi"
+      cpu    = 0.13
+      memory = "0.25Gi"
       args   = ["--port", "8001"]
 
       env {
@@ -266,21 +297,38 @@ resource "azurerm_container_app" "dcw" {
         secret_name = "origin-header-secret"
       }
 
+      startup_probe {
+        transport               = "TCP"
+        port                    = 8001
+        initial_delay           = 1
+        interval_seconds        = 1
+        timeout                 = 3
+        failure_count_threshold = 240
+      }
       liveness_probe {
-        transport = "TCP"
-        port      = 8001
+        transport               = "TCP"
+        port                    = 8001
+        initial_delay           = 1
+        interval_seconds        = 10
+        timeout                 = 1
+        failure_count_threshold = 3
       }
       readiness_probe {
-        transport = "TCP"
-        port      = 8001
+        transport               = "TCP"
+        port                    = 8001
+        initial_delay           = 3
+        interval_seconds        = 5
+        timeout                 = 5
+        success_count_threshold = 1
+        failure_count_threshold = 48
       }
     }
 
     container {
       name   = "mockbank"
       image  = local.backend_image
-      cpu    = 0.25
-      memory = "0.5Gi"
+      cpu    = 0.13
+      memory = "0.25Gi"
       args   = ["--port", "8002"]
 
       env {
@@ -288,13 +336,30 @@ resource "azurerm_container_app" "dcw" {
         secret_name = "origin-header-secret"
       }
 
+      startup_probe {
+        transport               = "TCP"
+        port                    = 8002
+        initial_delay           = 1
+        interval_seconds        = 1
+        timeout                 = 3
+        failure_count_threshold = 240
+      }
       liveness_probe {
-        transport = "TCP"
-        port      = 8002
+        transport               = "TCP"
+        port                    = 8002
+        initial_delay           = 1
+        interval_seconds        = 10
+        timeout                 = 1
+        failure_count_threshold = 3
       }
       readiness_probe {
-        transport = "TCP"
-        port      = 8002
+        transport               = "TCP"
+        port                    = 8002
+        initial_delay           = 3
+        interval_seconds        = 5
+        timeout                 = 5
+        success_count_threshold = 1
+        failure_count_threshold = 48
       }
     }
 
