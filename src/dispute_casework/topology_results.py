@@ -15,6 +15,8 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+from dispute_casework.topology_smoke import max_gap_s
+
 RAW = Path(__file__).parents[2] / "docs/results/0007-topology-raw"
 RESULTS = Path(__file__).parents[2] / "docs/results/0007-topology.json"
 TIMERS_S = {"ingress": 240, "cloudflare": 125}
@@ -91,8 +93,15 @@ def survived(run: dict[str, Any]) -> bool:
 
 
 def attribute(stream: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Survival of every run, then its attribution against its pairs on other legs."""
+    """Gap and survival of every run, then its attribution against its pairs.
+
+    The gap is computed from the record's arrival times by the measurement client's
+    rule rather than read from the record, so every record is held to the same rule.
+    """
     for run in stream:
+        run["max_gap_s"] = max_gap_s(
+            run["t_headers_s"], run["chunks"], run["duration_s"]
+        )
         run["survived"] = survived(run)
     pairs = {
         (run["leg"], run["arm"], run["run"]): run
