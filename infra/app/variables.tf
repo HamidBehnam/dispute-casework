@@ -8,9 +8,14 @@ variable "subdomain" {
   description = "Host label under the domain that the application is served from. Supplied through TF_VAR_subdomain."
 }
 
-variable "image_tag" {
+variable "image_digest" {
   type        = string
-  description = "Tag of the backend image in the registry, as the image build produces it. Supplied through TF_VAR_image_tag."
+  description = "Digest of the backend image in the registry (sha256:<64 hex>), as the image push reports it. Supplied through TF_VAR_image_digest."
+
+  validation {
+    condition     = can(regex("^sha256:[0-9a-f]{64}$", var.image_digest))
+    error_message = "The backend image is referenced by digest: sha256: followed by 64 lowercase hex characters."
+  }
 }
 
 variable "min_replicas" {
