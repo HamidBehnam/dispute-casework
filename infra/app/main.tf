@@ -6,7 +6,7 @@ data "azurerm_resource_group" "dcw" {
 
 locals {
   hostname      = "${var.subdomain}.${var.domain}"
-  backend_image = "${data.azurerm_container_registry.dcw.login_server}/dcw-backend:${var.image_tag}"
+  backend_image = "${data.azurerm_container_registry.dcw.login_server}/dcw-backend@${var.image_digest}"
   cerbos_image  = "ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515"
 }
 
