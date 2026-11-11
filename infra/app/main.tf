@@ -372,6 +372,12 @@ resource "azurerm_container_app" "dcw" {
   # The provider reads back an empty value for a Key Vault reference (vendor note on secret).
   lifecycle {
     ignore_changes = [secret]
+
+    # With no IP restriction rule the ingress allows all inbound traffic.
+    precondition {
+      condition     = length(data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs) > 0
+      error_message = "Cloudflare's IPv4 range list is empty; the ingress would have no Allow rule and accept every address."
+    }
   }
 
   depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.secrets_user]
