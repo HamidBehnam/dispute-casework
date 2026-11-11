@@ -39,6 +39,25 @@ def test_a_request_with_a_wrong_origin_header_is_refused() -> None:
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize(
+    ("header", "status"), [("other", 403), (SECRET, 200)], ids=["refused", "accepted"]
+)
+def test_the_origin_header_is_compared_with_compare_digest(
+    monkeypatch: pytest.MonkeyPatch, header: str, status: int
+) -> None:
+    calls: list[tuple[bytes, bytes]] = []
+    compare_digest = api.secrets.compare_digest
+
+    def recording_compare_digest(a: bytes, b: bytes) -> bool:
+        calls.append((a, b))
+        return compare_digest(a, b)
+
+    monkeypatch.setattr(api.secrets, "compare_digest", recording_compare_digest)
+    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: header})
+    assert response.status_code == status
+    assert calls == [(header.encode(), SECRET.encode())]
+
+
 def test_the_stream_carries_a_heartbeat_whenever_it_is_idle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
