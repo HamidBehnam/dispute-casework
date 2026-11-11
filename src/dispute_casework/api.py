@@ -1,4 +1,4 @@
-"""HTTP surface of the topology spike: a streamed response behind the origin check."""
+"""HTTP surface: a streamed response behind the origin check."""
 
 import asyncio
 import secrets

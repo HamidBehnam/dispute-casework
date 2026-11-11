@@ -1,4 +1,4 @@
-"""Writes docs/results/0007-topology.json from the committed raw readings of the spike.
+"""Writes docs/results/0007-topology.json from the committed raw topology readings.
 
 The raw readings live under docs/results/0007-topology-raw: the measurement
 client's records (stream/, cold_start/), the Azure Monitor and Log Analytics
@@ -269,7 +269,7 @@ def cold_start_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def projections(rates: dict[str, Any] | None) -> dict[str, Any]:
-    """Monthly figures from the retail rates and free grants, as 0b computed them."""
+    """Monthly figures from the retail rates and free grants."""
     if rates is None:
         return {}
     idle_floor = {}
