@@ -116,6 +116,10 @@ resource "azurerm_key_vault_certificate" "origin" {
     }
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   depends_on = [azurerm_role_assignment.certificates_officer]
 }
 
