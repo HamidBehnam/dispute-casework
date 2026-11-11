@@ -1,4 +1,5 @@
 import asyncio
+import secrets
 
 import httpx
 import pytest
@@ -46,13 +47,13 @@ def test_the_origin_header_is_compared_with_compare_digest(
     monkeypatch: pytest.MonkeyPatch, header: str, status: int
 ) -> None:
     calls: list[tuple[bytes, bytes]] = []
-    compare_digest = api.secrets.compare_digest
+    compare_digest = secrets.compare_digest
 
     def recording_compare_digest(a: bytes, b: bytes) -> bool:
         calls.append((a, b))
         return compare_digest(a, b)
 
-    monkeypatch.setattr(api.secrets, "compare_digest", recording_compare_digest)
+    monkeypatch.setattr(secrets, "compare_digest", recording_compare_digest)
     response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: header})
     assert response.status_code == status
     assert calls == [(header.encode(), SECRET.encode())]
