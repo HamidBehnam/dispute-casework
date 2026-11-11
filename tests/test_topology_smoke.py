@@ -5,7 +5,7 @@ import pytest
 
 from dispute_casework import topology_smoke
 from dispute_casework.api import ORIGIN_HEADER
-from dispute_casework.topology_smoke import measure
+from dispute_casework.topology_smoke import max_gap_s, measure
 
 HEADERS_AT = 1.0
 
@@ -73,6 +73,11 @@ def test_a_silent_body_records_its_silence_not_zero(clock: Clock) -> None:
     )
     assert record["max_gap_s"] == 125.2
     assert record["ended_by"] == "server"
+
+
+def test_a_run_with_headers_and_no_chunk_has_its_gap_to_the_end() -> None:
+    assert max_gap_s(0.17, [], 241.17) == 241.0
+    assert max_gap_s(None, [], 30.0) is None
 
 
 def test_every_time_is_rounded_before_the_gap_arithmetic(clock: Clock) -> None:

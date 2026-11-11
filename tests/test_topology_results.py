@@ -4,6 +4,7 @@ from pathlib import Path
 from dispute_casework.topology_results import (
     RAW,
     RESULTS,
+    attribute,
     attributed_to,
     cold_start,
     cold_start_summary,
@@ -108,6 +109,12 @@ def test_a_run_survives_only_within_the_gap_bound_for_its_whole_duration() -> No
     assert not survived(run(ended_by="reset"))
     assert not survived(run(status=524))
     assert not survived(run(bytes=0, max_gap_s=None))
+
+
+def test_the_gap_is_taken_from_the_arrival_times_not_the_record() -> None:
+    silent = cut(t_headers_s=0.26, chunks=[{"t": 0.26, "bytes": 6}], duration_s=125.27)
+    [attributed] = attribute([silent])
+    assert attributed["max_gap_s"] == 125.01
 
 
 def test_gates_count_heartbeat_runs_per_leg_within_a_series() -> None:

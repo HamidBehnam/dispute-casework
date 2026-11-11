@@ -28,6 +28,16 @@ ENDED_BY: dict[type[httpx.HTTPError], str] = {
 }
 
 
+def max_gap_s(
+    t_headers_s: float | None, chunks: list[dict[str, float]], duration_s: float
+) -> float | None:
+    """The longest silence: after the headers, between chunks and before the end."""
+    if t_headers_s is None:
+        return None
+    arrivals = [t_headers_s, *(chunk["t"] for chunk in chunks), duration_s]
+    return round(max(later - earlier for earlier, later in pairwise(arrivals)), 3)
+
+
 def measure(
     url: str,
     secret: str,
@@ -62,8 +72,6 @@ def measure(
     except httpx.HTTPError as error:
         ended_by = ENDED_BY.get(type(error), f"error:{type(error).__name__}")
     duration = round(time.monotonic() - start, 3)
-    arrivals = [] if t_headers is None else [t_headers, *(c["t"] for c in chunks)]
-    gaps = [later - earlier for earlier, later in pairwise([*arrivals, duration])]
     return {
         "arm": "silent" if silent else "heartbeat",
         "seconds": seconds,
@@ -74,7 +82,7 @@ def measure(
         "duration_s": duration,
         "bytes": sum(int(chunk["bytes"]) for chunk in chunks),
         "chunks": chunks,
-        "max_gap_s": round(max(gaps), 3) if gaps else None,
+        "max_gap_s": max_gap_s(t_headers, chunks, duration),
         "ended_by": ended_by,
     }
 
