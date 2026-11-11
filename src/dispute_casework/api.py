@@ -21,7 +21,7 @@ MAX_STREAM_SECONDS = 600
 class ApiSettings(BaseSettings):
     """ORIGIN_HEADER_SECRET, from the environment."""
 
-    model_config = SettingsConfigDict(frozen=True)
+    model_config = SettingsConfigDict(frozen=True, hide_input_in_errors=True)
 
     origin_header_secret: SecretStr = Field(min_length=ORIGIN_SECRET_MIN_LENGTH)
 

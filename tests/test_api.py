@@ -70,6 +70,16 @@ def test_the_application_does_not_start_on_an_empty_or_short_secret(
     create_app()
 
 
+def test_a_rejected_secret_is_not_written_into_the_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rejected = "rejected-value-shorter-than-32"
+    monkeypatch.setenv("ORIGIN_HEADER_SECRET", rejected)
+    with pytest.raises(ValidationError) as error:
+        create_app()
+    assert rejected not in str(error.value)
+
+
 def test_every_route_refuses_a_request_without_the_origin_header() -> None:
     app = create_app()
     paths = [route.path for route in app.routes if isinstance(route, Route)]
