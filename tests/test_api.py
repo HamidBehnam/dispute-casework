@@ -3,6 +3,7 @@ import secrets
 
 import httpx
 import pytest
+from fastapi.routing import APIRoute
 from pydantic import ValidationError
 from starlette.routing import Route
 
@@ -106,3 +107,9 @@ def test_every_route_refuses_a_request_without_the_origin_header() -> None:
     assert paths == ["/stream"]
     for path in paths:
         assert get({"seconds": "1", "silent": "true"}, {}, path).status_code == 403
+
+
+def test_every_route_is_an_api_route() -> None:
+    """Only an APIRoute runs the application's dependencies, the origin check."""
+    routes = create_app().routes
+    assert routes and all(isinstance(route, APIRoute) for route in routes), routes
