@@ -110,6 +110,6 @@ def test_every_route_refuses_a_request_without_the_origin_header() -> None:
 
 
 def test_every_route_is_an_api_route() -> None:
-    """Only an APIRoute runs the application's dependencies, the origin check."""
+    """A Starlette Route or a Mount skips the application's origin check."""
     routes = create_app().routes
     assert routes and all(isinstance(route, APIRoute) for route in routes), routes
