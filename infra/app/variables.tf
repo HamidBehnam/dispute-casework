@@ -32,7 +32,7 @@ variable "developer_ip_addresses" {
 
 variable "origin_header_secret" {
   type        = string
-  description = "Value Cloudflare adds in the origin request header and the origin verifies. Supplied through TF_VAR_origin_header_secret, never committed; stored in Key Vault and in the Cloudflare rule."
+  description = "Value Cloudflare adds in the origin request header and the origin verifies. Supplied through TF_VAR_origin_header_secret, never committed; stored in Key Vault and in the Cloudflare rule, which holds it as a plain value, so it is also in this root's Terraform state and in any saved plan."
   sensitive   = true
 
   validation {

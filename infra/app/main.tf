@@ -82,8 +82,9 @@ resource "azurerm_key_vault_secret" "origin_header" {
   depends_on = [azurerm_role_assignment.secrets_officer]
 }
 
-# The private key is generated inside the vault and never leaves it; the
-# pending request's CSR is signed by Cloudflare's Origin CA and merged back.
+# The key is generated inside the vault; the pending request's CSR is signed by
+# Cloudflare's Origin CA and merged back. The key is exportable because the
+# environment imports the certificate, key included, through the platform identity.
 resource "azurerm_key_vault_certificate" "origin" {
   name         = "origin-certificate"
   key_vault_id = azurerm_key_vault.dcw.id
