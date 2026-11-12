@@ -61,7 +61,7 @@ Never remove:
 
 ## Dependencies
 
-- A dependency enters only after its version, license, purpose, required accounts and preconditions have been disclosed and approved. A component outside the agreed design, or a unit of own code that is not on the approved list, is a stop-and-ask.
+- A dependency enters only after its version, license, purpose, required accounts and preconditions have been disclosed and approved. A component outside the agreed design is a stop-and-ask.
 - Tools are pinned exactly in `pyproject.toml`. `uv.lock` is committed and CI runs `uv sync --locked`. Upgrades land through Dependabot pull requests or an explicit `uv lock --upgrade-package` commit.
 - GitHub Actions are pinned by commit SHA with the version in a comment.
 
