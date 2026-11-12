@@ -3,7 +3,7 @@
     "cerbos_empty_policies": "yes: at the first activation of the app on 2026-10-29 the cerbos container logged at 04:41:25Z \"Initializing disk store from /policies\", \"Found 0 executable policies\", \"Watching directory for changes\" (dir /policies) and \"Starting HTTP server at :3592\"; the system log attributes no probe failure to cerbos",
     "cloudflare_timeout": "governs body gaps",
     "custom_domain_binding": "yes: on 2026-10-29 the custom domain was bound by one apply with the proxied A record in place and the asuid TXT record; `az containerapp hostname list` reads bindingType SniEnabled with the certificate bound, and the environment certificate origin-certificate reads Succeeded, issuer CloudFlare Origin SSL Certificate Authority, expiring 2041-10-25; no DNS-only window was needed",
-    "environment_meter": "pending the cost read",
+    "environment_meter": "no",
     "ingress_timeout": "idle",
     "prevent_destroy_on_count": "yes: on 2026-10-29, after the Origin CA certificate was issued and before the issued flag was committed, a plan with infra/app/origin.csr moved aside and origin_certificate_issued false planned \"cloudflare_origin_ca_certificate.origin[0] will be destroyed (because index [0] is out of range for count)\" and exited 1 with \"Error: Instance cannot be destroyed\" \u2014 \"Resource cloudflare_origin_ca_certificate.origin[0] has lifecycle.prevent_destroy set, but the plan calls for this resource to be destroyed.\"; no revoke was planned",
     "sub_quarter_vcpu": "yes: on 2026-11-05 the apply of plan app-14 set backend 0.36 vCPU / 0.5Gi, cerbos 0.13 / 0.5Gi, mcp 0.13 / 0.25Gi and mockbank 0.13 / 0.25Gi (replica total 0.75 vCPU, 1.5Gi, an allowed combination) in the same change as the explicit probe timing; the service accepted it (\"Apply complete! Resources: 0 added, 1 changed, 0 destroyed.\" at 2026-11-05 21:02 EST), a fresh plan read \"No changes. Your infrastructure matches the configuration.\", and `az containerapp show` read the four cpu values on the new revision; the refusal of 2026-10-29 was the two-decimal precision rule (0.125), not a rule on values below 0.25"
@@ -1892,6 +1892,7 @@
       "valid": true
     }
   ],
+  "cold_start_offsets_resolution": "started_at is recorded truncated to the second and a system log row's time is an upper bound of its event, so scheduled_s and last_container_started_s are overstated and started_to_headers_s understated, by up to 1 s for the truncation plus the rows' batching delay",
   "cold_start_probes": [
     {
       "idle_window_s": 602,
@@ -3800,7 +3801,652 @@
     "n": 10,
     "valid_k": 10
   },
-  "cost": [],
+  "cost": [
+    {
+      "date": "2026-11-01",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-01",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-01",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-01",
+      "meter": "Operations",
+      "quantity": 0.0152,
+      "service": "Key Vault",
+      "usd": 0.000456
+    },
+    {
+      "date": "2026-11-01",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.1276e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-01",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 4.8e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.0003,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.001909,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Operations",
+      "quantity": 0.0164,
+      "service": "Key Vault",
+      "usd": 0.000492
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 0.000231645,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "All Other Operations",
+      "quantity": 0.0033,
+      "service": "Storage",
+      "usd": 1.32e-05
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 4.8e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-02",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.000515,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.001918,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Operations",
+      "quantity": 0.0171,
+      "service": "Key Vault",
+      "usd": 0.000513
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 0.000314959,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "All Other Operations",
+      "quantity": 0.0042,
+      "service": "Storage",
+      "usd": 1.68e-05
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 6.9e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0002,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-03",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "Operations",
+      "quantity": 0.0151,
+      "service": "Key Vault",
+      "usd": 0.000453
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 4.1326e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-04",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard Memory Active Usage",
+      "quantity": 5686.0,
+      "service": "Azure Container Apps",
+      "usd": 0.017058
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard Memory Idle Usage",
+      "quantity": 144363.0,
+      "service": "Azure Container Apps",
+      "usd": 0.433089
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard vCPU Active Usage",
+      "quantity": 2843.0,
+      "service": "Azure Container Apps",
+      "usd": 0.068232
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard vCPU Idle Usage",
+      "quantity": 72177.0,
+      "service": "Azure Container Apps",
+      "usd": 0.216531
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.00028,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.001908,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Operations",
+      "quantity": 0.0164,
+      "service": "Key Vault",
+      "usd": 0.000492
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 8.5766e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "All Other Operations",
+      "quantity": 0.0025,
+      "service": "Storage",
+      "usd": 1e-05
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-05",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Standard Memory Active Usage",
+      "quantity": 6136.0,
+      "service": "Azure Container Apps",
+      "usd": 0.018408
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Standard vCPU Active Usage",
+      "quantity": 3064.0,
+      "service": "Azure Container Apps",
+      "usd": 0.073536
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.000291,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.002672,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Operations",
+      "quantity": 0.017,
+      "service": "Key Vault",
+      "usd": 0.00051
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 0.000312502,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "All Other Operations",
+      "quantity": 0.0025,
+      "service": "Storage",
+      "usd": 1e-05
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-06",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.0014,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "Operations",
+      "quantity": 0.0149,
+      "service": "Key Vault",
+      "usd": 0.000447
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.1411e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-07",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "Operations",
+      "quantity": 0.015,
+      "service": "Key Vault",
+      "usd": 0.00045
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.1251e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-08",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "Operations",
+      "quantity": 0.0152,
+      "service": "Key Vault",
+      "usd": 0.000456
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.1001e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-09",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0666666656,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "Operations",
+      "quantity": 0.0157,
+      "service": "Key Vault",
+      "usd": 0.000471
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.3223e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-10",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 7.2e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "B1MS Compute - Free",
+      "quantity": 17.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 0.7555555548,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "Basic Registry Unit",
+      "quantity": 0.791673,
+      "service": "Container Registry",
+      "usd": 0.1318927218
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "Operations",
+      "quantity": 0.0122,
+      "service": "Key Vault",
+      "usd": 0.000366
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 2.3065e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-11-11",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 5.7e-05,
+      "service": "Storage",
+      "usd": 0.0
+    }
+  ],
   "gates": {
     "cloudflare": {
       "k": 3,
@@ -5897,11 +6543,74 @@
       "url_env": "INTERNAL_URL"
     }
   ],
-  "warm_replica_usd_per_month": null,
+  "warm_replica_usd_per_month": {
+    "assumptions": {
+      "allocation": "billed at the window's allocation; another allocation scales each vCPU meter by its vCPU and each memory meter by its memory",
+      "estimate": "the rows are Cost Management's open-month estimates until the invoice is issued; the estimate's highest-tier pricing does not move them, since each of these meters has one price tier",
+      "free_grant": "not subtracted: the rows carry no free usage, in cost or in quantity (the vendor: free usage does not appear on the bill), so the billed hours are the window's hours past the month's grant and each meter's usd_per_unit is its full unit price",
+      "meters": "every Container Apps meter billed on the window's days, idle and active; the last day also holds the minutes until the replica stopped (replicas_zero_after_window in the raw observations); the billed seconds are those after the month's grant ran out, and the rows do not say whether the grant took idle or active seconds first, so their active share is not established as the window's; idle_only_usd_per_month is the month at the idle meters' unit prices alone",
+      "month": "730 hours, no free grant"
+    },
+    "billed_hours": 20.839,
+    "billed_usd": 0.73491,
+    "idle_only_usd_per_month": {
+      "0.75/1.5": 17.74,
+      "1.0/2.0": 23.65
+    },
+    "usd_per_hour": 0.035266,
+    "usd_per_month": {
+      "0.75/1.5": 19.31,
+      "1.0/2.0": 25.74
+    },
+    "window_allocation": "1.0/2.0"
+  },
   "warm_window": {
     "end": "2026-11-05T21:57:00Z",
     "hours": 67.61,
     "start": "2026-11-03T02:20:08Z"
   },
-  "warm_window_cost": null
+  "warm_window_cost": {
+    "days": "whole calendar days; the boundary days are included whole",
+    "from": "2026-11-03",
+    "meters": {
+      "Standard Memory Active Usage": {
+        "quantity": 5686.0,
+        "usd": 0.017058,
+        "usd_per_unit": 3e-06
+      },
+      "Standard Memory Idle Usage": {
+        "quantity": 144363.0,
+        "usd": 0.433089,
+        "usd_per_unit": 3e-06
+      },
+      "Standard vCPU Active Usage": {
+        "quantity": 2843.0,
+        "usd": 0.068232,
+        "usd_per_unit": 2.4e-05
+      },
+      "Standard vCPU Idle Usage": {
+        "quantity": 72177.0,
+        "usd": 0.216531,
+        "usd_per_unit": 3e-06
+      }
+    },
+    "to": "2026-11-05",
+    "usd": 0.73491
+  },
+  "zero_replica_floor": {
+    "container_apps_usd": 0.0,
+    "days": 4,
+    "free_offers": "a service at 0.0 is billed on free-offer meters or within a free allowance on these days, so the floor is what is billed under those offers, not the components' list price",
+    "from": "2026-11-07",
+    "to": "2026-11-10",
+    "usd_per_day": 0.167057,
+    "usd_per_day_by_service": {
+      "Azure Database for PostgreSQL": 0.0,
+      "Container Registry": 0.166601,
+      "Key Vault": 0.000456,
+      "Log Analytics": 0.0,
+      "Storage": 0.0
+    },
+    "usd_per_month": 5.08
+  }
 }

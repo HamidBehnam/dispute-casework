@@ -2,7 +2,8 @@
 
 The raw readings live under docs/results/0007-topology-raw: the measurement
 client's records (stream/, cold_start/), the Azure Monitor and Log Analytics
-outputs saved per cold-start run (metrics/, logs/), the Cost Management query
+outputs saved per cold-start run (metrics/, logs/) and the hourly replica
+readings after the warm window (metrics/after-window.json), the Cost Management query
 responses (cost/), the observations made at apply time (observations.json) and
 the retail rates (rates.json). Every figure in the results file is computed here
 from them.
@@ -24,15 +25,47 @@ WINDOW_BEFORE_S = 5
 WINDOW_AFTER_S = 10
 GAP_BOUND_S = 20
 GATE_LEGS = ("cloudflare", "ingress", "internal")
-SECONDS_PER_MONTH = 730 * 3600
-IDLE_METERS = {"vcpu": "Standard vCPU Idle Usage", "gib": "Standard Memory Idle Usage"}
-WARM_MONTH_ASSUMPTIONS = {
-    "meters": "the two idle meters only: a warm replica that serves no request is idle",
-    "free_grant": "not subtracted: the rows are net of the calendar month's free grant "
-    "(free usage does not appear on the bill), and whether the grant falls on "
-    "idle seconds is not established by the rows",
-    "month": "730 hours",
+HOURS_PER_MONTH = 730
+SECONDS_PER_MONTH = HOURS_PER_MONTH * 3600
+CONTAINER_APPS = "Azure Container Apps"
+METER_RESOURCE = {
+    "Standard vCPU Idle Usage": "vcpu",
+    "Standard vCPU Active Usage": "vcpu",
+    "Standard Memory Idle Usage": "gib",
+    "Standard Memory Active Usage": "gib",
 }
+IDLE_METERS = {"Standard vCPU Idle Usage", "Standard Memory Idle Usage"}
+MANAGEMENT_METERS = {
+    "Environment Management Hour",
+    "Environment Planned Maintenance Hour",
+    "Environment Private Endpoint",
+    "Dedicated Plan Management",
+}
+WARM_MONTH_ASSUMPTIONS = {
+    "meters": "every Container Apps meter billed on the window's days, idle and "
+    "active; the last day also holds the minutes until the replica stopped "
+    "(replicas_zero_after_window in the raw observations); the billed seconds are "
+    "those after the month's grant ran out, and the rows do not say whether the "
+    "grant took idle or active seconds first, so their active share is not "
+    "established as the window's; idle_only_usd_per_month is the month at the "
+    "idle meters' unit prices alone",
+    "free_grant": "not subtracted: the rows carry no free usage, in cost or in "
+    "quantity (the vendor: free usage does not appear on the bill), so the billed "
+    "hours are the window's hours past the month's grant and each meter's "
+    "usd_per_unit is its full unit price",
+    "estimate": "the rows are Cost Management's open-month estimates until the "
+    "invoice is issued; the estimate's highest-tier pricing does not move them, "
+    "since each of these meters has one price tier",
+    "allocation": "billed at the window's allocation; another allocation scales "
+    "each vCPU meter by its vCPU and each memory meter by its memory",
+    "month": "730 hours, no free grant",
+}
+OFFSETS_RESOLUTION = (
+    "started_at is recorded truncated to the second and a system log row's time "
+    "is an upper bound of its event, so scheduled_s and last_container_started_s "
+    "are overstated and started_to_headers_s understated, by up to 1 s for the "
+    "truncation plus the rows' batching delay"
+)
 
 
 def timer_window(duration_s: float) -> str | None:
@@ -192,8 +225,11 @@ def offsets(
 ) -> dict[str, float | None]:
     """Where a cold start's time goes, from the system log rows' timestamps.
 
-    The platform writes the rows in batches, so a row's time is an upper bound
-    of its event.
+    The request's start is recorded truncated to the second, so it precedes the
+    true start by up to 1 s, and the platform writes the rows in batches, so a
+    row's time is an upper bound of its event. Both make an offset from the
+    request larger than its event's, and started_to_headers_s, whose headers time
+    the client takes from the true start, smaller.
     """
     t0 = datetime.fromisoformat(started_at)
 
@@ -302,10 +338,11 @@ def warm_window(observations: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def cost(raw: Path) -> list[dict[str, Any]]:
-    """The Query API responses as returned, one row per day and meter.
+    """The Query API responses as returned, one row per day, service and meter.
 
-    The query sums Cost and UsageQuantity per day grouped by the Meter dimension;
-    UsageDate is a number, yyyymmdd.
+    The query sums Cost and UsageQuantity per day grouped by the ServiceName and
+    Meter dimensions; UsageDate is a number, yyyymmdd. Every figure here is in US
+    dollars, so a row in another currency is refused rather than summed.
     """
     rows = []
     for path in sorted((raw / "cost").glob("*.json")):
@@ -313,11 +350,14 @@ def cost(raw: Path) -> list[dict[str, Any]]:
         names = [column["name"] for column in body["columns"]]
         for values in body["rows"]:
             row = dict(zip(names, values, strict=True))
+            if row["Currency"] != "USD":
+                raise ValueError(f"{path.name}: a row in {row['Currency']}, not USD")
             rows.append(
                 {
                     "date": datetime.strptime(str(row["UsageDate"]), "%Y%m%d")
                     .date()
                     .isoformat(),
+                    "service": row["ServiceName"],
                     "meter": row["Meter"],
                     "quantity": row["UsageQuantity"],
                     "usd": row["Cost"],
@@ -326,16 +366,27 @@ def cost(raw: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def environment_meter(rows: list[dict[str, Any]]) -> str:
+    """Claim 1: whether a plan management meter billed, from the rows."""
+    if not rows:
+        return "pending the cost read"
+    billed = any(
+        row["service"] == CONTAINER_APPS and row["meter"] in MANAGEMENT_METERS
+        for row in rows
+    )
+    return "yes" if billed else "no"
+
+
 def warm_window_cost(
     rows: list[dict[str, Any]], window: dict[str, Any] | None
 ) -> dict[str, Any] | None:
-    """The window's cost and per-meter quantities over its whole calendar days."""
+    """The app's cost and per-meter quantities over the window's whole days."""
     if window is None or not rows:
         return None
     first, last = window["start"][:10], window["end"][:10]
     meters: dict[str, dict[str, float]] = {}
     for row in rows:
-        if first <= row["date"] <= last:
+        if row["service"] == CONTAINER_APPS and first <= row["date"] <= last:
             meter = meters.setdefault(row["meter"], {"quantity": 0.0, "usd": 0.0})
             meter["quantity"] += row["quantity"]
             meter["usd"] += row["usd"]
@@ -358,27 +409,102 @@ def warm_window_cost(
 
 
 def warm_replica_month(
-    window_cost: dict[str, Any] | None, rates: dict[str, Any] | None
+    window_cost: dict[str, Any] | None,
+    window_allocation: dict[str, float] | None,
+    rates: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
-    """Each allocation's idle month at the measured unit prices of the idle meters."""
-    if window_cost is None or rates is None:
+    """The month at the hourly rate the window's billed amount and hours give.
+
+    The billed hours are the billed vCPU-seconds over the window's vCPU.
+    """
+    if window_cost is None or window_allocation is None or rates is None:
         return None
-    prices = {
-        key: window_cost["meters"].get(name, {}).get("usd_per_unit")
-        for key, name in IDLE_METERS.items()
+    vcpu_seconds = 0.0
+    usd_by_resource: dict[str | None, float] = {}
+    for name, meter in window_cost["meters"].items():
+        resource = METER_RESOURCE.get(name)
+        usd_by_resource[resource] = usd_by_resource.get(resource, 0.0) + meter["usd"]
+        if resource == "vcpu":
+            vcpu_seconds += meter["quantity"]
+    if not vcpu_seconds:
+        return None
+    hours = vcpu_seconds / window_allocation["vcpu"] / 3600
+    usd_per_month = {
+        f"{allocation['vcpu']}/{allocation['gib']}": round(
+            sum(
+                usd * (allocation[r] / window_allocation[r] if r else 1.0)
+                for r, usd in usd_by_resource.items()
+            )
+            / hours
+            * HOURS_PER_MONTH,
+            2,
+        )
+        for allocation in rates["allocations"]
     }
-    if None in prices.values():
-        return None
-    return {
-        "by_allocation": {
+    idle = {
+        METER_RESOURCE[name]: meter["usd"] / meter["quantity"]
+        for name, meter in window_cost["meters"].items()
+        if name in IDLE_METERS and meter["quantity"]
+    }
+    idle_only_usd_per_month = (
+        {
             f"{allocation['vcpu']}/{allocation['gib']}": round(
-                SECONDS_PER_MONTH
-                * sum(allocation[key] * prices[key] for key in IDLE_METERS),
-                2,
+                SECONDS_PER_MONTH * sum(allocation[r] * idle[r] for r in idle), 2
             )
             for allocation in rates["allocations"]
-        },
+        }
+        if len(idle) == len(IDLE_METERS)
+        else None
+    )
+    return {
+        "window_allocation": f"{window_allocation['vcpu']}/{window_allocation['gib']}",
+        "billed_usd": window_cost["usd"],
+        "billed_hours": round(hours, 3),
+        "usd_per_hour": round(window_cost["usd"] / hours, 6),
+        "usd_per_month": usd_per_month,
+        "idle_only_usd_per_month": idle_only_usd_per_month,
         "assumptions": WARM_MONTH_ASSUMPTIONS,
+    }
+
+
+def zero_replica_floor(
+    rows: list[dict[str, Any]], hourly_replicas: list[dict[str, Any]] | None
+) -> dict[str, Any] | None:
+    """What the resource group is billed per day while the app runs no replica.
+
+    A day counts when all 24 of its hourly Replicas maxima read 0.
+    """
+    if not rows or not hourly_replicas:
+        return None
+    by_day: dict[str, list[float | None]] = {}
+    for point in hourly_replicas:
+        by_day.setdefault(point["t"][:10], []).append(point["replicas"])
+    days = sorted(
+        day
+        for day, replicas in by_day.items()
+        if len(replicas) == 24 and all(r == 0 for r in replicas)
+    )
+    if not days:
+        return None
+    services: dict[str, float] = {}
+    for row in rows:
+        if row["date"] in days:
+            services[row["service"]] = services.get(row["service"], 0.0) + row["usd"]
+    usd_per_day = sum(services.values()) / len(days)
+    return {
+        "from": days[0],
+        "to": days[-1],
+        "days": len(days),
+        "container_apps_usd": round(services.get(CONTAINER_APPS, 0.0), 6),
+        "usd_per_day_by_service": {
+            service: round(usd / len(days), 6)
+            for service, usd in sorted(services.items())
+        },
+        "usd_per_day": round(usd_per_day, 6),
+        "usd_per_month": round(usd_per_day * HOURS_PER_MONTH / 24, 2),
+        "free_offers": "a service at 0.0 is billed on free-offer meters or within "
+        "a free allowance on these days, so the floor is what is billed under "
+        "those offers, not the components' list price",
     }
 
 
@@ -413,10 +539,9 @@ def results(raw: Path) -> dict[str, Any]:
         "gates": gates(stream),
         "gates_paired": gates(stream, "paired"),
         "ingress_inside": ingress_from_inside(stream),
+        "cold_start_offsets_resolution": OFFSETS_RESOLUTION,
         "claims": {
-            "environment_meter": observations.get(
-                "environment_meter", "pending the cost read"
-            ),
+            "environment_meter": environment_meter(rows),
             "ingress_timeout": ingress_timeout(stream),
             "cloudflare_timeout": cloudflare_timeout(stream),
             "sub_quarter_vcpu": observations.get("sub_quarter_vcpu", "pending"),
@@ -434,7 +559,12 @@ def results(raw: Path) -> dict[str, Any]:
         "cost": rows,
         "warm_window": window,
         "warm_window_cost": window_cost,
-        "warm_replica_usd_per_month": warm_replica_month(window_cost, rates),
+        "warm_replica_usd_per_month": warm_replica_month(
+            window_cost, observations.get("warm_window_allocation"), rates
+        ),
+        "zero_replica_floor": zero_replica_floor(
+            rows, optional_json(raw / "metrics" / "after-window.json")
+        ),
     }
 
 

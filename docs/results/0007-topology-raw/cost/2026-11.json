@@ -1,0 +1,802 @@
+{
+  "query": {
+    "type": "ActualCost",
+    "timeframe": "Custom",
+    "timePeriod": {
+      "from": "2026-11-01T00:00:00Z",
+      "to": "2026-11-11T23:59:59Z"
+    },
+    "dataset": {
+      "granularity": "Daily",
+      "aggregation": {
+        "totalCost": {
+          "name": "Cost",
+          "function": "Sum"
+        },
+        "totalQuantity": {
+          "name": "UsageQuantity",
+          "function": "Sum"
+        }
+      },
+      "grouping": [
+        {
+          "type": "Dimension",
+          "name": "ServiceName"
+        },
+        {
+          "type": "Dimension",
+          "name": "Meter"
+        }
+      ]
+    }
+  },
+  "read": "2026-11-12T00:01:09Z",
+  "type": "Microsoft.CostManagement/query",
+  "properties": {
+    "columns": [
+      {
+        "name": "Cost",
+        "type": "Number"
+      },
+      {
+        "name": "UsageQuantity",
+        "type": "Number"
+      },
+      {
+        "name": "UsageDate",
+        "type": "Number"
+      },
+      {
+        "name": "ServiceName",
+        "type": "String"
+      },
+      {
+        "name": "Meter",
+        "type": "String"
+      },
+      {
+        "name": "Currency",
+        "type": "String"
+      }
+    ],
+    "nextLink": null,
+    "rows": [
+      [
+        0.0,
+        24.0,
+        20261101,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261101,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261101,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000456,
+        0.0152,
+        20261101,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        3.1276e-05,
+        20261101,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        4.8e-05,
+        20261101,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261102,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261102,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0003,
+        20261102,
+        "Bandwidth",
+        "Standard Data Transfer In",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001909,
+        20261102,
+        "Bandwidth",
+        "Standard Data Transfer Out - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261102,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000492,
+        0.0164,
+        20261102,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        0.000231645,
+        20261102,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        1.32e-05,
+        0.0033,
+        20261102,
+        "Storage",
+        "All Other Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        4.8e-05,
+        20261102,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0001,
+        20261102,
+        "Storage",
+        "Hot LRS Write Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001,
+        20261102,
+        "Storage",
+        "Hot Read Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261103,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261103,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.000515,
+        20261103,
+        "Bandwidth",
+        "Standard Data Transfer In",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001918,
+        20261103,
+        "Bandwidth",
+        "Standard Data Transfer Out - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261103,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000513,
+        0.0171,
+        20261103,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        0.000314959,
+        20261103,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        1.68e-05,
+        0.0042,
+        20261103,
+        "Storage",
+        "All Other Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        6.9e-05,
+        20261103,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0002,
+        20261103,
+        "Storage",
+        "Hot LRS Write Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001,
+        20261103,
+        "Storage",
+        "Hot Read Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261104,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261104,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261104,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000453,
+        0.0151,
+        20261104,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        4.1326e-05,
+        20261104,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261104,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.017058,
+        5686.0,
+        20261105,
+        "Azure Container Apps",
+        "Standard Memory Active Usage",
+        "USD"
+      ],
+      [
+        0.433089,
+        144363.0,
+        20261105,
+        "Azure Container Apps",
+        "Standard Memory Idle Usage",
+        "USD"
+      ],
+      [
+        0.068232,
+        2843.0,
+        20261105,
+        "Azure Container Apps",
+        "Standard vCPU Active Usage",
+        "USD"
+      ],
+      [
+        0.216531,
+        72177.0,
+        20261105,
+        "Azure Container Apps",
+        "Standard vCPU Idle Usage",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261105,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261105,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.00028,
+        20261105,
+        "Bandwidth",
+        "Standard Data Transfer In",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001908,
+        20261105,
+        "Bandwidth",
+        "Standard Data Transfer Out - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261105,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000492,
+        0.0164,
+        20261105,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        8.5766e-05,
+        20261105,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        1e-05,
+        0.0025,
+        20261105,
+        "Storage",
+        "All Other Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261105,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0001,
+        20261105,
+        "Storage",
+        "Hot LRS Write Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.001,
+        20261105,
+        "Storage",
+        "Hot Read Operations - Free",
+        "USD"
+      ],
+      [
+        0.018408,
+        6136.0,
+        20261106,
+        "Azure Container Apps",
+        "Standard Memory Active Usage",
+        "USD"
+      ],
+      [
+        0.073536,
+        3064.0,
+        20261106,
+        "Azure Container Apps",
+        "Standard vCPU Active Usage",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261106,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261106,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.000291,
+        20261106,
+        "Bandwidth",
+        "Standard Data Transfer In",
+        "USD"
+      ],
+      [
+        0.0,
+        0.002672,
+        20261106,
+        "Bandwidth",
+        "Standard Data Transfer Out - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261106,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.00051,
+        0.017,
+        20261106,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        0.000312502,
+        20261106,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        1e-05,
+        0.0025,
+        20261106,
+        "Storage",
+        "All Other Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261106,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0001,
+        20261106,
+        "Storage",
+        "Hot LRS Write Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.0014,
+        20261106,
+        "Storage",
+        "Hot Read Operations - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261107,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261107,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261107,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000447,
+        0.0149,
+        20261107,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        3.1411e-05,
+        20261107,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261107,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261108,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261108,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261108,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.00045,
+        0.015,
+        20261108,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        3.1251e-05,
+        20261108,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261108,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261109,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261109,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261109,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000456,
+        0.0152,
+        20261109,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        3.1001e-05,
+        20261109,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261109,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        24.0,
+        20261110,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        1.0666666656,
+        20261110,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1666013328,
+        1.000008,
+        20261110,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000471,
+        0.0157,
+        20261110,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        3.3223e-05,
+        20261110,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        7.2e-05,
+        20261110,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        17.0,
+        20261111,
+        "Azure Database for PostgreSQL",
+        "B1MS Compute - Free",
+        "USD"
+      ],
+      [
+        0.0,
+        0.7555555548,
+        20261111,
+        "Azure Database for PostgreSQL",
+        "Storage Data Stored - Free",
+        "USD"
+      ],
+      [
+        0.1318927218,
+        0.791673,
+        20261111,
+        "Container Registry",
+        "Basic Registry Unit",
+        "USD"
+      ],
+      [
+        0.000366,
+        0.0122,
+        20261111,
+        "Key Vault",
+        "Operations",
+        "USD"
+      ],
+      [
+        0.0,
+        2.3065e-05,
+        20261111,
+        "Log Analytics",
+        "Analytics Logs Data Ingestion",
+        "USD"
+      ],
+      [
+        0.0,
+        5.7e-05,
+        20261111,
+        "Storage",
+        "Hot LRS Data Stored - Free",
+        "USD"
+      ]
+    ]
+  }
+}

@@ -34,5 +34,14 @@
     "utc": "2026-11-05T21:57:00Z",
     "et": "2026-11-05 16:57 EST",
     "read": "the time of the apply of plan app-13 (min_replicas 1 -> 0), recorded to the minute; az containerapp show --query properties.template.scale.minReplicas reads null after it (azurerm 5.11.0 sends no minimum when it is 0 (container_apps.go:1117); the service returns minReplicas null; the documented default minimum is 0 (scale-app)) and the Terraform state reads min_replicas 0"
+  },
+  "warm_window_allocation": {
+    "vcpu": 1.0,
+    "gib": 2.0,
+    "read": "az monitor activity-log list for the app (read 2026-11-12) holds no Microsoft.App/containerApps/write between the apply that opened the window (2026-11-03T02:17:06Z) and the apply that closed it (2026-11-05T21:56:45Z); the next write is the apply of plan app-14 (2026-11-06T02:02:25Z), which moved the replica from the fallback allocation, 1.0 vCPU and 2.0Gi, to 0.75 vCPU and 1.5Gi (sub_quarter_vcpu)"
+  },
+  "replicas_zero_after_window": {
+    "utc": "2026-11-05T22:03:00Z",
+    "read": "az monitor metrics list --metric Replicas --aggregation Maximum --interval PT1M (read 2026-11-12) reads 1 for every minute from 21:50 through 22:02 and 0 for every minute from 22:03 through 22:29; the replica ran six minutes past the apply that closed the window, and those minutes are billed on the window's last day"
   }
 }
