@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from dispute_casework.topology_results import (
     RAW,
     RESULTS,
@@ -9,6 +11,7 @@ from dispute_casework.topology_results import (
     cold_start,
     cold_start_summary,
     cost,
+    environment_meter,
     gates,
     ingress_from_inside,
     offsets,
@@ -18,6 +21,7 @@ from dispute_casework.topology_results import (
     warm_replica_month,
     warm_window,
     warm_window_cost,
+    zero_replica_floor,
 )
 
 
@@ -239,14 +243,15 @@ def test_the_warm_window_is_the_time_between_the_two_applies() -> None:
 
 
 def query_response(rows: list[list[object]]) -> dict[str, object]:
-    """The shape of the Query API's example response (api-version 2025-03-01)."""
+    """The shape of the Query API's response (api-version 2025-03-01)."""
     return {
-        "type": "microsoft.costmanagement/Query",
+        "type": "Microsoft.CostManagement/query",
         "properties": {
             "columns": [
                 {"name": "Cost", "type": "Number"},
                 {"name": "UsageQuantity", "type": "Number"},
                 {"name": "UsageDate", "type": "Number"},
+                {"name": "ServiceName", "type": "String"},
                 {"name": "Meter", "type": "String"},
                 {"name": "Currency", "type": "String"},
             ],
@@ -256,11 +261,25 @@ def query_response(rows: list[list[object]]) -> dict[str, object]:
     }
 
 
+def row(
+    date: str, meter: str, quantity: float, usd: float, **overrides: object
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "date": date,
+        "service": "Azure Container Apps",
+        "meter": meter,
+        "quantity": quantity,
+        "usd": usd,
+    }
+    return record | overrides
+
+
 WINDOW = {
     "start": "2026-11-03T02:20:08Z",
     "end": "2026-11-05T21:57:00Z",
     "hours": 67.61,
 }
+WINDOW_ALLOCATION = {"vcpu": 1.0, "gib": 2.0}
 RATES = {"allocations": [{"vcpu": 0.75, "gib": 1.5}, {"vcpu": 1.0, "gib": 2.0}]}
 
 
@@ -268,113 +287,214 @@ def test_cost_rows_are_read_from_the_query_response_as_returned(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "cost").mkdir()
-    (tmp_path / "cost" / "query.json").write_text(
+    (tmp_path / "cost" / "2026-11.json").write_text(
         json.dumps(
             query_response(
                 [
-                    [0.3, 100000.0, 20261103, "Standard vCPU Idle Usage", "USD"],
-                    [2.10333307059661, 5.0, 20261102, "Standard Requests", "USD"],
+                    [
+                        0.216531,
+                        72177.0,
+                        20261105,
+                        "Azure Container Apps",
+                        "Standard vCPU Idle Usage",
+                        "USD",
+                    ],
+                    [
+                        0.1666013328,
+                        1.000008,
+                        20261102,
+                        "Container Registry",
+                        "Basic Registry Unit",
+                        "USD",
+                    ],
                 ]
             )
         )
     )
     assert cost(tmp_path) == [
-        {
-            "date": "2026-11-03",
-            "meter": "Standard vCPU Idle Usage",
-            "quantity": 100000.0,
-            "usd": 0.3,
-        },
-        {
-            "date": "2026-11-02",
-            "meter": "Standard Requests",
-            "quantity": 5.0,
-            "usd": 2.10333307059661,
-        },
+        row("2026-11-05", "Standard vCPU Idle Usage", 72177.0, 0.216531),
+        row(
+            "2026-11-02",
+            "Basic Registry Unit",
+            1.000008,
+            0.1666013328,
+            service="Container Registry",
+        ),
     ]
+
+
+def test_a_cost_row_in_another_currency_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "cost").mkdir()
+    (tmp_path / "cost" / "2026-11.json").write_text(
+        json.dumps(
+            query_response(
+                [
+                    [
+                        0.2,
+                        72177.0,
+                        20261105,
+                        "Azure Container Apps",
+                        "Standard vCPU Idle Usage",
+                        "EUR",
+                    ]
+                ]
+            )
+        )
+    )
+    with pytest.raises(ValueError, match="EUR"):
+        cost(tmp_path)
 
 
 def test_a_response_with_no_rows_yields_no_cost_and_no_month(tmp_path: Path) -> None:
     (tmp_path / "cost").mkdir()
-    (tmp_path / "cost" / "query.json").write_text(json.dumps(query_response([])))
+    (tmp_path / "cost" / "2026-11.json").write_text(json.dumps(query_response([])))
     assert cost(tmp_path) == []
     assert warm_window_cost([], WINDOW) is None
-    assert warm_replica_month(None, RATES) is None
+    assert warm_replica_month(None, WINDOW_ALLOCATION, RATES) is None
+    assert environment_meter([]) == "pending the cost read"
 
 
-def test_the_window_cost_sums_its_whole_days_per_meter_and_the_month_follows() -> None:
+def test_the_environment_meter_is_answered_from_the_management_meters() -> None:
+    rows = [row("2026-11-05", "Standard vCPU Idle Usage", 72177.0, 0.216531)]
+    assert environment_meter(rows) == "no"
+    assert (
+        environment_meter(
+            [*rows, row("2026-11-05", "Environment Management Hour", 24.0, 2.4)]
+        )
+        == "yes"
+    )
+    for meter in (
+        "Environment Planned Maintenance Hour",
+        "Environment Private Endpoint",
+        "Dedicated Plan Management",
+    ):
+        assert environment_meter([*rows, row("2026-11-05", meter, 24.0, 2.4)]) == "yes"
+
+
+def test_the_window_cost_sums_the_apps_meters_over_its_whole_days() -> None:
     rows = [
-        {
-            "date": "2026-11-02",
-            "meter": "Standard vCPU Idle Usage",
-            "quantity": 9.0,
-            "usd": 9.0,
-        },
-        {
-            "date": "2026-11-03",
-            "meter": "Standard vCPU Idle Usage",
-            "quantity": 40000.0,
-            "usd": 0.12,
-        },
-        {
-            "date": "2026-11-04",
-            "meter": "Standard vCPU Idle Usage",
-            "quantity": 60000.0,
-            "usd": 0.18,
-        },
-        {
-            "date": "2026-11-04",
-            "meter": "Standard Memory Idle Usage",
-            "quantity": 200000.0,
-            "usd": 0.6,
-        },
-        {
-            "date": "2026-11-05",
-            "meter": "Standard Requests",
-            "quantity": 0.0,
-            "usd": 0.0,
-        },
-        {
-            "date": "2026-11-06",
-            "meter": "Standard Memory Idle Usage",
-            "quantity": 7.0,
-            "usd": 7.0,
-        },
+        row("2026-11-02", "Standard vCPU Idle Usage", 9.0, 9.0),
+        row("2026-11-04", "Standard vCPU Idle Usage", 40000.0, 0.12),
+        row("2026-11-05", "Standard vCPU Idle Usage", 32000.0, 0.096),
+        row("2026-11-05", "Standard vCPU Active Usage", 1000.0, 0.024),
+        row("2026-11-05", "Standard Memory Idle Usage", 144000.0, 0.432),
+        row("2026-11-05", "Standard Memory Active Usage", 2000.0, 0.006),
+        row(
+            "2026-11-05", "Basic Registry Unit", 1.0, 0.17, service="Container Registry"
+        ),
+        row("2026-11-06", "Standard Memory Idle Usage", 7.0, 7.0),
     ]
     window_cost = warm_window_cost(rows, WINDOW)
     assert window_cost == {
         "from": "2026-11-03",
         "to": "2026-11-05",
         "days": "whole calendar days; the boundary days are included whole",
-        "usd": 0.9,
+        "usd": 0.678,
         "meters": {
-            "Standard Memory Idle Usage": {
-                "quantity": 200000.0,
-                "usd": 0.6,
+            "Standard Memory Active Usage": {
+                "quantity": 2000.0,
+                "usd": 0.006,
                 "usd_per_unit": 3e-06,
             },
-            "Standard Requests": {"quantity": 0.0, "usd": 0.0, "usd_per_unit": None},
+            "Standard Memory Idle Usage": {
+                "quantity": 144000.0,
+                "usd": 0.432,
+                "usd_per_unit": 3e-06,
+            },
+            "Standard vCPU Active Usage": {
+                "quantity": 1000.0,
+                "usd": 0.024,
+                "usd_per_unit": 2.4e-05,
+            },
             "Standard vCPU Idle Usage": {
-                "quantity": 100000.0,
-                "usd": 0.3,
+                "quantity": 72000.0,
+                "usd": 0.216,
                 "usd_per_unit": 3e-06,
             },
         },
     }
-    month = warm_replica_month(window_cost, RATES)
+
+
+def test_the_month_follows_from_the_billed_hours_and_scales_by_allocation() -> None:
+    meters = {
+        "Standard Memory Active Usage": {"quantity": 2000.0, "usd": 0.006},
+        "Standard Memory Idle Usage": {"quantity": 144000.0, "usd": 0.432},
+        "Standard vCPU Active Usage": {"quantity": 1000.0, "usd": 0.024},
+        "Standard vCPU Idle Usage": {"quantity": 71000.0, "usd": 0.213},
+        "Standard Requests": {"quantity": 0.5, "usd": 0.003},
+    }
+    window_cost = {"usd": 0.678, "meters": meters}
+    month = warm_replica_month(window_cost, WINDOW_ALLOCATION, RATES)
     assert month is not None
-    assert month["by_allocation"] == {"0.75/1.5": 17.74, "1.0/2.0": 23.65}
-    assert set(month["assumptions"]) == {"meters", "free_grant", "month"}
-    assert warm_replica_month(window_cost, None) is None
+    assert month["window_allocation"] == "1.0/2.0"
+    assert month["billed_hours"] == 20.0
+    assert month["usd_per_hour"] == 0.0339
+    assert month["usd_per_month"] == {"0.75/1.5": 18.59, "1.0/2.0": 24.75}
+    assert month["idle_only_usd_per_month"] == {"0.75/1.5": 17.74, "1.0/2.0": 23.65}
+    assert set(month["assumptions"]) == {
+        "meters",
+        "free_grant",
+        "estimate",
+        "allocation",
+        "month",
+    }
+    del meters["Standard Memory Idle Usage"]
+    month = warm_replica_month(window_cost, WINDOW_ALLOCATION, RATES)
+    assert month is not None
+    assert month["idle_only_usd_per_month"] is None
+    assert warm_replica_month(window_cost, None, RATES) is None
+    assert warm_replica_month(window_cost, WINDOW_ALLOCATION, None) is None
 
 
-def test_the_month_needs_a_measured_price_for_both_idle_meters() -> None:
-    rows = [
-        {
-            "date": "2026-11-04",
-            "meter": "Standard vCPU Idle Usage",
-            "quantity": 100000.0,
-            "usd": 0.3,
-        },
+def test_the_month_needs_billed_vcpu_seconds() -> None:
+    window_cost = {
+        "usd": 0.6,
+        "meters": {"Standard Memory Idle Usage": {"quantity": 200000.0, "usd": 0.6}},
+    }
+    assert warm_replica_month(window_cost, WINDOW_ALLOCATION, RATES) is None
+
+
+def hours(day: str, replicas: float | None = 0.0) -> list[dict[str, object]]:
+    return [
+        {"t": f"{day}T{hour:02}:00:00Z", "replicas": replicas} for hour in range(24)
     ]
-    assert warm_replica_month(warm_window_cost(rows, WINDOW), RATES) is None
+
+
+def test_the_zero_replica_floor_covers_whole_days_with_no_replica() -> None:
+    hourly = [
+        *hours("2026-11-06")[:5],
+        {"t": "2026-11-06T05:00:00Z", "replicas": 1.0},
+        *hours("2026-11-06")[6:],
+        *hours("2026-11-07"),
+        *hours("2026-11-08"),
+        *hours("2026-11-09", None),
+        *hours("2026-11-10")[:23],
+    ]
+    rows = [
+        row("2026-11-06", "Standard vCPU Active Usage", 3064.0, 0.073536),
+        row(
+            "2026-11-07", "Basic Registry Unit", 1.0, 0.17, service="Container Registry"
+        ),
+        row(
+            "2026-11-08", "Basic Registry Unit", 1.0, 0.17, service="Container Registry"
+        ),
+        row("2026-11-08", "Operations", 0.015, 0.00045, service="Key Vault"),
+        row(
+            "2026-11-09", "Basic Registry Unit", 1.0, 0.17, service="Container Registry"
+        ),
+    ]
+    floor = zero_replica_floor(rows, hourly)
+    assert floor is not None
+    assert floor.pop("free_offers")
+    assert floor == {
+        "from": "2026-11-07",
+        "to": "2026-11-08",
+        "days": 2,
+        "container_apps_usd": 0.0,
+        "usd_per_day_by_service": {"Container Registry": 0.17, "Key Vault": 0.000225},
+        "usd_per_day": 0.170225,
+        "usd_per_month": 5.18,
+    }
+    assert zero_replica_floor(rows, None) is None
+    assert zero_replica_floor([], hourly) is None
+    assert zero_replica_floor(rows, hours("2026-11-06", 1.0)) is None
