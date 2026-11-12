@@ -92,7 +92,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--url-env", default="INTERNAL_URL")
     parser.add_argument("--leg", default="internal")
     parser.add_argument(
-        "--series", help="a series outside the pre-registration, kept apart"
+        "--series", help="a series outside the planned runs, kept apart"
     )
     parser.add_argument("--seconds", type=int, default=300)
     parser.add_argument("--silent", action="store_true")

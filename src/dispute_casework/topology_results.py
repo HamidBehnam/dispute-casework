@@ -80,7 +80,7 @@ def outlasted(pair: dict[str, Any], run: dict[str, Any]) -> bool:
     """Whether the run of the same arm and order on another leg got past this run's end.
 
     The heartbeat arm must survive; the silent arm never meets the gap bound, so
-    for it the pre-registered comparison is lasting longer than the cut.
+    for it the comparison is lasting longer than the cut.
     """
     if run["arm"] == "heartbeat":
         return bool(pair["survived"])
