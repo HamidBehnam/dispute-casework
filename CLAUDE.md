@@ -28,7 +28,7 @@ In each root under `infra/`:
 - Documentation states the current rule. The history of what changed belongs in the commit message.
 - AI capabilities are vendor or framework components. Cosine similarity, vector stores, BM25, rerankers and fusion are never implemented here, including during a simplification pass. Application code, glue and instrumentation are written here.
 - Seams are plain functions with one implementation each and no interfaces: parse_token, authorize and allowed_labels, guard, embed, retrieve, rerank, call_model, compute_deadlines.
-- Code is written here only where no vendor or framework component does the unit's whole job. Each such unit is listed in the step's ADR under "Code written here", and the list is disclosed and approved before a unit is written.
+- Code is written here only where no vendor or framework component does the unit's whole job. Each unit is checked against vendor components before it is written, and that record is kept outside the repository.
 - Minimum acceptable beats complete and clever. Legibility and defensibility come first.
 
 ## Strip list
