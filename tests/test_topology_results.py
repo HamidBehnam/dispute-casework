@@ -323,6 +323,30 @@ def test_cost_rows_are_read_from_the_query_response_as_returned(
     ]
 
 
+def test_the_cost_rows_of_every_month_are_read_in_month_order(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "cost").mkdir()
+    for month, date in (("2026-11", 20261102), ("2026-10", 20261030)):
+        (tmp_path / "cost" / f"{month}.json").write_text(
+            json.dumps(
+                query_response(
+                    [
+                        [
+                            0.1666013328,
+                            1.000008,
+                            date,
+                            "Container Registry",
+                            "Basic Registry Unit",
+                            "USD",
+                        ]
+                    ]
+                )
+            )
+        )
+    assert [r["date"] for r in cost(tmp_path)] == ["2026-10-30", "2026-11-02"]
+
+
 def test_a_cost_row_in_another_currency_is_refused(tmp_path: Path) -> None:
     (tmp_path / "cost").mkdir()
     (tmp_path / "cost" / "2026-11.json").write_text(

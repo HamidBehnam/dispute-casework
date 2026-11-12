@@ -3803,6 +3803,307 @@
   },
   "cost": [
     {
+      "date": "2026-10-28",
+      "meter": "B1MS Compute - Free",
+      "quantity": 15.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0322580624,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.000112,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.000417,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "5.4 mini Inp Gl 1M Tokens",
+      "quantity": 1.3e-05,
+      "service": "Foundry Models",
+      "usd": 9.75e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "5.4 mini Opt Gl 1M Tokens",
+      "quantity": 5e-06,
+      "service": "Foundry Models",
+      "usd": 2.25e-05
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "5.4 nano Inp Gl 1M Tokens",
+      "quantity": 1.3e-05,
+      "service": "Foundry Models",
+      "usd": 2.6e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "5.4 nano Opt Gl 1M Tokens",
+      "quantity": 5e-06,
+      "service": "Foundry Models",
+      "usd": 6.25e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Rerank v4 Fast Glbl Search",
+      "quantity": 0.002,
+      "service": "Foundry Models",
+      "usd": 0.004
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "V4 Pro Inp glbl Tokens",
+      "quantity": 0.011,
+      "service": "Foundry Models",
+      "usd": 1.914e-05
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "V4 Pro Outp glbl Tokens",
+      "quantity": 0.002,
+      "service": "Foundry Models",
+      "usd": 6.96e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "text-embedding-3-large-glbl Tokens",
+      "quantity": 0.014,
+      "service": "Foundry Models",
+      "usd": 1.82e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "All Other Operations",
+      "quantity": 0.0012,
+      "service": "Storage",
+      "usd": 4.8e-06
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0002,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.0032,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "LRS List and Create Container Operations - Free",
+      "quantity": 0.0002,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-28",
+      "meter": "Read Operations - Free",
+      "quantity": 0.0001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0322580624,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Standard Data Transfer In",
+      "quantity": 0.001835,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Standard Data Transfer Out - Free",
+      "quantity": 0.005718,
+      "service": "Bandwidth",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Basic Registry Unit",
+      "quantity": 0.967683,
+      "service": "Container Registry",
+      "usd": 0.1612159878
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Task vCPU Duration",
+      "quantity": 72.0,
+      "service": "Container Registry",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Operations",
+      "quantity": 0.0204,
+      "service": "Key Vault",
+      "usd": 0.000612
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 0.000330729,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "All Other Operations",
+      "quantity": 0.0177,
+      "service": "Storage",
+      "usd": 7.08e-05
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 2.8e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Hot LRS Write Operations - Free",
+      "quantity": 0.0014,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Hot Read Operations - Free",
+      "quantity": 0.0074,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "LRS List and Create Container Operations - Free",
+      "quantity": 0.0003,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-29",
+      "meter": "Read Operations - Free",
+      "quantity": 0.0001,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0322580624,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "Operations",
+      "quantity": 0.0162,
+      "service": "Key Vault",
+      "usd": 0.000486
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.4342e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-30",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 4.8e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "B1MS Compute - Free",
+      "quantity": 24.0,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "Storage Data Stored - Free",
+      "quantity": 1.0322580624,
+      "service": "Azure Database for PostgreSQL",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "Basic Registry Unit",
+      "quantity": 1.000008,
+      "service": "Container Registry",
+      "usd": 0.1666013328
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "Operations",
+      "quantity": 0.0153,
+      "service": "Key Vault",
+      "usd": 0.000459
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "Analytics Logs Data Ingestion",
+      "quantity": 3.1886e-05,
+      "service": "Log Analytics",
+      "usd": 0.0
+    },
+    {
+      "date": "2026-10-31",
+      "meter": "Hot LRS Data Stored - Free",
+      "quantity": 4.8e-05,
+      "service": "Storage",
+      "usd": 0.0
+    },
+    {
       "date": "2026-11-01",
       "meter": "B1MS Compute - Free",
       "quantity": 24.0,
