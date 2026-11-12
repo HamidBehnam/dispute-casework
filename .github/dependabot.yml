@@ -35,3 +35,7 @@ updates:
     directory: /infra/app
     schedule:
       interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/identity
+    schedule:
+      interval: weekly
