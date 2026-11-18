@@ -1,5 +1,9 @@
 import asyncio
 import secrets
+import uuid
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -9,6 +13,7 @@ from starlette.routing import Route
 
 from dispute_casework import api
 from dispute_casework.api import ORIGIN_HEADER, create_app
+from dispute_casework.identity import IdentitySettings
 
 SECRET = "expected-value-padded-to-the-minimum-length"
 
@@ -27,8 +32,22 @@ def get(
 
 
 @pytest.fixture(autouse=True)
-def origin_header_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+def environment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    identity: IdentitySettings,
+    jwks_url: str,
+) -> None:
     monkeypatch.setenv("ORIGIN_HEADER_SECRET", SECRET)
+    monkeypatch.setenv("IDENTITY_TENANT_ID", identity.identity_tenant_id)
+    monkeypatch.setenv("API_CLIENT_ID", identity.api_client_id)
+    monkeypatch.setenv("MCP_CLIENT_ID", identity.mcp_client_id)
+    monkeypatch.setattr(api, "jwks_uri", lambda tenant_id: jwks_url)
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<title>index</title>")
+    (tmp_path / "redirect.html").write_text("<title>Signing in</title>")
+    (tmp_path / "assets" / "main.js").write_text("export {};")
+    monkeypatch.setattr(api, "STATIC_DIR", tmp_path)
 
 
 def test_a_request_without_the_origin_header_is_refused() -> None:
@@ -101,15 +120,97 @@ def test_a_rejected_secret_is_not_written_into_the_error(
     assert rejected not in str(error.value)
 
 
+ROUTE_PATHS = {
+    "/stream": "/stream",
+    "/": "/",
+    "/redirect": "/redirect",
+    "/assets/{path:path}": "/assets/main.js",
+    "/me": "/me",
+}
+
+
 def test_every_route_refuses_a_request_without_the_origin_header() -> None:
     app = create_app()
     paths = [route.path for route in app.routes if isinstance(route, Route)]
-    assert paths == ["/stream"]
+    assert sorted(paths) == sorted(ROUTE_PATHS)
     for path in paths:
-        assert get({"seconds": "1", "silent": "true"}, {}, path).status_code == 403
+        response = get({"seconds": "1", "silent": "true"}, {}, ROUTE_PATHS[path])
+        assert response.status_code == 403
 
 
 def test_every_route_is_an_api_route() -> None:
     """A Starlette Route or a Mount skips the application's origin check."""
     routes = create_app().routes
     assert routes and all(isinstance(route, APIRoute) for route in routes), routes
+
+
+def test_the_sign_in_page_and_its_assets_are_served() -> None:
+    page = get({}, {ORIGIN_HEADER: SECRET}, "/")
+    assert page.status_code == 200 and "<title>index</title>" in page.text
+    asset = get({}, {ORIGIN_HEADER: SECRET}, "/assets/main.js")
+    assert asset.status_code == 200 and asset.text == "export {};"
+    assert get({}, {ORIGIN_HEADER: SECRET}, "/assets/missing.js").status_code == 404
+
+
+def test_an_asset_path_cannot_leave_the_assets_directory() -> None:
+    response = get({}, {ORIGIN_HEADER: SECRET}, "/assets/..%2Findex.html")
+    assert response.status_code == 404
+
+
+def test_the_redirect_bridge_is_never_cached_and_carries_no_opener_policy() -> None:
+    response = get({}, {ORIGIN_HEADER: SECRET}, "/redirect")
+    assert response.status_code == 200
+    assert "<title>Signing in</title>" in response.text
+    assert response.headers["cache-control"] == "no-store"
+    assert "cross-origin-opener-policy" not in response.headers
+
+
+def test_me_refuses_a_request_without_a_bearer_token() -> None:
+    response = get({}, {ORIGIN_HEADER: SECRET}, "/me")
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+def test_me_returns_the_principal_of_a_valid_api_token(
+    identity: IdentitySettings,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+) -> None:
+    issued = claims(identity.api_client_id, roles=["restricted_viewer"])
+    response = get(
+        {}, {ORIGIN_HEADER: SECRET, "Authorization": f"Bearer {sign(issued)}"}, "/me"
+    )
+    assert response.status_code == 200
+    assert response.json() == {"oid": issued["oid"], "roles": ["restricted_viewer"]}
+
+
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"aud": "mcp"},
+        {"exp": 1},
+        {"roles": ["administrator"]},
+        {"oid": "not-a-guid"},
+    ],
+    ids=["mcp-audience", "expired", "unknown-role", "malformed-oid"],
+)
+def test_me_refuses_an_invalid_token(
+    identity: IdentitySettings,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+    overrides: dict[str, Any],
+) -> None:
+    if overrides.get("aud") == "mcp":
+        overrides = {"aud": identity.mcp_client_id}
+    token = sign(claims(identity.api_client_id, **overrides))
+    response = get(
+        {}, {ORIGIN_HEADER: SECRET, "Authorization": f"Bearer {token}"}, "/me"
+    )
+    assert response.status_code == 401
+
+
+def test_me_needs_the_origin_header_even_with_a_token() -> None:
+    response = get({}, {"Authorization": f"Bearer {uuid.uuid4()}"}, "/me")
+    assert response.status_code == 403
