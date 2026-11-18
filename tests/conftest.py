@@ -13,13 +13,19 @@ os.environ.pop("CONFIDENT_API_KEY", None)
 import hashlib
 import json
 import subprocess
+import threading
+import time
+import uuid
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+import jwt
 import psycopg
 import pytest
+from cryptography.hazmat.primitives.asymmetric import rsa
 from langchain_postgres import PGEngine, PGVectorStore
 
 from dispute_casework.corpus import SNAPSHOT_DIR, load
@@ -30,6 +36,7 @@ from dispute_casework.database import (
     tier_engines,
 )
 from dispute_casework.foundry import FoundrySettings
+from dispute_casework.identity import IdentitySettings, issuer
 from dispute_casework.retrieval import open_store
 
 DATABASE = "dcw"
@@ -196,3 +203,76 @@ def store(
     with loader_grant():
         load(database, SNAPSHOT_DIR, settings)
     return open_store(engines["tier_full"], settings)
+
+
+SIGNING_KID = "test-key"
+
+
+@pytest.fixture(scope="session")
+def signing_key() -> rsa.RSAPrivateKey:
+    return rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+
+@pytest.fixture(scope="session")
+def jwks_url(signing_key: rsa.RSAPrivateKey) -> Iterator[str]:
+    """The signing key's public half, served as a JWKS the way Entra serves its keys."""
+    jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(signing_key.public_key()))
+    body = json.dumps({"keys": [jwk | {"kid": SIGNING_KID, "use": "sig"}]}).encode()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_port}/keys"
+    server.shutdown()
+
+
+@pytest.fixture(scope="session")
+def identity() -> IdentitySettings:
+    return IdentitySettings(
+        identity_tenant_id=str(uuid.uuid4()),
+        api_client_id=str(uuid.uuid4()),
+        mcp_client_id=str(uuid.uuid4()),
+    )
+
+
+@pytest.fixture
+def claims(identity: IdentitySettings) -> Callable[..., dict[str, Any]]:
+    """Entra v2 access token claims for one audience; an override of None drops one."""
+
+    def build(audience: str, **overrides: Any) -> dict[str, Any]:
+        now = int(time.time())
+        claims = {
+            "iss": issuer(identity.identity_tenant_id),
+            "aud": audience,
+            "exp": now + 3600,
+            "nbf": now - 60,
+            "iat": now - 60,
+            "ver": "2.0",
+            "tid": identity.identity_tenant_id,
+            "oid": str(uuid.uuid4()),
+            "azp": str(uuid.uuid4()),
+            "scp": "access_as_user",
+            "roles": ["preparer"],
+        } | overrides
+        return {name: value for name, value in claims.items() if value is not None}
+
+    return build
+
+
+@pytest.fixture
+def sign(signing_key: rsa.RSAPrivateKey) -> Callable[[dict[str, Any]], str]:
+    def encode(claims: dict[str, Any]) -> str:
+        return jwt.encode(
+            claims, signing_key, algorithm="RS256", headers={"kid": SIGNING_KID}
+        )
+
+    return encode
