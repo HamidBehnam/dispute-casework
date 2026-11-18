@@ -884,6 +884,7 @@ name = "dispute-casework"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "alembic" },
     { name = "assistant-stream" },
     { name = "azure-identity" },
@@ -928,6 +929,7 @@ provisioning = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = "==3.14.5" },
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "assistant-stream", specifier = ">=0.0.36" },
     { name = "azure-identity", specifier = ">=1.25.3" },
