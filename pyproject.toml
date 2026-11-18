@@ -68,7 +68,8 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 pythonpath = ["infra/identity"]
-addopts = "--block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerunfailures -p no:xdist -p no:xdist.looponfail"
+markers = ["live: runs against the identity tenant; local only, selected with -m live"]
+addopts = "-m 'not live' --block-network -p no:deepeval -p no:asyncio -p no:repeat -p no:rerunfailures -p no:xdist -p no:xdist.looponfail"
 
 [tool.mypy]
 strict = true
