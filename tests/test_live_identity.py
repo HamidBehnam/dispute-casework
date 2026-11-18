@@ -26,6 +26,7 @@ from azure.identity.aio import AzureCliCredential as AsyncAzureCliCredential
 from azure.keyvault.secrets import SecretClient
 from msgraph.graph_service_client import GraphServiceClient
 from personas import PERSONAS, VAULT_URL, secret_name
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page, Request, Route
 
 from dispute_casework.api import ORIGIN_HEADER, ApiSettings
@@ -233,7 +234,10 @@ def test_the_unassigned_administrator_is_refused(
     deadline = time.monotonic() + ADMINISTRATOR_SIGN_IN_SECONDS
     refused = False
     while not refused and time.monotonic() < deadline:
-        shown = "" if popup.value.is_closed() else popup.value.content()
+        try:
+            shown = "" if popup.value.is_closed() else popup.value.content()
+        except PlaywrightError:  # the popup is between two pages; read it next second
+            shown = ""
         refused = any("AADSTS50105" in text for text in [shown, *console])
         page.wait_for_timeout(1000)
     observe("administrator", refused_with_aadsts50105=refused, api_tokens=len(tokens))
