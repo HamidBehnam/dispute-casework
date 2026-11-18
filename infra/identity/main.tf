@@ -172,8 +172,9 @@ resource "azuread_service_principal_delegated_permission_grant" "api_mcp" {
 }
 
 # The backend signs its On-Behalf-Of client assertion in process from the PKCS#12
-# secret, so the key is exportable. Renewal is an apply rather than AutoRenew: a
-# renewed certificate is not trusted by Entra until this root uploads it.
+# secret, so the key is exportable. There is no lifetime action: a renewed
+# certificate is not trusted by Entra until this root uploads it, so renewal is an
+# apply before the date in the obo_certificate_expires output.
 resource "azurerm_key_vault_certificate" "obo" {
   name         = "obo-certificate"
   key_vault_id = data.azurerm_key_vault.dcw.id
@@ -188,16 +189,6 @@ resource "azurerm_key_vault_certificate" "obo" {
       key_size   = 2048
       key_type   = "RSA"
       reuse_key  = false
-    }
-
-    lifetime_action {
-      action {
-        action_type = "EmailContacts"
-      }
-
-      trigger {
-        days_before_expiry = 30
-      }
     }
 
     secret_properties {
@@ -220,4 +211,23 @@ resource "azuread_application_certificate" "obo" {
   value          = azurerm_key_vault_certificate.obo.certificate_data
   start_date     = azurerm_key_vault_certificate.obo.certificate_attribute[0].not_before
   end_date       = azurerm_key_vault_certificate.obo.certificate_attribute[0].expires
+}
+
+# No persona registers multifactor authentication, which security defaults would
+# require; nobody joins the tenant through self-service sign-up.
+resource "msgraph_update_resource" "security_defaults" {
+  url = "policies/identitySecurityDefaultsEnforcementPolicy"
+
+  body = {
+    isEnabled = false
+  }
+}
+
+resource "msgraph_update_resource" "self_service_sign_up" {
+  url = "policies/authorizationPolicy"
+
+  body = {
+    allowEmailVerifiedUsersToJoinOrganization = false
+    allowedToSignUpEmailBasedSubscriptions    = false
+  }
 }
