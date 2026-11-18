@@ -20,8 +20,8 @@ from uuid import UUID
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity.aio import AzureCliCredential
 from azure.keyvault.secrets.aio import SecretClient
-from kiota_abstractions.api_error import APIError
 from msgraph.generated.models.app_role_assignment import AppRoleAssignment
+from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 from msgraph.generated.models.password_profile import PasswordProfile
 from msgraph.generated.models.user import User
 from msgraph.graph_service_client import GraphServiceClient
@@ -157,7 +157,7 @@ async def read_state(
             user = await graph.users.by_user_id(
                 user_principal_name(persona, settings)
             ).get()
-        except APIError as error:
+        except ODataError as error:
             if error.response_status_code != 404:
                 raise
         else:
@@ -227,16 +227,25 @@ async def main(command: str) -> None:
         SecretClient(VAULT_URL, vault_credential) as vault,
     ):
         graph = GraphServiceClient(graph_credential, scopes=GRAPH_SCOPES)
-        resources = await read_resources(graph, settings)
-        state = await read_state(graph, vault, resources, settings)
-        planned = changes(state, resources)
+        await run(command, graph, vault, settings)
+
+
+async def run(
+    command: str,
+    graph: GraphServiceClient,
+    vault: SecretClient,
+    settings: PersonaSettings,
+) -> None:
+    resources = await read_resources(graph, settings)
+    state = await read_state(graph, vault, resources, settings)
+    planned = changes(state, resources)
+    for change in planned:
+        print(change.kind, change.persona, change.app)
+    print(f"{len(planned)} changes")
+    if command == "apply":
+        users = dict(state.users)
         for change in planned:
-            print(change.kind, change.persona, change.app)
-        print(f"{len(planned)} changes")
-        if command == "apply":
-            users = dict(state.users)
-            for change in planned:
-                await apply_change(change, graph, vault, resources, users, settings)
+            await apply_change(change, graph, vault, resources, users, settings)
 
 
 if __name__ == "__main__":
