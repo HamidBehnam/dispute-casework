@@ -214,6 +214,32 @@ def test_a_persona_signs_in_with_a_redirect(
     assert me["roles"] == [PERSONAS[persona]] and not prompts and not off_origin
 
 
+ADMINISTRATOR_SIGN_IN_SECONDS = 600
+
+
+def test_the_unassigned_administrator_is_refused(
+    signed_in_page: tuple[Page, list[Request], list[str]],
+) -> None:
+    """E1: the administrator holds no app role, so Entra refuses the API token.
+
+    Run headed (`--headed`); the administrator signs in by hand in the popup, with
+    MFA. Only the error code is recorded."""
+    page, _, tokens = signed_in_page
+    console: list[str] = []
+    page.on("console", lambda message: console.append(message.text))
+    page.goto(ORIGIN)
+    with page.expect_popup() as popup:
+        page.click("#sign-in-popup")
+    deadline = time.monotonic() + ADMINISTRATOR_SIGN_IN_SECONDS
+    refused = False
+    while not refused and time.monotonic() < deadline:
+        shown = "" if popup.value.is_closed() else popup.value.content()
+        refused = any("AADSTS50105" in text for text in [shown, *console])
+        page.wait_for_timeout(1000)
+    observe("administrator", refused_with_aadsts50105=refused, api_tokens=len(tokens))
+    assert refused and not tokens
+
+
 def test_the_redirect_bridge_headers() -> None:
     """E2: /redirect is never cached and carries no opener policy."""
     secret = ApiSettings().origin_header_secret.get_secret_value()
