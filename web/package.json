@@ -1,0 +1,17 @@
+{
+    "name": "dispute-casework-web",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build"
+    },
+    "dependencies": {
+        "@azure/msal-browser": "5.29.1"
+    },
+    "devDependencies": {
+        "vite": "8.3.8"
+    },
+    "engines": {
+        "node": ">=26"
+    }
+}

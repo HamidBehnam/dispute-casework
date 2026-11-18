@@ -13,3 +13,5 @@ __pycache__/
 *.tfvars
 .terraform.tfstate.lock.info
 crash.log
+src/dispute_casework/static/
+web/node_modules/
