@@ -212,22 +212,3 @@ resource "azuread_application_certificate" "obo" {
   start_date     = azurerm_key_vault_certificate.obo.certificate_attribute[0].not_before
   end_date       = azurerm_key_vault_certificate.obo.certificate_attribute[0].expires
 }
-
-# No persona registers multifactor authentication, which security defaults would
-# require; nobody joins the tenant through self-service sign-up.
-resource "msgraph_update_resource" "security_defaults" {
-  url = "policies/identitySecurityDefaultsEnforcementPolicy"
-
-  body = {
-    isEnabled = false
-  }
-}
-
-resource "msgraph_update_resource" "self_service_sign_up" {
-  url = "policies/authorizationPolicy"
-
-  body = {
-    allowEmailVerifiedUsersToJoinOrganization = false
-    allowedToSignUpEmailBasedSubscriptions    = false
-  }
-}
