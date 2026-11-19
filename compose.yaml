@@ -12,3 +12,13 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+  edge:
+    # Local runs and the live tests only: docker compose --profile live up -d --wait
+    image: caddy:2.11.9@sha256:4851e54a46b206517c574821bb5cc67f170d2156041e9fbc4c9193b45e84a75b
+    profiles: ["live"]
+    environment:
+      - ORIGIN_HEADER_SECRET
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./infra/edge:/etc/caddy:ro

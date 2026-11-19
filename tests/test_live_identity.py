@@ -1,7 +1,8 @@
 """Sign-in, On-Behalf-Of and token shape against the identity tenant.
 
-Local only and never in CI: selected with `-m live`, with the backend serving the
-web build on LIVE_ORIGIN (http://localhost:8000) and the Azure CLI signed in to
+Local only and never in CI: selected with `-m live`. The backend serves the web
+build behind the compose `edge` proxy on LIVE_ORIGIN (http://localhost:8000), which
+adds the origin header as the production edge does; the Azure CLI is signed in to
 both tenants. Each test appends what it observed to OBSERVATIONS_DIR as JSON lines:
 claim names, types and verdicts, header names and values, request origins and
 counts, never a token or a password.
@@ -29,7 +30,6 @@ from personas import PERSONAS, VAULT_URL, secret_name
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page, Request, Route
 
-from dispute_casework.api import ORIGIN_HEADER, ApiSettings
 from dispute_casework.identity import (
     IdentitySettings,
     issuer,
@@ -97,20 +97,18 @@ def password(vault: SecretClient, persona: str) -> str:
 
 @pytest.fixture
 def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Request], list[str]]]:
-    """The application page with the origin header added on the application's origin
-    only, a log of every request, and the bearer tokens sent to /me."""
-    secret = ApiSettings().origin_header_secret.get_secret_value()
+    """The application page, every request it made and the tokens it sent to /me."""
     tokens: list[str] = []
 
-    def add_origin_header(route: Route, request: Request) -> None:
+    def capture_me_token(route: Route, request: Request) -> None:
         authorization = request.headers.get("authorization", "")
         if urlsplit(request.url).path == "/me" and authorization:
             tokens.append(authorization.removeprefix("Bearer "))
-        route.continue_(headers={**request.headers, ORIGIN_HEADER: secret})
+        route.continue_()
 
     requests: list[Request] = []
     page.context.on("request", lambda request: requests.append(request))
-    page.context.route(f"{ORIGIN}/**", add_origin_header)
+    page.context.route(f"{ORIGIN}/**", capture_me_token)
     yield page, requests, tokens
 
 
@@ -246,8 +244,7 @@ def test_the_unassigned_administrator_is_refused(
 
 def test_the_redirect_bridge_headers() -> None:
     """E2: /redirect is never cached and carries no opener policy."""
-    secret = ApiSettings().origin_header_secret.get_secret_value()
-    response = httpx.get(f"{ORIGIN}/redirect", headers={ORIGIN_HEADER: secret})
+    response = httpx.get(f"{ORIGIN}/redirect")
     observe(
         "redirect-headers",
         status=response.status_code,

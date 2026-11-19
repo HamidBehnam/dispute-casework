@@ -1,0 +1,8 @@
+# Stands in for the Cloudflare Transform Rule on localhost: every request to the
+# application, including the browser's follow of the sign-in redirect, carries the
+# origin header. The value is read from the environment at run time.
+:8000 {
+	reverse_proxy host.docker.internal:8001 {
+		header_up X-Origin-Secret {env.ORIGIN_HEADER_SECRET}
+	}
+}
