@@ -13,7 +13,8 @@ import base64
 import json
 import os
 import time
-from collections.abc import Iterator
+from collections.abc import Coroutine, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,12 @@ CLAIM_TYPES = {
     "roles": list,
 }
 RUN = time.strftime("%Y%m%dT%H%M%S")
+
+
+def run_coroutine[T](coroutine: Coroutine[Any, Any, T]) -> T:
+    """Sync Playwright keeps an event loop running on the test thread."""
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coroutine).result()
 
 
 def observe(test: str, **observation: Any) -> None:
@@ -175,7 +182,7 @@ def test_a_persona_signs_in_with_a_popup_and_reaches_me(
         f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
         password(vault, persona),
     )
-    page.wait_for_function("document.getElementById('me').textContent.length > 0")
+    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
     me = json.loads(page.inner_text("#me"))
     claims = api_claims(tokens[-1], identity)
     scripts = [r for r in requests if r.resource_type == "script"]
@@ -218,7 +225,7 @@ def test_a_persona_signs_in_with_a_redirect(
     prompts = enter_credentials(
         page, f"{persona}@{os.environ['IDENTITY_DOMAIN']}", password(vault, persona)
     )
-    page.wait_for_function("document.getElementById('me').textContent.length > 0")
+    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
     me = json.loads(page.inner_text("#me"))
     scripts = [r for r in requests if r.resource_type == "script"]
     off_origin = [r for r in scripts if not r.url.startswith(ORIGIN)]
@@ -297,10 +304,10 @@ def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
         f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
         password(vault, persona),
     )
-    page.wait_for_function("document.getElementById('me').textContent.length > 0")
+    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
     certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
 
-    token = asyncio.run(mcp_token(tokens[-1], identity, certificate))
+    token = run_coroutine(mcp_token(tokens[-1], identity, certificate))
     principal = parse_token(
         token,
         jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id)),
@@ -308,7 +315,7 @@ def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
         audience=identity.mcp_client_id,
     )
     fastmcp_accepts = (
-        asyncio.run(mcp_token_verifier(identity).verify_token(token)) is not None
+        run_coroutine(mcp_token_verifier(identity).verify_token(token)) is not None
     )
     claims = jwt.decode(token, options={"verify_signature": False})
     observe(
@@ -337,7 +344,7 @@ def test_an_assertion_for_another_audience_is_refused(
         .token
     )
     with pytest.raises(ClientAuthenticationError) as refusal:
-        asyncio.run(mcp_token(graph_token, identity, certificate))
+        run_coroutine(mcp_token(graph_token, identity, certificate))
     codes = [word for word in str(refusal.value).split() if word.startswith("AADSTS")]
     observe("obo-refused", refused=True, error_codes=codes)
 
@@ -361,6 +368,6 @@ def test_the_api_app_holds_one_certificate_and_no_password(
                 len(application.password_credentials or []),
             )
 
-    certificates, passwords = asyncio.run(read())
+    certificates, passwords = run_coroutine(read())
     observe("credentials", certificates=certificates, passwords=passwords)
     assert (certificates, passwords) == (1, 0)
