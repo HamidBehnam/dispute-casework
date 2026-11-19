@@ -14,6 +14,7 @@ import json
 import os
 import time
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -95,8 +96,17 @@ def password(vault: SecretClient, persona: str) -> str:
     return value
 
 
+@dataclass(frozen=True)
+class Sent:
+    """A request the browser made, with the page that made it, read when it was sent."""
+
+    url: str
+    resource_type: str
+    page_url: str
+
+
 @pytest.fixture
-def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Request], list[str]]]:
+def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Sent], list[str]]]:
     """The application page, every request it made and the tokens it sent to /me."""
     tokens: list[str] = []
 
@@ -106,8 +116,13 @@ def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Request], list[str]]
             tokens.append(authorization.removeprefix("Bearer "))
         route.continue_()
 
-    requests: list[Request] = []
-    page.context.on("request", lambda request: requests.append(request))
+    requests: list[Sent] = []
+    page.context.on(
+        "request",
+        lambda request: requests.append(
+            Sent(request.url, request.resource_type, request.frame.url)
+        ),
+    )
     page.context.route(f"{ORIGIN}/**", capture_me_token)
     yield page, requests, tokens
 
@@ -144,7 +159,7 @@ def api_claims(token: str, identity: IdentitySettings) -> dict[str, Any]:
 @pytest.mark.parametrize("attempt", [1, 2, 3])
 @pytest.mark.parametrize("persona", list(PERSONAS))
 def test_a_persona_signs_in_with_a_popup_and_reaches_me(
-    signed_in_page: tuple[Page, list[Request], list[str]],
+    signed_in_page: tuple[Page, list[Sent], list[str]],
     identity: IdentitySettings,
     vault: SecretClient,
     persona: str,
@@ -165,6 +180,7 @@ def test_a_persona_signs_in_with_a_popup_and_reaches_me(
     claims = api_claims(tokens[-1], identity)
     scripts = [r for r in requests if r.resource_type == "script"]
     off_origin = [r for r in scripts if not r.url.startswith(ORIGIN)]
+    from_app_pages = [r for r in scripts if r.page_url.startswith(ORIGIN)]
     observe(
         "popup",
         persona=persona,
@@ -181,13 +197,17 @@ def test_a_persona_signs_in_with_a_popup_and_reaches_me(
         roles=claims.get("roles"),
         script_requests=len(scripts),
         off_origin_script_requests=len(off_origin),
+        script_requests_from_app_pages=len(from_app_pages),
+        off_origin_script_requests_from_app_pages=sum(
+            not r.url.startswith(ORIGIN) for r in from_app_pages
+        ),
     )
     assert me["roles"] == [PERSONAS[persona]] and not prompts and not off_origin
 
 
 @pytest.mark.parametrize("persona", list(PERSONAS))
 def test_a_persona_signs_in_with_a_redirect(
-    signed_in_page: tuple[Page, list[Request], list[str]],
+    signed_in_page: tuple[Page, list[Sent], list[str]],
     vault: SecretClient,
     persona: str,
 ) -> None:
@@ -202,6 +222,7 @@ def test_a_persona_signs_in_with_a_redirect(
     me = json.loads(page.inner_text("#me"))
     scripts = [r for r in requests if r.resource_type == "script"]
     off_origin = [r for r in scripts if not r.url.startswith(ORIGIN)]
+    from_app_pages = [r for r in scripts if r.page_url.startswith(ORIGIN)]
     observe(
         "redirect",
         persona=persona,
@@ -209,6 +230,10 @@ def test_a_persona_signs_in_with_a_redirect(
         prompts=prompts,
         script_requests=len(scripts),
         off_origin_script_requests=len(off_origin),
+        script_requests_from_app_pages=len(from_app_pages),
+        off_origin_script_requests_from_app_pages=sum(
+            not r.url.startswith(ORIGIN) for r in from_app_pages
+        ),
     )
     assert me["roles"] == [PERSONAS[persona]] and not prompts and not off_origin
 
@@ -217,7 +242,7 @@ ADMINISTRATOR_SIGN_IN_SECONDS = 600
 
 
 def test_the_unassigned_administrator_is_refused(
-    signed_in_page: tuple[Page, list[Request], list[str]],
+    signed_in_page: tuple[Page, list[Sent], list[str]],
 ) -> None:
     """E1: the administrator holds no app role, so Entra refuses the API token.
 
@@ -257,7 +282,7 @@ def test_the_redirect_bridge_headers() -> None:
 
 @pytest.mark.parametrize("persona", list(PERSONAS))
 def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
-    signed_in_page: tuple[Page, list[Request], list[str]],
+    signed_in_page: tuple[Page, list[Sent], list[str]],
     identity: IdentitySettings,
     vault: SecretClient,
     persona: str,
