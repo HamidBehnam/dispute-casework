@@ -109,7 +109,7 @@ def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Request], list[str]]
         route.continue_(headers={**request.headers, ORIGIN_HEADER: secret})
 
     requests: list[Request] = []
-    page.context.on("request", requests.append)
+    page.context.on("request", lambda request: requests.append(request))
     page.context.route(f"{ORIGIN}/**", add_origin_header)
     yield page, requests, tokens
 
