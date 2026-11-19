@@ -10,10 +10,6 @@ terraform {
       source  = "hashicorp/azuread"
       version = "3.10.0"
     }
-    msgraph = {
-      source  = "microsoft/msgraph"
-      version = "0.6.0"
-    }
   }
 }
 
@@ -24,11 +20,7 @@ provider "azurerm" {
 }
 
 # The tenant that holds the registrations and the personas is named explicitly,
-# so neither provider falls back to the subscription's tenant by accident.
+# so the provider never falls back to the subscription's tenant by accident.
 provider "azuread" {
-  tenant_id = var.identity_tenant_id
-}
-
-provider "msgraph" {
   tenant_id = var.identity_tenant_id
 }
