@@ -8,9 +8,12 @@ const msal = new PublicClientApplication({
         clientId: env.VITE_WEB_CLIENT_ID,
         authority: `https://login.microsoftonline.com/${env.VITE_TENANT_ID}`,
         redirectUri: "/redirect",
-        postLogoutRedirectUri: "/redirect",
     },
 });
+
+function showError({ errorCode, subError, errorNo }) {
+    document.getElementById("error").textContent = JSON.stringify({ errorCode, subError, errorNo });
+}
 
 async function showMe(account) {
     const { accessToken } = await msal.acquireTokenSilent({ ...request, account });
@@ -19,14 +22,22 @@ async function showMe(account) {
 }
 
 await msal.initialize();
-const redirected = await msal.handleRedirectPromise();
-if (redirected) {
-    await showMe(redirected.account);
+try {
+    const redirected = await msal.handleRedirectPromise();
+    if (redirected) {
+        await showMe(redirected.account);
+    }
+} catch (error) {
+    showError(error);
 }
 
 document.getElementById("sign-in-popup").addEventListener("click", async () => {
-    const { account } = await msal.loginPopup(request);
-    await showMe(account);
+    try {
+        const { account } = await msal.loginPopup(request);
+        await showMe(account);
+    } catch (error) {
+        showError(error);
+    }
 });
 
 document.getElementById("sign-in-redirect").addEventListener("click", () => {
