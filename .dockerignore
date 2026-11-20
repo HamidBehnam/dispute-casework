@@ -11,3 +11,5 @@ docs
 infra
 migrations
 tests
+src/dispute_casework/static
+web/node_modules

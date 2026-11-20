@@ -1,9 +1,21 @@
+FROM node:26.13.1-trixie@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373cbd10e0ac AS web
+
+WORKDIR /build/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web ./
+ARG VITE_TENANT_ID
+ARG VITE_WEB_CLIENT_ID
+ARG VITE_API_CLIENT_ID
+RUN npm run build
+
 FROM python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
 COPY --from=ghcr.io/astral-sh/uv:0.12.21@sha256:a7aed3216253ee804de3e2d8afa5073baa1a177335345d43845cd4165e43b711 /uv /bin/uv
 
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+COPY --from=web /build/src/dispute_casework/static ./src/dispute_casework/static
 RUN uv sync --locked --no-default-groups --no-editable
 
 RUN useradd --no-create-home --uid 10001 app

@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     expected = ApiSettings().origin_header_secret.get_secret_value().encode()
     identity = IdentitySettings()
     jwks = jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id))
-    # check_dir=False: the MCP and mock-bank containers run this image without a build.
+    # check_dir=False: the pages exist only after the web build (the image's web stage).
     pages = StaticFiles(directory=STATIC_DIR, check_dir=False)
     assets = StaticFiles(directory=STATIC_DIR / "assets", check_dir=False)
 
