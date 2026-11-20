@@ -1,6 +1,5 @@
 """The personas of the identity tenant and their app-role assignments: two per
-role, and one member with no role, never assigned, whom Entra refuses a token for
-the API and MCP applications.
+role, and one member with no role, never assigned.
 
     uv run python infra/identity/personas.py plan
     uv run python infra/identity/personas.py apply
