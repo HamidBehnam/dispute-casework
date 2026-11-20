@@ -46,3 +46,18 @@ variable "origin_certificate_issued" {
   description = "True once the signed Origin CA certificate has been merged into the Key Vault certificate, which lets the environment import it and bind the custom domain. Changed in the tree, not in the shell."
   default     = true
 }
+
+variable "identity_tenant_id" {
+  type        = string
+  description = "Tenant that holds the application registrations, whose tokens the backend verifies. Supplied through TF_VAR_identity_tenant_id, the same value the identity root takes."
+}
+
+variable "api_client_id" {
+  type        = string
+  description = "Client ID of the API registration: the identity root's api_client_id output. Supplied through TF_VAR_api_client_id."
+}
+
+variable "mcp_client_id" {
+  type        = string
+  description = "Client ID of the MCP registration: the identity root's mcp_client_id output. Supplied through TF_VAR_mcp_client_id."
+}

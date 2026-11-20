@@ -8,6 +8,11 @@ locals {
   hostname      = "${var.subdomain}.${var.domain}"
   backend_image = "${data.azurerm_container_registry.dcw.login_server}/dcw-backend@${var.image_digest}"
   cerbos_image  = "ghcr.io/cerbos/cerbos:0.55.0@sha256:4b9d3b58c4f11c1b8953bc798d8d086e64f276882253ab169625fddc7f432515"
+  identity_env = {
+    IDENTITY_TENANT_ID = var.identity_tenant_id
+    API_CLIENT_ID      = var.api_client_id
+    MCP_CLIENT_ID      = var.mcp_client_id
+  }
 }
 
 resource "azurerm_log_analytics_workspace" "dcw" {
@@ -215,6 +220,13 @@ resource "azurerm_container_app" "dcw" {
         name        = "ORIGIN_HEADER_SECRET"
         secret_name = "origin-header-secret"
       }
+      dynamic "env" {
+        for_each = local.identity_env
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
 
       startup_probe {
         transport               = "TCP"
@@ -301,6 +313,13 @@ resource "azurerm_container_app" "dcw" {
         name        = "ORIGIN_HEADER_SECRET"
         secret_name = "origin-header-secret"
       }
+      dynamic "env" {
+        for_each = local.identity_env
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
 
       startup_probe {
         transport               = "TCP"
@@ -339,6 +358,13 @@ resource "azurerm_container_app" "dcw" {
       env {
         name        = "ORIGIN_HEADER_SECRET"
         secret_name = "origin-header-secret"
+      }
+      dynamic "env" {
+        for_each = local.identity_env
+        content {
+          name  = env.key
+          value = env.value
+        }
       }
 
       startup_probe {
