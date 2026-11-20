@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterator
 
 import httpx
@@ -153,9 +154,10 @@ def test_the_request_carries_the_origin_header_and_the_arm(clock: Clock) -> None
         seen.append(request)
         return httpx.Response(200, content=iter([b"0\n"]))
 
-    measure(
+    record = measure(
         "http://app", "the-secret", "the-token", 300, True, httpx.MockTransport(handler)
     )
     assert seen[0].url == "http://app/stream?seconds=300&silent=true"
     assert seen[0].headers[ORIGIN_HEADER] == "the-secret"
     assert seen[0].headers["Authorization"] == "Bearer the-token"
+    assert "the-token" not in json.dumps(record)
