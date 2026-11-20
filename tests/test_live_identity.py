@@ -18,6 +18,7 @@ import time
 from collections.abc import Coroutine, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -32,7 +33,7 @@ from azure.keyvault.secrets import SecretClient
 from msgraph.graph_service_client import GraphServiceClient
 from personas import PERSONAS, VAULT_URL, secret_name
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import Page, Request, Route
+from playwright.sync_api import Frame, Page, Request, Route
 
 from dispute_casework.identity import (
     IdentitySettings,
@@ -51,7 +52,11 @@ UNASSIGNED = [persona for persona, role in PERSONAS.items() if role is None]
 SIGN_IN_SECONDS = 90
 POLL_MILLISECONDS = 500
 PASSWORD_POST_SECONDS = 5
+CLOSE_GRACE_SECONDS = 2
 AADSTS = re.compile(r"AADSTS\d+")
+GUID = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
 CLAIM_TYPES = {
     "iss": str,
     "aud": str,
@@ -66,6 +71,7 @@ CLAIM_TYPES = {
     "roles": list,
 }
 RUN = time.strftime("%Y%m%dT%H%M%S")
+STARTED: dict[str, Any] = {}
 
 
 def run_coroutine[T](coroutine: Coroutine[Any, Any, T]) -> T:
@@ -74,10 +80,21 @@ def run_coroutine[T](coroutine: Coroutine[Any, Any, T]) -> T:
         return pool.submit(asyncio.run, coroutine).result()
 
 
+@pytest.fixture(autouse=True)
+def timed() -> None:
+    STARTED.update(utc=datetime.now(UTC).isoformat(timespec="milliseconds"))
+    STARTED.update(monotonic=time.monotonic())
+
+
 def observe(test: str, **observation: Any) -> None:
+    """One line per test, with the test's start time and its duration so far."""
     path = Path(os.environ["OBSERVATIONS_DIR"]) / f"identity-{RUN}.jsonl"
+    timing = {
+        "start_utc": STARTED["utc"],
+        "duration_ms": round((time.monotonic() - STARTED["monotonic"]) * 1000),
+    }
     with path.open("a") as file:
-        file.write(json.dumps({"test": test, **observation}) + "\n")
+        file.write(json.dumps({"test": test, **timing, **observation}) + "\n")
 
 
 def claim_shape(claims: dict[str, Any]) -> dict[str, str]:
@@ -150,8 +167,11 @@ class SignIn:
     "microsoft-error" (Microsoft's page showed an AADSTS code), "api-token-sent"
     (a token reached /me and the caller stopped there), "prompt" (a Microsoft page
     other than the credentials and stay-signed-in pages was still showing at the
-    deadline), "popup-closed" or "timeout". error_type names an exception raised
-    during the sign-in or after it.
+    deadline), "popup-closed" (the popup closed before it reached the bridge page
+    and MSAL wrote no error within CLOSE_GRACE_SECONDS) or "timeout". pages is the
+    login page's document sequence, host and path only; password_attempts counts
+    password submits made, password_confirmed whether one sent its POST.
+    error_type names an exception raised during the sign-in or after it.
     """
 
     result: str = "timeout"
@@ -159,11 +179,19 @@ class SignIn:
     microsoft_codes: list[str] = field(default_factory=list)
     app_error: dict[str, str] | None = None
     me: dict[str, Any] | None = None
+    pages: list[str] = field(default_factory=list)
+    password_attempts: int = 0
+    password_confirmed: bool = False
     error_type: str | None = None
 
 
 def on_microsoft(page: Page) -> bool:
     return not page.is_closed() and not page.url.startswith(ORIGIN)
+
+
+def where(url: str) -> str:
+    parts = urlsplit(url)
+    return GUID.sub("<guid>", f"{parts.netloc}{parts.path}")
 
 
 def visible(page: Page, selector: str) -> bool:
@@ -185,12 +213,21 @@ def sign_in(
     Every page is examined on every poll until the deadline, so a prompt on any
     host, before or after the stay-signed-in page, is recorded as itself."""
     typed_username = typed_password = False
+    bridge = where(f"{ORIGIN}/redirect")
+    closed_at: float | None = None
+
+    def record_page(frame: Frame) -> None:
+        if frame == login.main_frame:
+            outcome.pages.append(where(frame.url))
+
+    login.on("framenavigated", record_page)
     deadline = time.monotonic() + SIGN_IN_SECONDS
     while time.monotonic() < deadline:
         try:
             if stop_on_token and tokens:
                 outcome.result = "api-token-sent"
                 return
+            closed = login is not app and login.is_closed()
             me, error = app.evaluate(
                 "() => [document.getElementById('me')?.textContent ?? '',"
                 " document.getElementById('error')?.textContent ?? '']"
@@ -201,6 +238,13 @@ def sign_in(
             if error:
                 outcome.app_error, outcome.result = json.loads(error), "app-error"
                 return
+            if closed and bridge not in outcome.pages:
+                # MSAL closes the popup before it writes its own error, so a close is
+                # read as the user's only if no error follows within the grace.
+                closed_at = closed_at or time.monotonic()
+                if time.monotonic() - closed_at >= CLOSE_GRACE_SECONDS:
+                    outcome.result = "popup-closed"
+                    return
             if on_microsoft(login):
                 codes = AADSTS.findall(login.inner_text("body"))
                 if codes:
@@ -212,6 +256,7 @@ def sign_in(
                     login.click("input[type=submit]")
                     typed_username = True
                 elif not typed_password and visible(login, "input[name=passwd]"):
+                    outcome.password_attempts += 1
                     login.fill("input[name=passwd]", secret)
                     # Entra shows the password field before its view accepts the
                     # submit; only the form's POST shows the password was sent, so a
@@ -223,7 +268,7 @@ def sign_in(
                         timeout=PASSWORD_POST_SECONDS * 1000,
                     ):
                         login.click("input[type=submit]")
-                    typed_password = True
+                    typed_password = outcome.password_confirmed = True
                 elif login.locator("#KmsiCheckboxField").count():
                     login.click("#idBtn_Back")
                 elif (
@@ -268,6 +313,9 @@ def sign_in_record(outcome: SignIn) -> dict[str, Any]:
         "prompts": outcome.prompts,
         "microsoft_codes": outcome.microsoft_codes,
         "app_error": outcome.app_error,
+        "pages": outcome.pages,
+        "password_attempts": outcome.password_attempts,
+        "password_confirmed": outcome.password_confirmed,
         "error_type": outcome.error_type,
     }
 
