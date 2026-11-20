@@ -4,6 +4,7 @@ import uuid
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from azure.core.exceptions import ResourceNotFoundError
 from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 from personas import (
@@ -20,8 +21,10 @@ from personas import (
     secret_name,
 )
 
+ROLES = {persona: role for persona, role in PERSONAS.items() if role}
+UNASSIGNED = [persona for persona, role in PERSONAS.items() if role is None]
 RESOURCES = {
-    app: Resource(uuid.uuid4(), {role: uuid.uuid4() for role in set(PERSONAS.values())})
+    app: Resource(uuid.uuid4(), {role: uuid.uuid4() for role in set(ROLES.values())})
     for app in APPS
 }
 
@@ -33,7 +36,7 @@ def provisioned() -> State:
         users,
         frozenset(
             (users[persona], resource.service_principal_id, resource.role_ids[role])
-            for persona, role in PERSONAS.items()
+            for persona, role in ROLES.items()
             for resource in RESOURCES.values()
         ),
     )
@@ -47,9 +50,24 @@ def test_an_empty_tenant_gets_each_password_before_its_user_then_both_roles() ->
         for change in (
             Change("password", persona),
             Change("user", persona),
-            Change("assignment", persona, "api"),
-            Change("assignment", persona, "mcp"),
+            *(
+                (
+                    Change("assignment", persona, "api"),
+                    Change("assignment", persona, "mcp"),
+                )
+                if persona in ROLES
+                else ()
+            ),
         )
+    ]
+
+
+def test_the_member_with_no_role_gets_a_password_and_a_user_and_no_assignment() -> None:
+    state = provisioned()
+    users = {persona: user for persona, user in state.users.items() if persona in ROLES}
+    without_member = State(frozenset(ROLES), users, state.assignments)
+    assert changes(without_member, RESOURCES) == [
+        Change(kind, persona) for persona in UNASSIGNED for kind in ("password", "user")
     ]
 
 
@@ -80,10 +98,11 @@ def test_only_a_missing_assignment_is_added() -> None:
     assert changes(partial, RESOURCES) == [Change("assignment", "viewer-1", "mcp")]
 
 
-def test_two_personas_per_role() -> None:
-    roles = list(PERSONAS.values())
+def test_two_personas_per_role_and_one_member_with_none() -> None:
+    roles = list(ROLES.values())
     assert sorted(set(roles)) == ["approver", "preparer", "restricted_viewer"]
     assert all(roles.count(role) == 2 for role in roles)
+    assert len(UNASSIGNED) == 1
 
 
 def test_a_generated_password_has_every_character_class() -> None:
@@ -112,7 +131,7 @@ class FakeTenant:
                 id=str(uuid.uuid4()),
                 app_roles=[
                     SimpleNamespace(value=role, id=uuid.uuid4())
-                    for role in set(PERSONAS.values())
+                    for role in set(ROLES.values())
                 ],
             )
             for client_id in ("api-client", "mcp-client")
@@ -194,7 +213,7 @@ def test_apply_stores_each_password_before_its_user_and_repeats_as_a_no_op() -> 
     tenant = FakeTenant()
     asyncio.run(run("apply", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
     kinds = [kind for kind, _ in tenant.writes]
-    assert kinds.count("password") == 6 and kinds.count("user") == 6
+    assert kinds.count("password") == 7 and kinds.count("user") == 7
     assert kinds.count("assignment") == 12
     for persona in PERSONAS:
         assert tenant.writes.index(("password", persona)) < tenant.writes.index(
@@ -203,3 +222,10 @@ def test_apply_stores_each_password_before_its_user_and_repeats_as_a_no_op() -> 
     tenant.writes.clear()
     asyncio.run(run("apply", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
     assert tenant.writes == []
+
+
+def test_an_incomplete_service_principal_stops_the_run() -> None:
+    tenant = FakeTenant()
+    tenant.principals["mcp-client"].app_roles = None
+    with pytest.raises(RuntimeError, match="mcp service principal"):
+        asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
