@@ -163,7 +163,8 @@ def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Sent], list[str]]]:
 class SignIn:
     """How one sign-in ended, read from the application page and Microsoft's page.
 
-    result: "me" (the page showed /me), "app-error" (the page showed MSAL's error),
+    result: "me" (the page showed /me), "app-error" (the page showed MSAL's error, or
+    /me's status when /me refused the token),
     "microsoft-error" (Microsoft's page showed an AADSTS code), "api-token-sent"
     (a token reached /me and the caller stopped there), "prompt" (a Microsoft page
     other than the credentials and stay-signed-in pages was still showing at the
@@ -421,7 +422,7 @@ def test_a_persona_signs_in_with_a_redirect(
         observe(
             "redirect",
             persona=persona,
-            me_roles=outcome.me["roles"] if outcome.me else None,
+            me_roles=(outcome.me or {}).get("roles"),
             **sign_in_record(outcome),
             **script_counts(requests),
         )
@@ -495,7 +496,7 @@ def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
     record: dict[str, Any] = {"persona": persona}
     try:
         popup_sign_in(page, persona, vault, tokens, outcome)
-        record["me_roles"] = outcome.me["roles"] if outcome.me else None
+        record["me_roles"] = (outcome.me or {}).get("roles")
         assert tokens, "no API token reached /me"
         certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
         token = run_coroutine(mcp_token(tokens[-1], identity, certificate))
