@@ -1,6 +1,7 @@
 import asyncio
 import string
 import uuid
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import Any
 
@@ -125,6 +126,7 @@ class FakeTenant:
 
     def __init__(self) -> None:
         self.writes: list[tuple[str, str]] = []
+        self.values_read: list[str] = []
         self.secrets: dict[str, str] = {}
         self.accounts: dict[str, str] = {}
         self.assignments: dict[str, list[Any]] = {}
@@ -189,7 +191,12 @@ class FakeTenant:
     async def get_secret(self, name: str) -> SimpleNamespace:
         if name not in self.secrets:
             raise ResourceNotFoundError(name)
+        self.values_read.append(name)
         return SimpleNamespace(value=self.secrets[name])
+
+    async def list_properties_of_secrets(self) -> AsyncIterator[SimpleNamespace]:
+        for name in list(self.secrets):
+            yield SimpleNamespace(name=name)
 
     async def set_secret(self, name: str, value: str) -> None:
         self.writes.append(("password", name.removeprefix("persona-")))
@@ -205,10 +212,14 @@ SETTINGS = PersonaSettings(
 )
 
 
-def test_plan_writes_nothing() -> None:
+def test_plan_writes_nothing_and_reads_no_password() -> None:
     tenant = FakeTenant()
+    asyncio.run(run("apply", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
+    tenant.writes.clear()
+    tenant.values_read.clear()
     asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
     assert tenant.writes == []
+    assert tenant.values_read == []
 
 
 def test_apply_stores_each_password_before_its_user_and_repeats_as_a_no_op() -> None:
@@ -260,3 +271,12 @@ def test_an_incomplete_app_role_assignment_stops_the_run() -> None:
     )
     with pytest.raises(RuntimeError, match="assignment incomplete"):
         asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
+
+
+def test_a_user_without_a_stored_password_stops_the_run() -> None:
+    state = provisioned()
+    without_password = State(
+        state.stored_passwords - {"viewer-2"}, state.users, state.assignments
+    )
+    with pytest.raises(RuntimeError, match="viewer-2 exists without a stored password"):
+        changes(without_password, RESOURCES)

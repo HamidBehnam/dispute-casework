@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from typing import Literal
 from uuid import UUID
 
-from azure.core.exceptions import ResourceNotFoundError
 from azure.identity.aio import AzureCliCredential
 from azure.keyvault.secrets.aio import SecretClient
 from msgraph.generated.models.app_role_assignment import AppRoleAssignment
@@ -81,6 +80,8 @@ def changes(state: State, resources: dict[str, Resource]) -> list[Change]:
     planned: list[Change] = []
     for persona, role in PERSONAS.items():
         user_id = state.users.get(persona)
+        if user_id is not None and persona not in state.stored_passwords:
+            raise RuntimeError(f"{persona} exists without a stored password")
         if user_id is None and persona not in state.stored_passwords:
             planned.append(Change("password", persona))
         if user_id is None:
@@ -153,13 +154,10 @@ async def read_state(
     resources: dict[str, Resource],
     settings: PersonaSettings,
 ) -> State:
-    stored, users = set(), {}
+    names = {secret.name async for secret in vault.list_properties_of_secrets()}
+    stored = {persona for persona in PERSONAS if secret_name(persona) in names}
+    users = {}
     for persona in PERSONAS:
-        try:
-            await vault.get_secret(secret_name(persona))
-            stored.add(persona)
-        except ResourceNotFoundError:
-            pass
         try:
             user = await graph.users.by_user_id(
                 user_principal_name(persona, settings)
