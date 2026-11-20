@@ -1,4 +1,5 @@
-"""HTTP surface behind the origin check: the sign-in pages, /me and a stream."""
+"""HTTP surface behind the origin check: the sign-in pages, and /me and a stream for a
+bearer token's principal."""
 
 import asyncio
 import json
