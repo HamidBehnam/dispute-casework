@@ -51,7 +51,7 @@ def test_the_record_holds_every_gap_including_the_one_to_the_end(
     clock: Clock,
 ) -> None:
     body = [(1.0, b"a" * 131), (16.0, b"b" * 20), (31.0, b"c" * 20)]
-    record = measure("http://app", "s", 60, False, transport(clock, body, 60.0))
+    record = measure("http://app", "s", "t", 60, False, transport(clock, body, 60.0))
     assert record["status"] == 200
     assert record["ended_by"] == "server"
     assert record["t_headers_s"] == 1.0
@@ -69,7 +69,7 @@ def test_the_record_holds_every_gap_including_the_one_to_the_end(
 
 def test_a_silent_body_records_its_silence_not_zero(clock: Clock) -> None:
     record = measure(
-        "http://app", "s", 300, True, transport(clock, [(1.0, b"start\n")], 126.2)
+        "http://app", "s", "t", 300, True, transport(clock, [(1.0, b"start\n")], 126.2)
     )
     assert record["max_gap_s"] == 125.2
     assert record["ended_by"] == "server"
@@ -85,7 +85,7 @@ def test_every_time_is_rounded_before_the_gap_arithmetic(clock: Clock) -> None:
         clock.now = 0.2604
         return httpx.Response(200, content=iter([b"start\n"]))
 
-    record = measure("http://app", "s", 1, True, httpx.MockTransport(handler))
+    record = measure("http://app", "s", "t", 1, True, httpx.MockTransport(handler))
     assert record["t_headers_s"] == 0.26
     assert record["chunks"] == [{"t": 0.26, "bytes": 6}]
     assert record["max_gap_s"] == 0.0
@@ -103,7 +103,7 @@ def test_a_non_200_status_ends_the_run_without_reading_the_body(
         clock.now = 0.1
         return httpx.Response(403, content=unread_body())
 
-    record = measure("http://app", "s", 300, False, httpx.MockTransport(handler))
+    record = measure("http://app", "s", "t", 300, False, httpx.MockTransport(handler))
     assert record["status"] == 403
     assert record["ended_by"] == "status"
     assert record["bytes"] == 0
@@ -123,7 +123,9 @@ def test_a_cut_mid_stream_names_how_the_body_ended(
     clock: Clock, error: Exception, ended_by: str
 ) -> None:
     body = [(1.0, b"a" * 131), (16.0, b"b" * 20)]
-    record = measure("http://app", "s", 300, False, transport(clock, body, 90.3, error))
+    record = measure(
+        "http://app", "s", "t", 300, False, transport(clock, body, 90.3, error)
+    )
     assert record["ended_by"] == ended_by
     assert record["status"] == 200
     assert record["duration_s"] == 90.3
@@ -136,7 +138,7 @@ def test_a_failed_connection_leaves_the_timing_fields_empty(clock: Clock) -> Non
         clock.now = 30.0
         raise httpx.ConnectError("refused")
 
-    record = measure("http://app", "s", 300, False, httpx.MockTransport(handler))
+    record = measure("http://app", "s", "t", 300, False, httpx.MockTransport(handler))
     assert record["ended_by"] == "connect"
     assert record["status"] is None
     assert record["t_headers_s"] is None
@@ -151,6 +153,9 @@ def test_the_request_carries_the_origin_header_and_the_arm(clock: Clock) -> None
         seen.append(request)
         return httpx.Response(200, content=iter([b"0\n"]))
 
-    measure("http://app", "the-secret", 300, True, httpx.MockTransport(handler))
+    measure(
+        "http://app", "the-secret", "the-token", 300, True, httpx.MockTransport(handler)
+    )
     assert seen[0].url == "http://app/stream?seconds=300&silent=true"
     assert seen[0].headers[ORIGIN_HEADER] == "the-secret"
+    assert seen[0].headers["Authorization"] == "Bearer the-token"

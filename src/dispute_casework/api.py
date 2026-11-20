@@ -98,7 +98,7 @@ def create_app() -> FastAPI:
     def me(principal: Annotated[Principal, Depends(current_principal)]) -> Principal:
         return principal
 
-    @app.get("/stream")
+    @app.get("/stream", dependencies=[Depends(current_principal)])
     async def stream(
         seconds: Annotated[
             int, Query(ge=1, le=MAX_STREAM_SECONDS)
