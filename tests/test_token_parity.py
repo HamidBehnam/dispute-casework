@@ -1,9 +1,9 @@
 """The same token fixtures through parse_token (PyJWT) and FastMCP's JWTVerifier.
 
-FastMCP 4.1.8's JWTVerifier never reads nbf or iat and checks exp only when it is
-present (fastmcp/server/auth/providers/jwt.py, load_access_token), so it accepts
-three kinds of token that parse_token refuses. The expected verdicts below record
-that; a change in either verifier fails the test.
+FastMCP 4.2.2's JWTVerifier never reads iat and checks exp only when it is present
+(fastmcp/server/auth/providers/jwt.py, load_access_token), so it accepts two kinds
+of token that parse_token refuses. The expected verdicts below record that; a
+change in either verifier fails the test.
 """
 
 import asyncio
@@ -32,7 +32,7 @@ EXPECTED = {
     "valid": (ACCEPT, ACCEPT),
     "no-roles": (ACCEPT, ACCEPT),
     "expired": (REJECT, REJECT),
-    "nbf-in-the-future": (REJECT, ACCEPT),
+    "nbf-in-the-future": (REJECT, REJECT),
     "no-exp": (REJECT, ACCEPT),
     "iat-in-the-future": (REJECT, ACCEPT),
     "wrong-aud": (REJECT, REJECT),
