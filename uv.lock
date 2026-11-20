@@ -351,6 +351,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5b/db/325c6d7312d2200251c52323878281045aaffcb5586612296484e4280eaa/azure_core-1.41.0-py3-none-any.whl", hash = "sha256:522b4011e8180b1a3dcd2024396a4e7fe9ac37fb8597db47163d230b5efe892d", size = 220920, upload-time = "2026-05-07T23:30:56.357Z" },
 ]
 
+[package.optional-dependencies]
+aio = [
+    { name = "aiohttp" },
+]
+
 [[package]]
 name = "azure-identity"
 version = "1.25.3"
@@ -884,9 +889,9 @@ name = "dispute-casework"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiohttp" },
     { name = "alembic" },
     { name = "assistant-stream" },
+    { name = "azure-core", extra = ["aio"] },
     { name = "azure-identity" },
     { name = "azure-postgresql-auth", extra = ["psycopg3"] },
     { name = "beautifulsoup4" },
@@ -929,9 +934,9 @@ provisioning = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = "==3.14.5" },
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "assistant-stream", specifier = ">=0.0.36" },
+    { name = "azure-core", extras = ["aio"], specifier = ">=1.41.0" },
     { name = "azure-identity", specifier = ">=1.25.3" },
     { name = "azure-postgresql-auth", extras = ["psycopg3"], specifier = ">=1.1.0" },
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
