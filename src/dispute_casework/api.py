@@ -1,6 +1,7 @@
 """HTTP surface behind the origin check: the sign-in pages, /me and a stream."""
 
 import asyncio
+import json
 import secrets
 from pathlib import Path
 from typing import Annotated
@@ -71,6 +72,8 @@ def create_app() -> FastAPI:
                 issuer=issuer(identity.identity_tenant_id),
                 audience=identity.api_client_id,
             )
+        except (jwt.PyJWKClientConnectionError, json.JSONDecodeError) as error:
+            raise HTTPException(status_code=503) from error
         except (jwt.PyJWTError, ValidationError) as error:
             raise unauthorized from error
 

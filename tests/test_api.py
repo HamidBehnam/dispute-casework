@@ -1,7 +1,10 @@
 import asyncio
 import secrets
+import socket
+import threading
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -193,8 +196,9 @@ def test_me_returns_the_principal_of_a_valid_api_token(
         {"exp": 1},
         {"roles": ["administrator"]},
         {"oid": "not-a-guid"},
+        {"scp": None},
     ],
-    ids=["mcp-audience", "expired", "unknown-role", "malformed-oid"],
+    ids=["mcp-audience", "expired", "unknown-role", "malformed-oid", "no-scope"],
 )
 def test_me_refuses_an_invalid_token(
     identity: IdentitySettings,
@@ -209,6 +213,49 @@ def test_me_refuses_an_invalid_token(
         {}, {ORIGIN_HEADER: SECRET, "Authorization": f"Bearer {token}"}, "/me"
     )
     assert response.status_code == 401
+
+
+@pytest.fixture
+def non_json_keys_url() -> Iterator[str]:
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<html>maintenance</html>")
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_port}/keys"
+    server.shutdown()
+
+
+def closed_port_url() -> str:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return f"http://127.0.0.1:{probe.getsockname()[1]}/keys"
+
+
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+@pytest.mark.parametrize("keys", ["refused", "non-json"])
+def test_me_answers_503_when_the_signing_keys_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch,
+    identity: IdentitySettings,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+    non_json_keys_url: str,
+    keys: str,
+) -> None:
+    url = closed_port_url() if keys == "refused" else non_json_keys_url
+    monkeypatch.setattr(api, "jwks_uri", lambda tenant_id: url)
+    token = sign(claims(identity.api_client_id))
+    response = get(
+        {}, {ORIGIN_HEADER: SECRET, "Authorization": f"Bearer {token}"}, "/me"
+    )
+    assert response.status_code == 503
 
 
 def test_me_needs_the_origin_header_even_with_a_token() -> None:
