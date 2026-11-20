@@ -404,15 +404,23 @@ def test_an_unassigned_member_is_refused(
 
 def test_the_redirect_bridge_headers() -> None:
     """E2: /redirect is never cached and carries no opener policy."""
-    response = httpx.get(f"{ORIGIN}/redirect")
-    observe(
-        "redirect-headers",
-        status=response.status_code,
-        cache_control=response.headers.get("cache-control"),
-        cross_origin_opener_policy=response.headers.get("cross-origin-opener-policy"),
-    )
-    assert response.headers["cache-control"] == "no-store"
-    assert "cross-origin-opener-policy" not in response.headers
+    record: dict[str, Any] = {}
+    try:
+        response = httpx.get(f"{ORIGIN}/redirect")
+        record |= {
+            "status": response.status_code,
+            "cache_control": response.headers.get("cache-control"),
+            "cross_origin_opener_policy": response.headers.get(
+                "cross-origin-opener-policy"
+            ),
+        }
+    except Exception as error:
+        record["error_type"] = type(error).__name__
+        raise
+    finally:
+        observe("redirect-headers", **record)
+    assert record["cache_control"] == "no-store"
+    assert record["cross_origin_opener_policy"] is None
 
 
 @pytest.mark.parametrize("persona", ASSIGNED)
@@ -428,6 +436,7 @@ def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
     record: dict[str, Any] = {"persona": persona}
     try:
         popup_sign_in(page, persona, vault, tokens, outcome)
+        record["me_roles"] = outcome.me["roles"] if outcome.me else None
         assert tokens, "no API token reached /me"
         certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
         token = run_coroutine(mcp_token(tokens[-1], identity, certificate))
@@ -504,6 +513,12 @@ def test_the_api_app_holds_one_certificate_and_no_password(
                 len(application.password_credentials or []),
             )
 
-    certificates, passwords = run_coroutine(read())
-    observe("credentials", certificates=certificates, passwords=passwords)
-    assert (certificates, passwords) == (1, 0)
+    record: dict[str, Any] = {}
+    try:
+        record["certificates"], record["passwords"] = run_coroutine(read())
+    except Exception as error:
+        record["error_type"] = type(error).__name__
+        raise
+    finally:
+        observe("credentials", **record)
+    assert (record["certificates"], record["passwords"]) == (1, 0)
