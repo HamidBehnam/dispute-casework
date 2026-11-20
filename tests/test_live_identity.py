@@ -169,13 +169,6 @@ def visible(page: Page, selector: str) -> bool:
     return page.locator(selector).first.is_visible()
 
 
-def heading(page: Page) -> str:
-    """The prompt's heading, unless it names the account."""
-    locator = page.locator("[role=heading]:visible").first
-    text = locator.inner_text().strip() if locator.count() else ""
-    return "<names the account>" if "@" in text else text
-
-
 def sign_in(
     app: Page,
     login: Page,
@@ -228,9 +221,12 @@ def sign_in(
                     and not visible(login, "input[name=loginfmt]")
                     and not visible(login, "input[name=passwd]")
                 ):
-                    shown = heading(login)
-                    if shown and shown not in outcome.prompts:
-                        outcome.prompts.append(shown)
+                    shown = login.locator("[role=heading]:visible").first
+                    text = shown.inner_text().strip() if shown.count() else ""
+                    if "@" in text:
+                        text = "<names the account>"
+                    if text and text not in outcome.prompts:
+                        outcome.prompts.append(text)
         except PlaywrightError:
             pass  # a page between two navigations; read it on the next poll
         app.wait_for_timeout(POLL_MILLISECONDS)
@@ -264,18 +260,6 @@ def sign_in_record(outcome: SignIn) -> dict[str, Any]:
         "app_error": outcome.app_error,
         "error_type": outcome.error_type,
     }
-
-
-def api_claims(token: str, identity: IdentitySettings) -> dict[str, Any]:
-    principal = parse_token(
-        token,
-        jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id)),
-        issuer=issuer(identity.identity_tenant_id),
-        audience=identity.api_client_id,
-    )
-    claims: dict[str, Any] = jwt.decode(token, options={"verify_signature": False})
-    assert str(principal.oid) == claims["oid"]
-    return claims
 
 
 def popup_sign_in(
@@ -318,10 +302,19 @@ def test_a_persona_signs_in_with_a_popup_and_reaches_me(
         popup_sign_in(page, persona, vault, tokens, outcome)
         record["api_token_sent_to_me"] = bool(tokens)
         if outcome.me is not None and tokens:
-            claims = api_claims(tokens[-1], identity)
+            principal = parse_token(
+                tokens[-1],
+                jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id)),
+                issuer=issuer(identity.identity_tenant_id),
+                audience=identity.api_client_id,
+            )
+            claims = jwt.decode(tokens[-1], options={"verify_signature": False})
             record |= {
+                "parse_token_accepts": True,
                 "me_roles": outcome.me["roles"],
-                "me_oid_matches": outcome.me["oid"] == claims["oid"],
+                "me_oid_matches": outcome.me["oid"]
+                == claims["oid"]
+                == str(principal.oid),
                 "claim_shape": claim_shape(claims),
                 "ver": claims.get("ver"),
                 "aud_is_api": claims.get("aud") == identity.api_client_id,
