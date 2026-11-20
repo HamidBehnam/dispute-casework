@@ -3,19 +3,21 @@
 Local only and never in CI: selected with `-m live`. The backend serves the web
 build behind the compose `edge` proxy on LIVE_ORIGIN (http://localhost:8000), which
 adds the origin header as the production edge does; the Azure CLI is signed in to
-both tenants. Each test appends what it observed to OBSERVATIONS_DIR as JSON lines:
-claim names, types and verdicts, header names and values, request origins and
-counts, never a token or a password.
+both tenants. Each test appends what it observed to OBSERVATIONS_DIR as one JSON
+line, in a `finally`, whatever the outcome: claim names, types and verdicts, header
+names and values, request origins and counts, booleans and AADSTS codes, never an
+identifier, a token or a password.
 """
 
 import asyncio
 import base64
 import json
 import os
+import re
 import time
 from collections.abc import Coroutine, Iterator
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -44,6 +46,11 @@ from dispute_casework.identity import (
 pytestmark = [pytest.mark.live, pytest.mark.block_network(allowed_hosts=[".*"])]
 
 ORIGIN = os.environ.get("LIVE_ORIGIN", "http://localhost:8000")
+ASSIGNED = [persona for persona, role in PERSONAS.items() if role]
+UNASSIGNED = [persona for persona, role in PERSONAS.items() if role is None]
+SIGN_IN_SECONDS = 90
+POLL_MILLISECONDS = 500
+AADSTS = re.compile(r"AADSTS\d+")
 CLAIM_TYPES = {
     "iss": str,
     "aud": str,
@@ -134,21 +141,129 @@ def signed_in_page(page: Page) -> Iterator[tuple[Page, list[Sent], list[str]]]:
     yield page, requests, tokens
 
 
-def enter_credentials(page: Page, username: str, secret: str) -> list[str]:
-    """Microsoft's sign-in page: user name, password, and the stay-signed-in prompt.
-    Returns the URLs of any other prompt met (MFA, consent, password change)."""
-    page.fill("input[name=loginfmt]", username)
-    page.click("input[type=submit]")
-    page.fill("input[name=passwd]", secret)
-    page.click("input[type=submit]")
-    prompts = []
-    page.wait_for_load_state()
-    if "login.microsoftonline.com" in page.url and not page.is_closed():
-        if page.locator("#KmsiCheckboxField, #idBtn_Back").count():
-            page.click("#idBtn_Back")
-        elif not page.is_closed():
-            prompts.append(urlsplit(page.url).path)
-    return prompts
+@dataclass
+class SignIn:
+    """How one sign-in ended, read from the application page and Microsoft's page.
+
+    result: "me" (the page showed /me), "app-error" (the page showed MSAL's error),
+    "microsoft-error" (Microsoft's page showed an AADSTS code), "api-token-sent"
+    (a token reached /me and the caller stopped there), "prompt" (a Microsoft page
+    other than the credentials and stay-signed-in pages was still showing at the
+    deadline), "popup-closed" or "timeout". error_type names an exception raised
+    during the sign-in or after it.
+    """
+
+    result: str = "timeout"
+    prompts: list[str] = field(default_factory=list)
+    microsoft_codes: list[str] = field(default_factory=list)
+    app_error: dict[str, str] | None = None
+    me: dict[str, Any] | None = None
+    error_type: str | None = None
+
+
+def on_microsoft(page: Page) -> bool:
+    return not page.is_closed() and not page.url.startswith(ORIGIN)
+
+
+def visible(page: Page, selector: str) -> bool:
+    return page.locator(selector).first.is_visible()
+
+
+def heading(page: Page) -> str:
+    """The prompt's heading, unless it names the account."""
+    locator = page.locator("[role=heading]:visible").first
+    text = locator.inner_text().strip() if locator.count() else ""
+    return "<names the account>" if "@" in text else text
+
+
+def sign_in(
+    app: Page,
+    login: Page,
+    username: str,
+    secret: str,
+    tokens: list[str],
+    outcome: SignIn,
+    *,
+    stop_on_token: bool = False,
+) -> None:
+    """Drive Microsoft's pages on `login` until the application page settles.
+
+    Every page is examined on every poll until the deadline, so a prompt on any
+    host, before or after the stay-signed-in page, is recorded as itself."""
+    typed_username = typed_password = False
+    deadline = time.monotonic() + SIGN_IN_SECONDS
+    while time.monotonic() < deadline:
+        try:
+            if stop_on_token and tokens:
+                outcome.result = "api-token-sent"
+                return
+            me, error = app.evaluate(
+                "() => [document.getElementById('me')?.textContent ?? '',"
+                " document.getElementById('error')?.textContent ?? '']"
+            )
+            if me:
+                outcome.me, outcome.result = json.loads(me), "me"
+                return
+            if error:
+                outcome.app_error, outcome.result = json.loads(error), "app-error"
+                return
+            if on_microsoft(login):
+                codes = AADSTS.findall(login.inner_text("body"))
+                if codes:
+                    outcome.microsoft_codes = sorted(set(codes))
+                    outcome.result = "microsoft-error"
+                    return
+                if not typed_username and visible(login, "input[name=loginfmt]"):
+                    login.fill("input[name=loginfmt]", username)
+                    login.click("input[type=submit]")
+                    typed_username = True
+                elif not typed_password and visible(login, "input[name=passwd]"):
+                    login.fill("input[name=passwd]", secret)
+                    login.click("input[type=submit]")
+                    typed_password = True
+                elif login.locator("#KmsiCheckboxField").count():
+                    login.click("#idBtn_Back")
+                elif (
+                    typed_password
+                    and not visible(login, "input[name=loginfmt]")
+                    and not visible(login, "input[name=passwd]")
+                ):
+                    shown = heading(login)
+                    if shown and shown not in outcome.prompts:
+                        outcome.prompts.append(shown)
+        except PlaywrightError:
+            pass  # a page between two navigations; read it on the next poll
+        app.wait_for_timeout(POLL_MILLISECONDS)
+    if outcome.prompts and on_microsoft(login):
+        outcome.result = "prompt"
+    elif login is not app and login.is_closed():
+        outcome.result = "popup-closed"
+
+
+def script_counts(requests: list[Sent]) -> dict[str, int]:
+    """E2 is gated on the application's own pages; Microsoft's are recorded."""
+    scripts = [r for r in requests if r.resource_type == "script"]
+    from_app_pages = [r for r in scripts if r.page_url.startswith(ORIGIN)]
+    return {
+        "script_requests": len(scripts),
+        "off_origin_script_requests": sum(
+            not r.url.startswith(ORIGIN) for r in scripts
+        ),
+        "script_requests_from_app_pages": len(from_app_pages),
+        "off_origin_script_requests_from_app_pages": sum(
+            not r.url.startswith(ORIGIN) for r in from_app_pages
+        ),
+    }
+
+
+def sign_in_record(outcome: SignIn) -> dict[str, Any]:
+    return {
+        "result": outcome.result,
+        "prompts": outcome.prompts,
+        "microsoft_codes": outcome.microsoft_codes,
+        "app_error": outcome.app_error,
+        "error_type": outcome.error_type,
+    }
 
 
 def api_claims(token: str, identity: IdentitySettings) -> dict[str, Any]:
@@ -163,8 +278,31 @@ def api_claims(token: str, identity: IdentitySettings) -> dict[str, Any]:
     return claims
 
 
+def popup_sign_in(
+    page: Page,
+    persona: str,
+    vault: SecretClient,
+    tokens: list[str],
+    outcome: SignIn,
+    *,
+    stop_on_token: bool = False,
+) -> None:
+    page.goto(ORIGIN)
+    with page.expect_popup() as popup:
+        page.click("#sign-in-popup")
+    sign_in(
+        page,
+        popup.value,
+        f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
+        password(vault, persona),
+        tokens,
+        outcome,
+        stop_on_token=stop_on_token,
+    )
+
+
 @pytest.mark.parametrize("attempt", [1, 2, 3])
-@pytest.mark.parametrize("persona", list(PERSONAS))
+@pytest.mark.parametrize("persona", ASSIGNED)
 def test_a_persona_signs_in_with_a_popup_and_reaches_me(
     signed_in_page: tuple[Page, list[Sent], list[str]],
     identity: IdentitySettings,
@@ -174,104 +312,101 @@ def test_a_persona_signs_in_with_a_popup_and_reaches_me(
 ) -> None:
     """E1, E2 (popup), E5 and E6 for the API audience."""
     page, requests, tokens = signed_in_page
-    page.goto(ORIGIN)
-    with page.expect_popup() as popup:
-        page.click("#sign-in-popup")
-    prompts = enter_credentials(
-        popup.value,
-        f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
-        password(vault, persona),
-    )
-    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
-    me = json.loads(page.inner_text("#me"))
-    claims = api_claims(tokens[-1], identity)
-    scripts = [r for r in requests if r.resource_type == "script"]
-    off_origin = [r for r in scripts if not r.url.startswith(ORIGIN)]
-    from_app_pages = [r for r in scripts if r.page_url.startswith(ORIGIN)]
-    observe(
-        "popup",
-        persona=persona,
-        attempt=attempt,
-        me_roles=me["roles"],
-        me_oid_matches=me["oid"] == claims["oid"],
-        prompts=prompts,
-        silent_token=bool(tokens),
-        claim_shape=claim_shape(claims),
-        ver=claims.get("ver"),
-        aud_is_api=claims.get("aud") == identity.api_client_id,
-        iss_is_v2=claims.get("iss") == issuer(identity.identity_tenant_id),
-        scp=claims.get("scp"),
-        roles=claims.get("roles"),
-        script_requests=len(scripts),
-        off_origin_script_requests=len(off_origin),
-        script_requests_from_app_pages=len(from_app_pages),
-        off_origin_script_requests_from_app_pages=sum(
-            not r.url.startswith(ORIGIN) for r in from_app_pages
-        ),
-    )
-    assert me["roles"] == [PERSONAS[persona]] and not prompts and not off_origin
+    outcome = SignIn()
+    record: dict[str, Any] = {"persona": persona, "attempt": attempt}
+    try:
+        popup_sign_in(page, persona, vault, tokens, outcome)
+        record["api_token_sent_to_me"] = bool(tokens)
+        if outcome.me is not None and tokens:
+            claims = api_claims(tokens[-1], identity)
+            record |= {
+                "me_roles": outcome.me["roles"],
+                "me_oid_matches": outcome.me["oid"] == claims["oid"],
+                "claim_shape": claim_shape(claims),
+                "ver": claims.get("ver"),
+                "aud_is_api": claims.get("aud") == identity.api_client_id,
+                "iss_is_v2": claims.get("iss") == issuer(identity.identity_tenant_id),
+                "tid_is_identity_tenant": (
+                    claims.get("tid") == identity.identity_tenant_id
+                ),
+                "scp": claims.get("scp"),
+                "roles": claims.get("roles"),
+            }
+    except Exception as error:
+        outcome.error_type = type(error).__name__
+        raise
+    finally:
+        observe("popup", **record, **sign_in_record(outcome), **script_counts(requests))
+    assert outcome.result == "me" and not outcome.prompts
+    assert record["me_roles"] == [PERSONAS[persona]]
+    assert script_counts(requests)["off_origin_script_requests_from_app_pages"] == 0
 
 
-@pytest.mark.parametrize("persona", list(PERSONAS))
+@pytest.mark.parametrize("persona", ASSIGNED)
 def test_a_persona_signs_in_with_a_redirect(
     signed_in_page: tuple[Page, list[Sent], list[str]],
     vault: SecretClient,
     persona: str,
 ) -> None:
     """E2, the redirect flow through the bridge."""
-    page, requests, _ = signed_in_page
-    page.goto(ORIGIN)
-    page.click("#sign-in-redirect")
-    prompts = enter_credentials(
-        page, f"{persona}@{os.environ['IDENTITY_DOMAIN']}", password(vault, persona)
-    )
-    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
-    me = json.loads(page.inner_text("#me"))
-    scripts = [r for r in requests if r.resource_type == "script"]
-    off_origin = [r for r in scripts if not r.url.startswith(ORIGIN)]
-    from_app_pages = [r for r in scripts if r.page_url.startswith(ORIGIN)]
-    observe(
-        "redirect",
-        persona=persona,
-        me_roles=me["roles"],
-        prompts=prompts,
-        script_requests=len(scripts),
-        off_origin_script_requests=len(off_origin),
-        script_requests_from_app_pages=len(from_app_pages),
-        off_origin_script_requests_from_app_pages=sum(
-            not r.url.startswith(ORIGIN) for r in from_app_pages
-        ),
-    )
-    assert me["roles"] == [PERSONAS[persona]] and not prompts and not off_origin
+    page, requests, tokens = signed_in_page
+    outcome = SignIn()
+    try:
+        page.goto(ORIGIN)
+        page.click("#sign-in-redirect")
+        sign_in(
+            page,
+            page,
+            f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
+            password(vault, persona),
+            tokens,
+            outcome,
+        )
+    except Exception as error:
+        outcome.error_type = type(error).__name__
+        raise
+    finally:
+        observe(
+            "redirect",
+            persona=persona,
+            me_roles=outcome.me["roles"] if outcome.me else None,
+            **sign_in_record(outcome),
+            **script_counts(requests),
+        )
+    assert outcome.result == "me" and not outcome.prompts
+    assert outcome.me and outcome.me["roles"] == [PERSONAS[persona]]
+    assert script_counts(requests)["off_origin_script_requests_from_app_pages"] == 0
 
 
-ADMINISTRATOR_SIGN_IN_SECONDS = 600
-
-
-def test_the_unassigned_administrator_is_refused(
+@pytest.mark.parametrize("persona", UNASSIGNED)
+def test_an_unassigned_member_is_refused(
     signed_in_page: tuple[Page, list[Sent], list[str]],
+    vault: SecretClient,
+    persona: str,
 ) -> None:
-    """E1: the administrator holds no app role, so Entra refuses the API token.
+    """E1: a member with no app role is refused a token for the API.
 
-    Run headed (`--headed`); the administrator signs in by hand in the popup, with
-    MFA. Only the error code is recorded."""
+    The AADSTS code is read wherever it appears: MSAL's errorNo in the page's
+    #error, or the text of Microsoft's page. The test ends as soon as a token
+    reaches /me."""
     page, _, tokens = signed_in_page
-    console: list[str] = []
-    page.on("console", lambda message: console.append(message.text))
-    page.goto(ORIGIN)
-    with page.expect_popup() as popup:
-        page.click("#sign-in-popup")
-    deadline = time.monotonic() + ADMINISTRATOR_SIGN_IN_SECONDS
-    refused = False
-    while not refused and time.monotonic() < deadline:
-        try:
-            shown = "" if popup.value.is_closed() else popup.value.content()
-        except PlaywrightError:  # the popup is between two pages; read it next second
-            shown = ""
-        refused = any("AADSTS50105" in text for text in [shown, *console])
-        page.wait_for_timeout(1000)
-    observe("administrator", refused_with_aadsts50105=refused, api_tokens=len(tokens))
-    assert refused and not tokens
+    outcome = SignIn()
+    try:
+        popup_sign_in(page, persona, vault, tokens, outcome, stop_on_token=True)
+    except Exception as error:
+        outcome.error_type = type(error).__name__
+        raise
+    finally:
+        app_number = (outcome.app_error or {}).get("errorNo")
+        codes = [f"AADSTS{app_number}"] if app_number else outcome.microsoft_codes
+        observe(
+            "unassigned",
+            **sign_in_record(outcome),
+            aadsts_codes=codes,
+            aadsts_point="app" if app_number else "microsoft" if codes else None,
+            api_tokens_sent_to_me=len(tokens),
+        )
+    assert "AADSTS50105" in codes and not tokens
 
 
 def test_the_redirect_bridge_headers() -> None:
@@ -287,7 +422,7 @@ def test_the_redirect_bridge_headers() -> None:
     assert "cross-origin-opener-policy" not in response.headers
 
 
-@pytest.mark.parametrize("persona", list(PERSONAS))
+@pytest.mark.parametrize("persona", ASSIGNED)
 def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
     signed_in_page: tuple[Page, list[Sent], list[str]],
     identity: IdentitySettings,
@@ -296,57 +431,65 @@ def test_the_backend_exchanges_a_persona_token_for_an_mcp_token(
 ) -> None:
     """E3, E4 (c) and E6 for the MCP audience."""
     page, _, tokens = signed_in_page
-    page.goto(ORIGIN)
-    with page.expect_popup() as popup:
-        page.click("#sign-in-popup")
-    enter_credentials(
-        popup.value,
-        f"{persona}@{os.environ['IDENTITY_DOMAIN']}",
-        password(vault, persona),
-    )
-    page.wait_for_function("document.getElementById('me')?.textContent.length > 0")
-    certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
-
-    token = run_coroutine(mcp_token(tokens[-1], identity, certificate))
-    principal = parse_token(
-        token,
-        jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id)),
-        issuer=issuer(identity.identity_tenant_id),
-        audience=identity.mcp_client_id,
-    )
-    fastmcp_accepts = (
-        run_coroutine(mcp_token_verifier(identity).verify_token(token)) is not None
-    )
-    claims = jwt.decode(token, options={"verify_signature": False})
-    observe(
-        "obo",
-        persona=persona,
-        parse_token_accepts=True,
-        fastmcp_accepts=fastmcp_accepts,
-        claim_shape=claim_shape(claims),
-        ver=claims.get("ver"),
-        aud_is_mcp=claims.get("aud") == identity.mcp_client_id,
-        azp_is_api=claims.get("azp") == identity.api_client_id,
-        scp=claims.get("scp"),
-        roles=claims.get("roles"),
-    )
-    assert principal.roles == {PERSONAS[persona]} and fastmcp_accepts
+    outcome = SignIn()
+    record: dict[str, Any] = {"persona": persona}
+    try:
+        popup_sign_in(page, persona, vault, tokens, outcome)
+        assert tokens, "no API token reached /me"
+        certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
+        token = run_coroutine(mcp_token(tokens[-1], identity, certificate))
+        principal = parse_token(
+            token,
+            jwt.PyJWKClient(jwks_uri(identity.identity_tenant_id)),
+            issuer=issuer(identity.identity_tenant_id),
+            audience=identity.mcp_client_id,
+        )
+        record["parse_token_accepts"] = True
+        record["roles_match"] = principal.roles == {PERSONAS[persona]}
+        record["fastmcp_accepts"] = (
+            run_coroutine(mcp_token_verifier(identity).verify_token(token)) is not None
+        )
+        claims = jwt.decode(token, options={"verify_signature": False})
+        record |= {
+            "claim_shape": claim_shape(claims),
+            "ver": claims.get("ver"),
+            "aud_is_mcp": claims.get("aud") == identity.mcp_client_id,
+            "azp_is_api": claims.get("azp") == identity.api_client_id,
+            "tid_is_identity_tenant": claims.get("tid") == identity.identity_tenant_id,
+            "scp": claims.get("scp"),
+            "roles": claims.get("roles"),
+        }
+    except Exception as error:
+        outcome.error_type = type(error).__name__
+        raise
+    finally:
+        observe("obo", **record, **sign_in_record(outcome))
+    assert record["roles_match"] and record["fastmcp_accepts"]
 
 
 def test_an_assertion_for_another_audience_is_refused(
     identity: IdentitySettings, vault: SecretClient
 ) -> None:
     """E3: a token whose audience is not the API is not exchanged."""
-    certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
-    graph_token = (
-        AzureCliCredential(tenant_id=identity.identity_tenant_id)
-        .get_token("https://graph.microsoft.com/.default")
-        .token
-    )
-    with pytest.raises(ClientAuthenticationError) as refusal:
-        run_coroutine(mcp_token(graph_token, identity, certificate))
-    codes = [word for word in str(refusal.value).split() if word.startswith("AADSTS")]
-    observe("obo-refused", refused=True, error_codes=codes)
+    record: dict[str, Any] = {"refused": False, "error_codes": []}
+    try:
+        certificate = base64.b64decode(vault.get_secret("obo-certificate").value or "")
+        graph_token = (
+            AzureCliCredential(tenant_id=identity.identity_tenant_id)
+            .get_token("https://graph.microsoft.com/.default")
+            .token
+        )
+        try:
+            run_coroutine(mcp_token(graph_token, identity, certificate))
+        except ClientAuthenticationError as refusal:
+            record["refused"] = True
+            record["error_codes"] = sorted(set(AADSTS.findall(str(refusal))))
+    except Exception as error:
+        record["error_type"] = type(error).__name__
+        raise
+    finally:
+        observe("obo-refused", **record)
+    assert record["refused"]
 
 
 def test_the_api_app_holds_one_certificate_and_no_password(
