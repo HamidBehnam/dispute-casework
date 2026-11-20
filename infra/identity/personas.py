@@ -1,4 +1,6 @@
-"""The six personas of the identity tenant and their app-role assignments.
+"""The personas of the identity tenant and their app-role assignments: two per
+role, and one member with no role, never assigned, whom Entra refuses a token for
+the API and MCP applications.
 
     uv run python infra/identity/personas.py plan
     uv run python infra/identity/personas.py apply
@@ -31,13 +33,14 @@ VAULT_URL = "https://kv-dcw-eus2.vault.azure.net"
 GRAPH_SCOPES = ["https://graph.microsoft.com/.default"]
 PASSWORD_LENGTH = 32
 
-PERSONAS = {
+PERSONAS: dict[str, str | None] = {
     "preparer-1": "preparer",
     "preparer-2": "preparer",
     "approver-1": "approver",
     "approver-2": "approver",
     "viewer-1": "restricted_viewer",
     "viewer-2": "restricted_viewer",
+    "unassigned-1": None,
 }
 APPS = ("api", "mcp")
 
@@ -82,6 +85,8 @@ def changes(state: State, resources: dict[str, Resource]) -> list[Change]:
             planned.append(Change("password", persona))
         if user_id is None:
             planned.append(Change("user", persona))
+        if role is None:
+            continue
         for app in APPS:
             resource = resources[app]
             assigned = (
@@ -128,7 +133,8 @@ async def read_resources(
         ("mcp", settings.mcp_client_id),
     ):
         principal = await graph.service_principals_with_app_id(client_id).get()
-        assert principal and principal.id and principal.app_roles is not None
+        if not (principal and principal.id and principal.app_roles is not None):
+            raise RuntimeError(f"Graph returned the {app} service principal incomplete")
         resources[app] = Resource(
             UUID(principal.id),
             {
@@ -161,7 +167,8 @@ async def read_state(
             if error.response_status_code != 404:
                 raise
         else:
-            assert user and user.id
+            if not (user and user.id):
+                raise RuntimeError(f"Graph returned {persona} without an id")
             users[persona] = UUID(user.id)
 
     assignments = set()
@@ -169,7 +176,8 @@ async def read_state(
         page = await graph.service_principals.by_service_principal_id(
             str(resource.service_principal_id)
         ).app_role_assigned_to.get()
-        assert page and page.value is not None
+        if not (page and page.value is not None):
+            raise RuntimeError("Graph returned no app-role assignment page")
         if page.odata_next_link:
             raise RuntimeError("more app-role assignments than one page holds")
         assignments |= {
@@ -204,9 +212,15 @@ async def apply_change(
                 ),
             )
         )
-        assert created and created.id
+        if not (created and created.id):
+            raise RuntimeError(
+                f"Graph created {change.persona} without returning its id"
+            )
         users[change.persona] = UUID(created.id)
     else:
+        role = PERSONAS[change.persona]
+        if role is None:
+            raise ValueError(f"{change.persona} holds no role to assign")
         resource = resources[change.app]
         await graph.service_principals.by_service_principal_id(
             str(resource.service_principal_id)
@@ -214,7 +228,7 @@ async def apply_change(
             AppRoleAssignment(
                 principal_id=users[change.persona],
                 resource_id=resource.service_principal_id,
-                app_role_id=resource.role_ids[PERSONAS[change.persona]],
+                app_role_id=resource.role_ids[role],
             )
         )
 
