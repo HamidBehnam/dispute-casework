@@ -137,7 +137,8 @@ resource "azuread_application_identifier_uri" "api" {
   identifier_uri = "api://${azuread_application.api.client_id}"
 }
 
-# Tokens for the API and the MCP server are issued only to users assigned one of their roles.
+# Entra refuses tokens for the API and the MCP server to a user assigned none of their roles,
+# except a Global Administrator, to whom Microsoft does not apply the requirement.
 resource "azuread_service_principal" "mcp" {
   client_id                    = azuread_application.mcp.client_id
   app_role_assignment_required = true
