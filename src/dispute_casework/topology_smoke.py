@@ -2,8 +2,9 @@
 
     python -m dispute_casework.topology_smoke --url-env PUBLIC_URL --leg cloudflare
 
-One JSON record per run, on stdout and, given --out, in a file. The URL comes
-from the named environment variable and the header value from ORIGIN_HEADER_SECRET.
+One JSON record per run, on stdout and, given --out, in a file. The URL and the
+bearer token come from the named environment variables (--url-env, --token-env)
+and the header value from ORIGIN_HEADER_SECRET; the token is never recorded.
 """
 
 import argparse
@@ -41,6 +42,7 @@ def max_gap_s(
 def measure(
     url: str,
     secret: str,
+    token: str,
     seconds: int,
     silent: bool,
     transport: httpx.BaseTransport | None = None,
@@ -58,7 +60,10 @@ def measure(
         with (
             httpx.Client(timeout=timeout, transport=transport) as client,
             client.stream(
-                "GET", f"{url}/stream", params=params, headers={ORIGIN_HEADER: secret}
+                "GET",
+                f"{url}/stream",
+                params=params,
+                headers={ORIGIN_HEADER: secret, "Authorization": f"Bearer {token}"},
             ) as response,
         ):
             status = response.status_code
@@ -90,6 +95,7 @@ def measure(
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url-env", default="INTERNAL_URL")
+    parser.add_argument("--token-env", default="STREAM_TOKEN")
     parser.add_argument("--leg", default="internal")
     parser.add_argument(
         "--series", help="a series outside the planned runs, kept apart"
@@ -111,6 +117,7 @@ def main(argv: list[str] | None = None) -> None:
         **measure(
             os.environ[args.url_env],
             os.environ["ORIGIN_HEADER_SECRET"],
+            os.environ[args.token_env],
             args.seconds,
             args.silent,
         ),

@@ -53,6 +53,15 @@ def environment(
     monkeypatch.setattr(api, "STATIC_DIR", tmp_path)
 
 
+@pytest.fixture
+def bearer(
+    identity: IdentitySettings,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+) -> dict[str, str]:
+    return {"Authorization": f"Bearer {sign(claims(identity.api_client_id))}"}
+
+
 def test_a_request_without_the_origin_header_is_refused() -> None:
     response = get({"seconds": "1", "silent": "true"}, {})
     assert response.status_code == 403
@@ -63,11 +72,15 @@ def test_a_request_with_a_wrong_origin_header_is_refused() -> None:
     assert response.status_code == 403
 
 
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
 @pytest.mark.parametrize(
     ("header", "status"), [("other", 403), (SECRET, 200)], ids=["refused", "accepted"]
 )
 def test_the_origin_header_is_compared_with_compare_digest(
-    monkeypatch: pytest.MonkeyPatch, header: str, status: int
+    monkeypatch: pytest.MonkeyPatch,
+    bearer: dict[str, str],
+    header: str,
+    status: int,
 ) -> None:
     calls: list[tuple[bytes, bytes]] = []
     compare_digest = secrets.compare_digest
@@ -77,29 +90,53 @@ def test_the_origin_header_is_compared_with_compare_digest(
         return compare_digest(a, b)
 
     monkeypatch.setattr(secrets, "compare_digest", recording_compare_digest)
-    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: header})
+    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: header} | bearer)
     assert response.status_code == status
     assert calls == [(header.encode(), SECRET.encode())]
 
 
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
 def test_the_stream_carries_a_heartbeat_whenever_it_is_idle(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, bearer: dict[str, str]
 ) -> None:
     assert api.HEARTBEAT_SECONDS == 15
     # add_keepalive takes the interval in seconds; a short one keeps the test short.
     monkeypatch.setattr(api, "HEARTBEAT_SECONDS", 0.05)
-    response = get({"seconds": "1"}, {ORIGIN_HEADER: SECRET})
+    response = get({"seconds": "1"}, {ORIGIN_HEADER: SECRET} | bearer)
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
     assert response.text.count(": heartbeat\n\n") >= 10
 
 
-def test_the_silent_arm_sends_no_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+def test_the_silent_arm_sends_no_heartbeat(
+    monkeypatch: pytest.MonkeyPatch, bearer: dict[str, str]
+) -> None:
     monkeypatch.setattr(api, "HEARTBEAT_SECONDS", 0.05)
-    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: SECRET})
+    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: SECRET} | bearer)
     assert response.status_code == 200
     assert ": heartbeat" not in response.text
     assert "start" in response.text and "end" in response.text
+
+
+def test_the_stream_refuses_a_request_without_a_bearer_token() -> None:
+    response = get({"seconds": "1", "silent": "true"}, {ORIGIN_HEADER: SECRET})
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+def test_the_stream_refuses_an_invalid_bearer_token(
+    identity: IdentitySettings,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+) -> None:
+    token = sign(claims(identity.mcp_client_id))
+    response = get(
+        {"seconds": "1", "silent": "true"},
+        {ORIGIN_HEADER: SECRET, "Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 401
 
 
 def test_the_application_does_not_start_on_an_empty_or_short_secret(
