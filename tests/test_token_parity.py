@@ -2,8 +2,10 @@
 
 FastMCP 4.2.2's JWTVerifier never reads iat and checks exp only when it is present
 (fastmcp/server/auth/providers/jwt.py, load_access_token), so it accepts two kinds
-of token that parse_token refuses. The expected verdicts below record that; a
-change in either verifier fails the test.
+of token that parse_token refuses. Its tolerance is 0 s on exp and 30 s on nbf,
+against parse_token's 300 s, so a token inside that band is accepted by
+parse_token only. The expected verdicts below record that; a change in either
+verifier fails the test.
 """
 
 import asyncio
@@ -23,7 +25,12 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from fastmcp.server.auth.providers.jwt import JWTVerifier
 from pydantic import ValidationError
 
-from dispute_casework.identity import IdentitySettings, issuer, parse_token
+from dispute_casework.identity import (
+    REQUIRED_SCOPE,
+    IdentitySettings,
+    issuer,
+    parse_token,
+)
 
 ACCEPT, REJECT = "accept", "reject"
 
@@ -31,8 +38,12 @@ ACCEPT, REJECT = "accept", "reject"
 EXPECTED = {
     "valid": (ACCEPT, ACCEPT),
     "no-roles": (ACCEPT, ACCEPT),
+    "no-scp": (REJECT, REJECT),
+    "wrong-scp": (REJECT, REJECT),
     "expired": (REJECT, REJECT),
+    "exp-inside-the-leeway": (ACCEPT, REJECT),
     "nbf-in-the-future": (REJECT, REJECT),
+    "nbf-inside-the-leeway": (ACCEPT, REJECT),
     "no-exp": (REJECT, ACCEPT),
     "iat-in-the-future": (REJECT, ACCEPT),
     "wrong-aud": (REJECT, REJECT),
@@ -64,8 +75,16 @@ def mint(
     now = int(time.time())
     overrides: dict[str, dict[str, Any]] = {
         "no-roles": {"roles": None},
-        "expired": {"exp": now - 60},
+        "no-scp": {"scp": None},
+        "wrong-scp": {"scp": "access_as_users"},
+        "expired": {"iat": now - 4200, "nbf": now - 4200, "exp": now - 600},
+        "exp-inside-the-leeway": {
+            "iat": now - 3660,
+            "nbf": now - 3660,
+            "exp": now - 60,
+        },
         "nbf-in-the-future": {"nbf": now + 3600},
+        "nbf-inside-the-leeway": {"nbf": now + 120},
         "no-exp": {"exp": None},
         "iat-in-the-future": {"iat": now + 3600},
         "wrong-aud": {"aud": str(uuid.uuid4())},
@@ -126,7 +145,7 @@ def test_parse_token_and_fastmcp_verdicts_match_the_expected_table(
         issuer=issuer(identity.identity_tenant_id),
         audience=client_id,
         algorithm="RS256",
-        required_scopes=["access_as_user"],
+        required_scopes=[REQUIRED_SCOPE],
     )
     accepted = asyncio.run(verifier.verify_token(token)) is not None
     fastmcp_verdict = ACCEPT if accepted else REJECT

@@ -12,6 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 Role = Literal["preparer", "approver", "restricted_viewer"]
 
 REQUIRED_CLAIMS = ["exp", "iat", "nbf", "iss", "aud"]
+REQUIRED_SCOPE = "access_as_user"
+# Microsoft.IdentityModel's TokenValidationParameters.DefaultClockSkew.
+CLOCK_SKEW_SECONDS = 300
 
 
 class IdentitySettings(BaseSettings):
@@ -50,8 +53,11 @@ def parse_token(
         audience=audience,
         issuer=issuer,
         options={"require": REQUIRED_CLAIMS},
-        leeway=0,
+        leeway=CLOCK_SKEW_SECONDS,
     )
+    scopes = claims.get("scp", "")
+    if not isinstance(scopes, str) or REQUIRED_SCOPE not in scopes.split():
+        raise jwt.InvalidTokenError(f"scp does not grant {REQUIRED_SCOPE}")
     return Principal.model_validate(
         {"oid": claims.get("oid"), "roles": claims.get("roles", [])}
     )
@@ -64,7 +70,7 @@ def mcp_token_verifier(identity: IdentitySettings) -> JWTVerifier:
         issuer=issuer(identity.identity_tenant_id),
         audience=identity.mcp_client_id,
         algorithm="RS256",
-        required_scopes=["access_as_user"],
+        required_scopes=[REQUIRED_SCOPE],
     )
 
 
@@ -82,6 +88,6 @@ async def mcp_token(
         user_assertion=user_assertion,
     ) as credential:
         token = await credential.get_token(
-            f"api://{identity.mcp_client_id}/access_as_user"
+            f"api://{identity.mcp_client_id}/{REQUIRED_SCOPE}"
         )
     return token.token

@@ -81,6 +81,39 @@ def test_parse_token_refuses_an_unknown_role(
         )
 
 
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+@pytest.mark.parametrize("scp", [None, "", "User.Read", "access_as_users"], ids=str)
+def test_parse_token_refuses_a_token_without_the_delegated_scope(
+    identity: IdentitySettings,
+    jwks_url: str,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+    scp: str | None,
+) -> None:
+    with pytest.raises(jwt.InvalidTokenError, match="scp"):
+        parse_token(
+            sign(claims(identity.api_client_id, scp=scp)),
+            jwt.PyJWKClient(jwks_url),
+            issuer=issuer(identity.identity_tenant_id),
+            audience=identity.api_client_id,
+        )
+
+
+@pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
+def test_parse_token_accepts_the_scope_among_others(
+    identity: IdentitySettings,
+    jwks_url: str,
+    claims: Callable[..., dict[str, Any]],
+    sign: Callable[[dict[str, Any]], str],
+) -> None:
+    parse_token(
+        sign(claims(identity.api_client_id, scp="User.Read access_as_user")),
+        jwt.PyJWKClient(jwks_url),
+        issuer=issuer(identity.identity_tenant_id),
+        audience=identity.api_client_id,
+    )
+
+
 def test_the_mcp_verifier_names_issuer_keys_audience_and_scope(
     identity: IdentitySettings,
 ) -> None:
