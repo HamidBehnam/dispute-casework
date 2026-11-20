@@ -73,6 +73,7 @@ class Change:
     kind: Literal["password", "user", "assignment"]
     persona: str
     app: str = ""
+    role: str = ""
 
 
 def changes(state: State, resources: dict[str, Resource]) -> list[Change]:
@@ -94,7 +95,7 @@ def changes(state: State, resources: dict[str, Resource]) -> list[Change]:
                 resource.role_ids[role],
             ) in state.assignments
             if not assigned:
-                planned.append(Change("assignment", persona, app))
+                planned.append(Change("assignment", persona, app, role))
     return planned
 
 
@@ -217,9 +218,6 @@ async def apply_change(
             )
         users[change.persona] = UUID(created.id)
     else:
-        role = PERSONAS[change.persona]
-        if role is None:
-            raise ValueError(f"{change.persona} holds no role to assign")
         resource = resources[change.app]
         await graph.service_principals.by_service_principal_id(
             str(resource.service_principal_id)
@@ -227,7 +225,7 @@ async def apply_change(
             AppRoleAssignment(
                 principal_id=users[change.persona],
                 resource_id=resource.service_principal_id,
-                app_role_id=resource.role_ids[role],
+                app_role_id=resource.role_ids[change.role],
             )
         )
 

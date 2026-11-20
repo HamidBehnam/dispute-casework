@@ -52,8 +52,8 @@ def test_an_empty_tenant_gets_each_password_before_its_user_then_both_roles() ->
             Change("user", persona),
             *(
                 (
-                    Change("assignment", persona, "api"),
-                    Change("assignment", persona, "mcp"),
+                    Change("assignment", persona, "api", ROLES[persona]),
+                    Change("assignment", persona, "mcp", ROLES[persona]),
                 )
                 if persona in ROLES
                 else ()
@@ -82,8 +82,8 @@ def test_a_stored_password_is_reused_for_a_user_not_yet_created() -> None:
     resumed = State(state.stored_passwords, users, state.assignments)
     assert changes(resumed, RESOURCES) == [
         Change("user", "approver-2"),
-        Change("assignment", "approver-2", "api"),
-        Change("assignment", "approver-2", "mcp"),
+        Change("assignment", "approver-2", "api", "approver"),
+        Change("assignment", "approver-2", "mcp", "approver"),
     ]
 
 
@@ -95,7 +95,9 @@ def test_only_a_missing_assignment_is_added() -> None:
         RESOURCES["mcp"].role_ids["restricted_viewer"],
     )
     partial = State(state.stored_passwords, state.users, state.assignments - {missing})
-    assert changes(partial, RESOURCES) == [Change("assignment", "viewer-1", "mcp")]
+    assert changes(partial, RESOURCES) == [
+        Change("assignment", "viewer-1", "mcp", "restricted_viewer")
+    ]
 
 
 def test_two_personas_per_role_and_one_member_with_none() -> None:
