@@ -233,12 +233,6 @@ def non_json_keys_url() -> Iterator[str]:
     server.shutdown()
 
 
-def closed_port_url() -> str:
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return f"http://127.0.0.1:{probe.getsockname()[1]}/keys"
-
-
 @pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
 @pytest.mark.parametrize("keys", ["refused", "non-json"])
 def test_me_answers_503_when_the_signing_keys_cannot_be_read(
@@ -249,7 +243,11 @@ def test_me_answers_503_when_the_signing_keys_cannot_be_read(
     non_json_keys_url: str,
     keys: str,
 ) -> None:
-    url = closed_port_url() if keys == "refused" else non_json_keys_url
+    url = non_json_keys_url
+    if keys == "refused":
+        with socket.socket() as closed:
+            closed.bind(("127.0.0.1", 0))
+            url = f"http://127.0.0.1:{closed.getsockname()[1]}/keys"
     monkeypatch.setattr(api, "jwks_uri", lambda tenant_id: url)
     token = sign(claims(identity.api_client_id))
     response = get(
