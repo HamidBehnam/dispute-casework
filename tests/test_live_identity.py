@@ -50,6 +50,7 @@ ASSIGNED = [persona for persona, role in PERSONAS.items() if role]
 UNASSIGNED = [persona for persona, role in PERSONAS.items() if role is None]
 SIGN_IN_SECONDS = 90
 POLL_MILLISECONDS = 500
+PASSWORD_POST_SECONDS = 5
 AADSTS = re.compile(r"AADSTS\d+")
 CLAIM_TYPES = {
     "iss": str,
@@ -212,7 +213,16 @@ def sign_in(
                     typed_username = True
                 elif not typed_password and visible(login, "input[name=passwd]"):
                     login.fill("input[name=passwd]", secret)
-                    login.click("input[type=submit]")
+                    # Entra shows the password field before its view accepts the
+                    # submit; only the form's POST shows the password was sent, so a
+                    # click without one times out here and the next poll submits again.
+                    with login.expect_request(
+                        lambda request: (
+                            request.method == "POST" and request.is_navigation_request()
+                        ),
+                        timeout=PASSWORD_POST_SECONDS * 1000,
+                    ):
+                        login.click("input[type=submit]")
                     typed_password = True
                 elif login.locator("#KmsiCheckboxField").count():
                     login.click("#idBtn_Back")
