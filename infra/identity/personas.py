@@ -134,14 +134,15 @@ async def read_resources(
         principal = await graph.service_principals_with_app_id(client_id).get()
         if not (principal and principal.id and principal.app_roles is not None):
             raise RuntimeError(f"Graph returned the {app} service principal incomplete")
-        resources[app] = Resource(
-            UUID(principal.id),
-            {
-                role.value: role.id
-                for role in principal.app_roles
-                if role.value and role.id
-            },
-        )
+        role_ids = {
+            role.value: role.id
+            for role in principal.app_roles
+            if role.value and role.id
+        }
+        missing = {role for role in PERSONAS.values() if role} - role_ids.keys()
+        if missing:
+            raise RuntimeError(f"the {app} service principal lacks roles {missing}")
+        resources[app] = Resource(UUID(principal.id), role_ids)
     return resources
 
 
@@ -179,11 +180,10 @@ async def read_state(
             raise RuntimeError("Graph returned no app-role assignment page")
         if page.odata_next_link:
             raise RuntimeError("more app-role assignments than one page holds")
-        assignments |= {
-            (a.principal_id, a.resource_id, a.app_role_id)
-            for a in page.value
-            if a.principal_id and a.resource_id and a.app_role_id
-        }
+        for a in page.value:
+            if not (a.principal_id and a.resource_id and a.app_role_id):
+                raise RuntimeError("Graph returned an app-role assignment incomplete")
+            assignments.add((a.principal_id, a.resource_id, a.app_role_id))
     return State(frozenset(stored), users, frozenset(assignments))
 
 

@@ -229,3 +229,32 @@ def test_an_incomplete_service_principal_stops_the_run() -> None:
     tenant.principals["mcp-client"].app_roles = None
     with pytest.raises(RuntimeError, match="mcp service principal"):
         asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
+
+
+def test_a_service_principal_without_a_role_the_script_assigns_stops_the_run() -> None:
+    tenant = FakeTenant()
+    roles = tenant.principals["api-client"].app_roles
+    tenant.principals["api-client"].app_roles = [
+        role for role in roles if role.value != "approver"
+    ]
+    with pytest.raises(RuntimeError, match="api service principal lacks roles"):
+        asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
+
+
+def test_a_role_the_script_does_not_assign_is_ignored() -> None:
+    tenant = FakeTenant()
+    tenant.principals["mcp-client"].app_roles.append(
+        SimpleNamespace(value=None, id=uuid.uuid4())
+    )
+    asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
+    assert tenant.writes == []
+
+
+def test_an_incomplete_app_role_assignment_stops_the_run() -> None:
+    tenant = FakeTenant()
+    principal_id = tenant.principals["api-client"].id
+    tenant.assignments[principal_id].append(
+        SimpleNamespace(principal_id=None, resource_id=None, app_role_id=None)
+    )
+    with pytest.raises(RuntimeError, match="assignment incomplete"):
+        asyncio.run(run("plan", tenant, tenant, SETTINGS))  # type: ignore[arg-type]
