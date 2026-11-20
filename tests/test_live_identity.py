@@ -220,6 +220,7 @@ def sign_in(
         if frame == login.main_frame:
             outcome.pages.append(where(frame.url))
 
+    outcome.pages.append(where(login.url))
     login.on("framenavigated", record_page)
     deadline = time.monotonic() + SIGN_IN_SECONDS
     while time.monotonic() < deadline:
