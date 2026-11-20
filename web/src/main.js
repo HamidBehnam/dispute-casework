@@ -18,11 +18,15 @@ function showError({ errorCode, subError, errorNo }) {
 async function showMe(account) {
     const { accessToken } = await msal.acquireTokenSilent({ ...request, account });
     const response = await fetch("/me", { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!response.ok) {
+        document.getElementById("error").textContent = JSON.stringify({ status: response.status });
+        return;
+    }
     document.getElementById("me").textContent = await response.text();
 }
 
-await msal.initialize();
 try {
+    await msal.initialize();
     const redirected = await msal.handleRedirectPromise();
     if (redirected) {
         await showMe(redirected.account);
@@ -41,5 +45,5 @@ document.getElementById("sign-in-popup").addEventListener("click", async () => {
 });
 
 document.getElementById("sign-in-redirect").addEventListener("click", () => {
-    msal.loginRedirect(request);
+    msal.loginRedirect(request).catch(showError);
 });
