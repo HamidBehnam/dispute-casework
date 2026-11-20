@@ -1,11 +1,11 @@
 """The same token fixtures through parse_token (PyJWT) and FastMCP's JWTVerifier.
 
-FastMCP 4.2.2's JWTVerifier never reads iat and checks exp only when it is present
-(fastmcp/server/auth/providers/jwt.py, load_access_token), so it accepts two kinds
-of token that parse_token refuses. Its tolerance is 0 s on exp and 30 s on nbf,
-against parse_token's 300 s, so a token inside that band is accepted by
-parse_token only. The expected verdicts below record that; a change in either
-verifier fails the test.
+FastMCP 4.2.2's JWTVerifier never reads iat and checks exp and nbf only when they
+are present (fastmcp/server/auth/providers/jwt.py, load_access_token), so it
+accepts a token without one of them, or with iat in the future, which parse_token
+refuses. Its tolerance is 0 s on exp and 30 s on nbf, against parse_token's 300 s,
+so a token inside that band is accepted by parse_token only. The expected verdicts
+below record that; a change in either verifier fails the test.
 """
 
 import asyncio
@@ -45,6 +45,8 @@ EXPECTED = {
     "nbf-in-the-future": (REJECT, REJECT),
     "nbf-inside-the-leeway": (ACCEPT, REJECT),
     "no-exp": (REJECT, ACCEPT),
+    "no-nbf": (REJECT, ACCEPT),
+    "no-iat": (REJECT, ACCEPT),
     "iat-in-the-future": (REJECT, ACCEPT),
     "wrong-aud": (REJECT, REJECT),
     "wrong-iss": (REJECT, REJECT),
@@ -86,6 +88,8 @@ def mint(
         "nbf-in-the-future": {"nbf": now + 3600},
         "nbf-inside-the-leeway": {"nbf": now + 120},
         "no-exp": {"exp": None},
+        "no-nbf": {"nbf": None},
+        "no-iat": {"iat": None},
         "iat-in-the-future": {"iat": now + 3600},
         "wrong-aud": {"aud": str(uuid.uuid4())},
         "wrong-iss": {"iss": issuer(str(uuid.uuid4()))},
