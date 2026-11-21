@@ -79,7 +79,7 @@ Never remove:
 
 - Linear `main`. One pull request per step, rebase-merged. No long-lived branches.
 - Each step ends with an annotated tag, `step/NN-name` for build steps and `rung/N-name` for measured configurations, with a one-line body. The tag is placed last and never moved; later fixes land on `main`.
-- Commits carry a single human author. Author and committer are the repository's configured identity; no co-author trailers and no tool attribution in commit messages or tag bodies.
+- Commits carry a single human author. Author and committer are the repository's configured identity; no co-author trailers and no tool attribution in commit messages or tag bodies. Dependency bumps merged from Dependabot keep the bot as author.
 - Conventional commit messages. Commits stay local until the run report has been reviewed.
 - Secrets are blocked at push by GitHub push protection; GitHub secret scanning and gitleaks in CI detect them after a push. Prompts, run reports and session transcripts are never committed. `.claude/` is ignored.
 - File contents, commit messages and tag bodies describe the system and its decisions only.
