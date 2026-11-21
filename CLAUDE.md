@@ -21,6 +21,16 @@ In each root under `infra/`:
     terraform init -backend=false
     terraform validate
 
+In `web/`, on Node 26 (`.nvmrc`), with `VITE_TENANT_ID`, `VITE_WEB_CLIENT_ID` and `VITE_API_CLIENT_ID` set for the build:
+
+    npm ci
+    npm audit
+    npm run build
+
+The live sign-in suite runs locally and never in CI. It needs the web build, the `edge` service (`docker compose --profile live up -d --wait`), the backend on port 8001 (`uv run uvicorn dispute_casework.api:create_app --factory --port 8001`), an Azure CLI sign-in to both tenants, and `ORIGIN_HEADER_SECRET`, `IDENTITY_TENANT_ID`, `API_CLIENT_ID`, `MCP_CLIENT_ID`, `IDENTITY_DOMAIN`, `ARM_TENANT_ID` and `OBSERVATIONS_DIR` in the environment:
+
+    uv run pytest -m live tests/test_live_identity.py
+
 ## Code
 
 - Maximum simplicity, subject to four constraints holding at once: correct (including failure paths, authorization paths and idempotency of writes); industry-standard (how it is done in production today, never a tutorial pattern); acceptable to a senior reviewer without changes; self-explanatory. When they conflict: correct, then industry-standard, then acceptable, then simple.
