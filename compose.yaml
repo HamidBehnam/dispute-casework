@@ -1,7 +1,7 @@
 services:
   postgres:
     # pgvector 0.8.2 on PostgreSQL 17, the versions Azure Database for PostgreSQL offers.
-    image: pgvector/pgvector:0.8.2-pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+    image: pgvector/pgvector:0.8.7-pg17@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
