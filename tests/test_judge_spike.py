@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx2
+import judge_model
 import openai
 import pytest
 from azure.identity import CredentialUnavailableError
@@ -157,6 +158,23 @@ def test_a_401_is_an_environment_failure(
     [row] = log.rows()
     assert row["attempts"][0]["status"] == 401
     assert row["outcome"] == "environment"
+
+
+def test_a_failure_handling_an_answer_is_recorded_with_the_answer(
+    chat_server: ChatServer, log: RequestLog, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken_parser(content: str) -> Any:
+        raise RuntimeError("parser crashed")
+
+    monkeypatch.setattr(judge_model, "trim_and_load_json", broken_parser)
+    chat_server.replies = [(200, completion(VALID["Truths"]))]
+    with pytest.raises(RuntimeError):
+        judge_at(chat_server, log).generate(PROMPT, Truths)
+    [row] = log.rows()
+    assert row["content"] == VALID["Truths"]
+    assert row["finish_reason"] == "stop"
+    assert row["attempts"] == [{"status": 200}]
+    assert row["outcome"] == "exception_other"
 
 
 def test_a_credential_failure_is_an_environment_failure(
