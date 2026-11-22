@@ -89,6 +89,9 @@ class Attempts:
         self.current[-1].update(answer(response))
 
 
+SETUP_PHASES = ("connection.connect_tcp.", "connection.start_tls.")
+
+
 def event(name: str, info: dict[str, Any]) -> dict[str, Any]:
     recorded: dict[str, Any] = {"name": name, "at": time.time()}
     if "exception" in info:
@@ -123,24 +126,23 @@ def answer(response: httpx2.Response) -> dict[str, Any]:
 def connection_facts(attempt: dict[str, Any]) -> dict[str, Any]:
     """New or reused connection, when it opened, and how the attempt failed.
 
-    An attempt opened a new connection when it has a connect_tcp event; the
-    connection counts as opened at its last completed setup event (start_tls
-    on https, connect_tcp otherwise). The events stay the primary record.
+    An attempt opened a new connection when it has a connect_tcp event (and
+    start_tls on https). The connection counts as opened at its last completed
+    setup event; a failed setup leaves no opened time, since the connection
+    was never usable. The events stay the primary record.
     """
-    names = [e["name"] for e in attempt["events"]]
-    setup = [
-        e["at"]
-        for e in attempt["events"]
-        if e["name"]
-        in ("connection.connect_tcp.complete", "connection.start_tls.complete")
-    ]
-    failed = [e for e in attempt["events"] if "exception" in e]
+    events = attempt["events"]
+    names = [e["name"] for e in events]
+    setup = [e for e in events if e["name"].startswith(SETUP_PHASES)]
+    failed = [e for e in events if "exception" in e]
+    setup_failed = any(e["name"].endswith(".failed") for e in setup)
+    completed = [e["at"] for e in setup if e["name"].endswith(".complete")]
     protocol = next(
         (n.split(".")[0] for n in names if n.startswith(("http11.", "http2."))), None
     )
     return {
         "new_connection": "connection.connect_tcp.started" in names,
-        "opened_at": setup[-1] if setup else None,
+        "opened_at": None if setup_failed or not completed else max(completed),
         "protocol": protocol,
         "failed_phase": failed[0]["name"] if failed else None,
         "exception": failed[0]["exception"] if failed else None,
