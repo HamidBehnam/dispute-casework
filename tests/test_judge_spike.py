@@ -1,4 +1,6 @@
 import json
+import socket
+import struct
 import threading
 from collections.abc import Callable, Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,7 +36,9 @@ VALID = {
     "Steps": '{"steps": ["s"]}',
     "ReasonScore": '{"score": 8, "reason": "r"}',
 }
-Reply = tuple[int, str]
+# A reply is a status and body, "drop" (close without answering) or "reset"
+# (send part of an answer, then reset the connection).
+Reply = tuple[int, str] | str
 
 
 def completion(content: str) -> str:
@@ -68,7 +72,22 @@ class ChatServer:
             def do_POST(self) -> None:
                 length = int(self.headers["Content-Length"])
                 server.bodies.append(json.loads(self.rfile.read(length)))
-                status, body = server.replies.pop(0)
+                reply = server.replies.pop(0)
+                if reply == "drop":
+                    self.close_connection = True
+                    return
+                if reply == "reset":
+                    self.wfile.write(
+                        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                        b'Content-Length: 1000\r\n\r\n{"id"'
+                    )
+                    self.wfile.flush()
+                    self.connection.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0)
+                    )
+                    self.close_connection = True
+                    return
+                status, body = reply
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("retry-after-ms", "1")
@@ -117,7 +136,7 @@ def test_a_schema_answer_is_parsed_and_recorded_as_valid(
     [row] = log.rows()
     assert row["outcome"] == "valid"
     assert row["step"] == "Truths"
-    assert row["attempts"] == [{"status": 200}]
+    assert [attempt["status"] for attempt in row["attempts"]] == [200]
     assert row["usage"]["prompt_tokens"] == 3
     assert chat_server.bodies[0]["response_format"] == {"type": "json_object"}
     assert chat_server.bodies[0]["temperature"] == 0.0
@@ -149,6 +168,82 @@ def test_retries_exhausted_end_as_a_transport_error(
     assert row["outcome"] == "transport_error"
 
 
+def statuses(row: dict[str, Any]) -> list[int | None]:
+    return [attempt.get("status") for attempt in row["attempts"]]
+
+
+def test_a_connection_dropped_after_a_429_leaves_an_attempt_with_its_exception(
+    chat_server: ChatServer, log: RequestLog
+) -> None:
+    chat_server.replies = [
+        (429, '{"error": "busy"}'),
+        "drop",
+        (200, completion(VALID["Truths"])),
+    ]
+    judge_at(chat_server, log).generate(PROMPT, Truths)
+    [row] = log.rows()
+    assert statuses(row) == [429, None, 200]
+    dropped = row["attempts"][1]
+    assert dropped["failed_phase"] == "http11.receive_response_headers.failed"
+    assert dropped["exception"][0]["class"] == "RemoteProtocolError"
+    assert row["attempts"][2]["new_connection"] is True
+    assert row["outcome"] == "valid"
+
+
+def test_a_refused_connection_leaves_each_attempt_with_its_exception(
+    log: RequestLog,
+) -> None:
+    with socket.socket() as unused:
+        unused.bind(("127.0.0.1", 0))
+        port = unused.getsockname()[1]
+    settings = FoundrySettings(endpoint=f"http://127.0.0.1:{port}", key="k")
+    with pytest.raises(openai.APIConnectionError):
+        Judge(settings, log, "q01", 1).generate(PROMPT, Truths)
+    [row] = log.rows()
+    assert statuses(row) == [None, None, None]
+    for attempt in row["attempts"]:
+        assert attempt["failed_phase"] == "connection.connect_tcp.failed"
+        assert attempt["exception"][0]["class"] == "ConnectError"
+        assert attempt["new_connection"] is True
+        assert attempt["opened_at"] is None
+    assert row["outcome"] == "transport_error"
+
+
+def test_a_reset_mid_response_leaves_the_attempt_with_its_exception(
+    chat_server: ChatServer, log: RequestLog
+) -> None:
+    chat_server.replies = ["reset", (200, completion(VALID["Truths"]))]
+    judge_at(chat_server, log).generate(PROMPT, Truths)
+    [row] = log.rows()
+    reset = row["attempts"][0]
+    assert reset["status"] == 200
+    assert reset["failed_phase"] == "http11.receive_response_body.failed"
+    # socketserver shuts the socket down before closing it, so the client sees
+    # either the reset or the early end of the body, whichever arrives first.
+    assert reset["exception"][0]["class"] in ("ReadError", "RemoteProtocolError")
+    assert statuses(row) == [200, 200]
+    assert row["outcome"] == "valid"
+
+
+def test_a_traced_row_holds_no_request_header_or_key(
+    chat_server: ChatServer, log: RequestLog
+) -> None:
+    chat_server.replies = [
+        (429, '{"error": "busy"}'),
+        "drop",
+        (200, completion(VALID["Truths"])),
+    ]
+    settings = FoundrySettings(
+        endpoint=chat_server.endpoint, key="key-text-never-recorded"
+    )
+    Judge(settings, log, "q01", 1).generate(PROMPT, Truths)
+    [row] = log.rows()
+    text = json.dumps(row).lower()
+    assert all(attempt["events"] for attempt in row["attempts"])
+    for secret in ("key-text-never-recorded", "authorization", "bearer", "x-stainless"):
+        assert secret not in text
+
+
 def test_a_401_is_an_environment_failure(
     chat_server: ChatServer, log: RequestLog
 ) -> None:
@@ -173,7 +268,7 @@ def test_a_failure_handling_an_answer_is_recorded_with_the_answer(
     [row] = log.rows()
     assert row["content"] == VALID["Truths"]
     assert row["finish_reason"] == "stop"
-    assert row["attempts"] == [{"status": 200}]
+    assert [attempt["status"] for attempt in row["attempts"]] == [200]
     assert row["outcome"] == "exception_other"
 
 
