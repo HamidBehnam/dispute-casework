@@ -1,10 +1,14 @@
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from cohere import ClientV2
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+if TYPE_CHECKING:
+    import httpx2
 
 EMBEDDING_DEPLOYMENT = "text-embedding-3-large"
 EMBEDDING_DIMENSIONS = 1536
@@ -47,14 +51,23 @@ def api_key(settings: FoundrySettings, scope: str) -> str | Callable[[], str]:
 # OpenAIEmbeddings forbids extra arguments, so under the pydantic mypy plugin it
 # accepts only field names, not the aliases base_url, api_key and timeout; both
 # clients use the field names.
-def chat_model(settings: FoundrySettings, deployment: str) -> ChatOpenAI:
+def chat_model(
+    settings: FoundrySettings,
+    deployment: str,
+    *,
+    timeout_seconds: float = TIMEOUT_SECONDS,
+    http_client: "httpx2.Client | None" = None,
+    http_async_client: "httpx2.AsyncClient | None" = None,
+) -> ChatOpenAI:
     return ChatOpenAI(
         openai_api_base=f"{settings.endpoint}/openai/v1",
         openai_api_key=api_key(settings, OPENAI_ROUTE_SCOPE),
         model=deployment,
         use_responses_api=deployment not in CHAT_COMPLETIONS_ONLY,
         stream_usage=True,
-        request_timeout=TIMEOUT_SECONDS,
+        request_timeout=timeout_seconds,
+        http_client=http_client,
+        http_async_client=http_async_client,
     )
 
 
