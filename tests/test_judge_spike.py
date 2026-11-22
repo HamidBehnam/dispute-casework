@@ -1,3 +1,4 @@
+import asyncio
 import json
 import socket
 import struct
@@ -20,7 +21,7 @@ from judge_spike import run
 from judge_validity import gate, measurement_outcome
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, ValidationError
-from request_log import RequestLog
+from request_log import RequestLog, connection_facts
 
 from dispute_casework import foundry
 from dispute_casework.foundry import FoundrySettings
@@ -69,6 +70,8 @@ class ChatServer:
         server = self
 
         class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
             def do_POST(self) -> None:
                 length = int(self.headers["Content-Length"])
                 server.bodies.append(json.loads(self.rfile.read(length)))
@@ -82,6 +85,7 @@ class ChatServer:
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("retry-after-ms", "1")
+                self.send_header("Content-Length", str(len(body.encode())))
                 self.end_headers()
                 self.wfile.write(body.encode())
 
@@ -173,7 +177,24 @@ def statuses(row: dict[str, Any]) -> list[int | None]:
     return [attempt.get("status") for attempt in row["attempts"]]
 
 
-def test_a_connection_dropped_after_a_429_leaves_an_attempt_with_its_exception(
+def test_a_retry_inside_the_keep_alive_window_reuses_the_connection(
+    chat_server: ChatServer, log: RequestLog
+) -> None:
+    chat_server.replies = [
+        (429, '{"error": "busy"}'),
+        (200, completion(VALID["Truths"])),
+    ]
+    judge_at(chat_server, log).generate(PROMPT, Truths)
+    [row] = log.rows()
+    first, retry = row["attempts"]
+    assert first["new_connection"] is True
+    assert retry["new_connection"] is False
+    assert retry["opened_at"] is None
+    assert not any(e["name"].startswith("connection.") for e in retry["events"])
+    assert statuses(row) == [429, 200]
+
+
+def test_a_reused_connection_dropped_before_the_answer_leaves_its_exception(
     chat_server: ChatServer, log: RequestLog
 ) -> None:
     chat_server.replies = [
@@ -185,9 +206,77 @@ def test_a_connection_dropped_after_a_429_leaves_an_attempt_with_its_exception(
     [row] = log.rows()
     assert statuses(row) == [429, None, 200]
     dropped = row["attempts"][1]
+    assert dropped["new_connection"] is False
     assert dropped["failed_phase"] == "http11.receive_response_headers.failed"
     assert dropped["exception"][0]["class"] == "RemoteProtocolError"
     assert row["attempts"][2]["new_connection"] is True
+    assert row["outcome"] == "valid"
+
+
+def events(*names: str, failed: str | None = None) -> dict[str, Any]:
+    recorded: list[dict[str, Any]] = [
+        {"name": name, "at": float(at)} for at, name in enumerate(names)
+    ]
+    if failed:
+        recorded.append(
+            {
+                "name": failed,
+                "at": float(len(names)),
+                "exception": [{"class": "X", "message": "m"}],
+            }
+        )
+    return {"events": recorded}
+
+
+TCP = ("connection.connect_tcp.started", "connection.connect_tcp.complete")
+TLS = ("connection.start_tls.started", "connection.start_tls.complete")
+SEND = ("http11.send_request_headers.started", "http11.send_request_headers.complete")
+
+
+@pytest.mark.parametrize(
+    ("attempt", "new", "opened_at", "failed_phase"),
+    [
+        (events(*TCP, *TLS, *SEND), True, 3.0, None),
+        (
+            events(*TCP, TLS[0], failed="connection.start_tls.failed"),
+            True,
+            None,
+            "connection.start_tls.failed",
+        ),
+        (
+            events(TCP[0], failed="connection.connect_tcp.failed"),
+            True,
+            None,
+            "connection.connect_tcp.failed",
+        ),
+        (events(*TCP, *SEND), True, 1.0, None),
+        (events(*SEND), False, None, None),
+    ],
+    ids=["https", "tls-failed", "tcp-failed", "plain-http", "reused"],
+)
+def test_connection_facts_follow_the_setup_events(
+    attempt: dict[str, Any],
+    new: bool,
+    opened_at: float | None,
+    failed_phase: str | None,
+) -> None:
+    facts = connection_facts(attempt)
+    assert facts["new_connection"] is new
+    assert facts["opened_at"] == opened_at
+    assert facts["failed_phase"] == failed_phase
+
+
+def test_the_async_path_records_its_attempts(
+    chat_server: ChatServer, log: RequestLog
+) -> None:
+    chat_server.replies = [
+        (429, '{"error": "busy"}'),
+        (200, completion(VALID["Truths"])),
+    ]
+    asyncio.run(judge_at(chat_server, log).a_generate(PROMPT, Truths))
+    [row] = log.rows()
+    assert statuses(row) == [429, 200]
+    assert all(attempt["events"] for attempt in row["attempts"])
     assert row["outcome"] == "valid"
 
 
