@@ -73,19 +73,10 @@ class ChatServer:
                 length = int(self.headers["Content-Length"])
                 server.bodies.append(json.loads(self.rfile.read(length)))
                 reply = server.replies.pop(0)
-                if reply == "drop":
+                if isinstance(reply, str):
                     self.close_connection = True
-                    return
-                if reply == "reset":
-                    self.wfile.write(
-                        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
-                        b'Content-Length: 1000\r\n\r\n{"id"'
-                    )
-                    self.wfile.flush()
-                    self.connection.setsockopt(
-                        socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0)
-                    )
-                    self.close_connection = True
+                    if reply == "reset":
+                        self.reset_mid_response()
                     return
                 status, body = reply
                 self.send_response(status)
@@ -93,6 +84,16 @@ class ChatServer:
                 self.send_header("retry-after-ms", "1")
                 self.end_headers()
                 self.wfile.write(body.encode())
+
+            def reset_mid_response(self) -> None:
+                self.wfile.write(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                    b'Content-Length: 1000\r\n\r\n{"id"'
+                )
+                self.wfile.flush()
+                self.connection.setsockopt(
+                    socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0)
+                )
 
             def log_message(self, format: str, *args: Any) -> None:
                 pass
