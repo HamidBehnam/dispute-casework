@@ -17,6 +17,8 @@ from dispute_casework.foundry import FoundrySettings, chat_model
 JUDGE_DEPLOYMENT = "DeepSeek-V4-Pro"
 # Microsoft's client-timeout guidance for reasoning models: up to 29 minutes.
 JUDGE_TIMEOUT_SECONDS = 1740
+# A retry after a failed TLS handshake usually succeeds (phase 1d diagnostic).
+JUDGE_MAX_RETRIES = 5
 
 
 class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
@@ -27,16 +29,24 @@ class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
     """
 
     def __init__(
-        self, settings: FoundrySettings, log: RequestLog, case_id: str, repeat: int
+        self,
+        settings: FoundrySettings,
+        log: RequestLog,
+        case_id: str,
+        repeat: int,
+        *,
+        remeasured: bool = False,
     ) -> None:
         self.log = log
         self.case_id = case_id
         self.repeat = repeat
+        self.remeasured = remeasured
         self.attempts = Attempts()
         self.chat = chat_model(
             settings,
             JUDGE_DEPLOYMENT,
             timeout_seconds=JUDGE_TIMEOUT_SECONDS,
+            max_retries=JUDGE_MAX_RETRIES,
             http_client=self.attempts.sync_client,
             http_async_client=self.attempts.async_client,
         )
@@ -119,6 +129,7 @@ class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
             request_row(
                 case_id=self.case_id,
                 repeat=self.repeat,
+                remeasured=self.remeasured,
                 step=schema.__name__ if schema else None,
                 prompt=prompt,
                 started_at=started_at,

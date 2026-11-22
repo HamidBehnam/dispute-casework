@@ -16,8 +16,8 @@ from azure.identity import CredentialUnavailableError
 from deepeval.errors import DeepEvalError
 from deepeval.metrics.faithfulness.schema import Truths, Verdicts
 from judge_inputs import CHUNKS, QUERIES, answer_prompt, build_cases
-from judge_model import JUDGE_TIMEOUT_SECONDS, Judge
-from judge_spike import run
+from judge_model import JUDGE_MAX_RETRIES, JUDGE_TIMEOUT_SECONDS, Judge
+from judge_spike import late_rows, run
 from judge_validity import gate, measurement_outcome
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, ValidationError
@@ -131,6 +131,14 @@ def test_the_judge_client_carries_its_timeout_under_a_key_and_under_a_token_prov
     judge = Judge(settings, log, "q01", 1)
     assert judge.chat.root_client.timeout == JUDGE_TIMEOUT_SECONDS
     assert judge.chat.root_async_client.timeout == JUDGE_TIMEOUT_SECONDS
+    assert judge.chat.root_client.max_retries == JUDGE_MAX_RETRIES == 5
+    assert judge.chat.root_async_client.max_retries == JUDGE_MAX_RETRIES
+
+
+def test_a_chat_model_without_max_retries_keeps_the_sdk_default() -> None:
+    settings = FoundrySettings(endpoint="https://ai-test.example", key="k")
+    chat = foundry.chat_model(settings, "gpt-5.4-mini")
+    assert chat.root_client.max_retries == openai.DEFAULT_MAX_RETRIES == 2
 
 
 def test_a_schema_answer_is_parsed_and_recorded_as_valid(
@@ -165,11 +173,11 @@ def test_each_attempt_of_a_retried_request_is_recorded(
 def test_retries_exhausted_end_as_a_transport_error(
     chat_server: ChatServer, log: RequestLog
 ) -> None:
-    chat_server.replies = [(429, '{"error": "busy"}')] * 3
+    chat_server.replies = [(429, '{"error": "busy"}')] * 6
     with pytest.raises(openai.RateLimitError):
         judge_at(chat_server, log).generate(PROMPT, Truths)
     [row] = log.rows()
-    assert [attempt["status"] for attempt in row["attempts"]] == [429, 429, 429]
+    assert [attempt["status"] for attempt in row["attempts"]] == [429] * 6
     assert row["outcome"] == "transport_error"
 
 
@@ -290,7 +298,7 @@ def test_a_refused_connection_leaves_each_attempt_with_its_exception(
     with pytest.raises(openai.APIConnectionError):
         Judge(settings, log, "q01", 1).generate(PROMPT, Truths)
     [row] = log.rows()
-    assert statuses(row) == [None, None, None]
+    assert statuses(row) == [None] * 6
     for attempt in row["attempts"]:
         assert attempt["failed_phase"] == "connection.connect_tcp.failed"
         assert attempt["exception"][0]["class"] == "ConnectError"
@@ -438,6 +446,8 @@ def row(outcome: str, prompt: str = "p", step: str | None = "Truths") -> dict[st
         ([], "Skipped due to case timeout.", "case_timeout"),
         ([row("transport_error", "a")], "x", "transport_error"),
         ([row("parse_error", "a"), row("environment", "b")], "x", "environment"),
+        ([row("parse_error", "a"), row("transport_error", "b")], "x", "parse_error"),
+        ([row("transport_error", "a"), row("schema_error", "b")], "x", "schema_error"),
         ([row("valid", "a")], "KeyError: 'truths'", "exception_other"),
     ],
 )
@@ -502,13 +512,19 @@ class ScriptedJudge(Judge):  # type: ignore[no-untyped-call]
     """The judge with its one network call replaced by a scripted answer per step."""
 
     def __init__(
-        self, log: RequestLog, case_id: str, repeat: int, answer: Callable[[str], str]
+        self,
+        log: RequestLog,
+        case_id: str,
+        repeat: int,
+        remeasured: bool,
+        answer: Callable[[str], str],
     ) -> None:
         super().__init__(
             FoundrySettings(endpoint="http://127.0.0.1:9", key="k"),
             log,
             case_id,
             repeat,
+            remeasured=remeasured,
         )
         self.answer = answer
 
@@ -530,32 +546,249 @@ CASES = [
 ]
 
 
-def test_a_run_measures_every_case_twice(log: RequestLog, tmp_path: Path) -> None:
+Script = dict[tuple[str, int, bool], Callable[[str], str]]
+
+
+def valid(step: str) -> str:
+    return VALID[step]
+
+
+def cut(step: str) -> str:
+    raise openai.APIConnectionError(
+        request=httpx2.Request("POST", "http://127.0.0.1:9")
+    )
+
+
+def unparsable(step: str) -> str:
+    return "not json"
+
+
+def refused(step: str) -> str:
+    response = httpx2.Response(
+        401, request=httpx2.Request("POST", "http://127.0.0.1:9")
+    )
+    raise openai.AuthenticationError("unauthorized", response=response, body=None)
+
+
+def on(*steps: str, then: Callable[[str], str]) -> Callable[[str], str]:
+    """Answers valid except at the named steps, where it answers with `then`."""
+    return lambda step: then(step) if step in steps else VALID[step]
+
+
+def run_scripted(
+    log: RequestLog, tmp_path: Path, script: Script
+) -> tuple[Any, list[dict[str, str]], list[dict[str, Any]]]:
     measurements = tmp_path / "measurements.jsonl"
-    verdict = run(
+    verdict, slots = run(
         CASES,
-        lambda case_id, repeat: ScriptedJudge(log, case_id, repeat, VALID.__getitem__),
+        lambda case_id, repeat, remeasured: ScriptedJudge(
+            log,
+            case_id,
+            repeat,
+            remeasured,
+            script.get((case_id, repeat, remeasured), valid),
+        ),
         log,
         measurements,
     )
-    assert (verdict.n, verdict.k, verdict.verdict) == (8, 8, "pass")
-    assert len(measurements.read_text().splitlines()) == 8
+    rows = [json.loads(line) for line in measurements.read_text().splitlines()]
+    return verdict, slots, rows
 
 
-def test_a_run_stops_at_the_first_environment_failure(
+def counts(verdict: Any) -> tuple[int, int, int, int, str]:
+    return (verdict.n, verdict.k, verdict.s, verdict.t, verdict.verdict)
+
+
+def test_a_run_measures_every_slot_once_when_nothing_is_cut(
     log: RequestLog, tmp_path: Path
 ) -> None:
-    def refused(step: str) -> str:
-        response = httpx2.Response(
-            401, request=httpx2.Request("POST", "http://127.0.0.1:9")
-        )
-        raise openai.AuthenticationError("unauthorized", response=response, body=None)
+    verdict, slots, rows = run_scripted(log, tmp_path, {})
+    assert counts(verdict) == (8, 8, 0, 0, "pass")
+    assert len(rows) == 8
+    assert not any(row["remeasured"] for row in rows + log.rows())
 
-    verdict = run(
-        CASES,
-        lambda case_id, repeat: ScriptedJudge(log, case_id, repeat, refused),
-        log,
-        tmp_path / "measurements.jsonl",
+
+def test_a_slot_cut_by_transport_is_remeasured_alone_and_counts_its_final(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    script: Script = {("q01", 1, False): on("Steps", then=cut)}
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (8, 8, 0, 0, "pass")
+    assert {"slot": "q01-r1-geval", "first": "transport_error", "final": "valid"} in (
+        slots
     )
-    assert (verdict.n, verdict.verdict) == (0, "stopped by environment, undecided")
+    [remeasured] = [row for row in rows if row["remeasured"]]
+    assert remeasured["measurement_id"] == "q01-r1-geval-remeasured"
+    assert remeasured["outcome"] == "valid"
+    first = next(row for row in rows if row["measurement_id"] == "q01-r1-geval")
+    assert first["outcome"] == "transport_error"
+    assert {row["step"] for row in log.rows() if row["remeasured"]} == {
+        "Steps",
+        "ReasonScore",
+    }
+
+
+def test_a_slot_cut_twice_stays_transport(log: RequestLog, tmp_path: Path) -> None:
+    script: Script = {
+        ("q02", 2, False): on("Claims", then=cut),
+        ("q02", 2, True): on("Truths", then=cut),
+    }
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (8, 7, 0, 1, "undecided by transport")
+    assert {
+        "slot": "q02-r2-faithfulness",
+        "first": "transport_error",
+        "final": "transport_error",
+    } in slots
+    assert [row["outcome"] for row in rows if row["remeasured"]] == ["transport_error"]
+
+
+def test_a_slot_cut_by_transport_then_judged_badly_counts_as_judge_failure(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    script: Script = {
+        ("q01", 1, False): on("Truths", then=cut),
+        ("q01", 1, True): on("Verdicts", then=unparsable),
+    }
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (8, 7, 1, 0, "pass")
+    assert {
+        "slot": "q01-r1-faithfulness",
+        "first": "transport_error",
+        "final": "parse_error",
+    } in slots
+    assert [row["outcome"] for row in rows if row["remeasured"]] == ["parse_error"]
+
+
+def test_a_judge_failure_stands_and_only_the_cut_slot_is_remeasured(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    script: Script = {
+        ("q01", 1, False): lambda step: {"Claims": unparsable, "Steps": cut}.get(
+            step, valid
+        )(step)
+    }
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (8, 7, 1, 0, "pass")
+    assert [row["measurement_id"] for row in rows if row["remeasured"]] == [
+        "q01-r1-geval-remeasured"
+    ]
+    assert not any(
+        row["remeasured"] and row["step"] in {"Truths", "Claims"} for row in log.rows()
+    )
+
+
+@pytest.mark.parametrize(
+    ("script", "expected"),
+    [
+        (
+            {
+                ("q01", 1, False): on("Truths", then=unparsable),
+                ("q02", 2, False): on("Steps", then=unparsable),
+            },
+            (8, 6, 2, 0, "fail"),
+        ),
+        (
+            {
+                ("q01", 2, False): on("Truths", "Steps", then=cut),
+                ("q01", 2, True): on("Steps", then=cut),
+                ("q02", 1, False): on("ReasonScore", then=unparsable),
+            },
+            (8, 6, 1, 1, "undecided by transport"),
+        ),
+        (
+            {
+                ("q01", 1, False): on("Truths", then=cut),
+                ("q02", 1, False): on("Steps", then=cut),
+            },
+            (8, 8, 0, 0, "pass"),
+        ),
+    ],
+)
+def test_the_gate_counts_each_slot_by_its_final_outcome(
+    log: RequestLog, tmp_path: Path, script: Script, expected: tuple[Any, ...]
+) -> None:
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert len(slots) == 8
+    assert counts(verdict) == expected
+
+
+def test_a_judge_failure_beside_a_transport_cut_in_one_measurement_stands(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    calls = []
+
+    def schema_refused_then_cut(step: str) -> str:
+        calls.append(step)
+        if step == "Truths" and len(calls) == 1:
+            raise TypeError("schema not accepted")
+        if step == "Truths":
+            cut(step)
+        return VALID[step]
+
+    verdict, slots, rows = run_scripted(
+        log, tmp_path, {("q01", 1, False): schema_refused_then_cut}
+    )
+    first = next(row for row in rows if row["measurement_id"] == "q01-r1-faithfulness")
+    assert first["outcome"] == "hidden_re_request"
+    own = [row for row in log.rows() if row["case_id"] == "q01" and row["repeat"] == 1]
+    assert [row["outcome"] for row in own[:2]] == ["exception_other", "transport_error"]
+    assert counts(verdict) == (8, 7, 1, 0, "pass")
+    assert not any(row["remeasured"] for row in rows)
+
+
+def test_an_environment_failure_stops_the_run_before_any_remeasurement(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    script: Script = {
+        ("q01", 1, False): lambda step: {"Truths": refused, "Steps": cut}.get(
+            step, valid
+        )(step)
+    }
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (1, 0, 0, 1, "stopped by environment, undecided")
+    assert [row["outcome"] for row in rows] == ["environment", "transport_error"]
+    assert not any(row["remeasured"] for row in rows + log.rows())
+
+
+def test_an_environment_failure_in_a_remeasurement_stops_the_run(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    script: Script = {
+        ("q01", 1, False): on("Steps", then=cut),
+        ("q01", 1, True): on("Steps", then=refused),
+    }
+    verdict, slots, rows = run_scripted(log, tmp_path, script)
+    assert counts(verdict) == (1, 1, 0, 0, "stopped by environment, undecided")
+    assert [row["measurement_id"] for row in rows] == [
+        "q01-r1-faithfulness",
+        "q01-r1-geval",
+        "q01-r1-geval-remeasured",
+    ]
     assert {row["case_id"] for row in log.rows()} == {"q01"}
+
+
+def test_late_rows_compare_each_measurement_with_its_own_end(
+    log: RequestLog, tmp_path: Path
+) -> None:
+    measurements = tmp_path / "measurements.jsonl"
+    ended = {False: 100.0, True: 200.0}
+    measurements.write_text(
+        "".join(
+            json.dumps(
+                {"case_id": "q01", "repeat": 1, "remeasured": r, "case_ended_at": e}
+            )
+            + "\n"
+            for r, e in ended.items()
+        )
+    )
+    first_late = {"case_id": "q01", "repeat": 1, "remeasured": False, "ended_at": 150.0}
+    second_on_time = {
+        "case_id": "q01",
+        "repeat": 1,
+        "remeasured": True,
+        "ended_at": 150.0,
+    }
+    log.write(first_late)
+    log.write(second_on_time)
+    assert late_rows(log, measurements) == [first_late]

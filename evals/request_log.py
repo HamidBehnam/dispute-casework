@@ -186,6 +186,7 @@ def request_row(
     *,
     case_id: str,
     repeat: int,
+    remeasured: bool = False,
     step: str | None,
     prompt: str,
     started_at: float,
@@ -198,6 +199,7 @@ def request_row(
     return {
         "case_id": case_id,
         "repeat": repeat,
+        "remeasured": remeasured,
         "step": step,
         "prompt_sha256": prompt_sha256(prompt),
         "started_at": started_at,

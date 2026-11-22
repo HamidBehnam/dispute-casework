@@ -47,33 +47,35 @@ from request_log import RequestLog
 from dispute_casework.foundry import FoundrySettings
 
 REPEATS = 2
-# The longest case: six requests, each with up to three attempts at the judge's
-# 1,740-second timeout, so DeepEval's own case budget never ends a case first.
-CASE_TIMEOUT_SECONDS = 6 * 3 * 1740
+METRICS = ("faithfulness", "geval")
+STEPS = {"faithfulness": FAITHFULNESS_STEPS, "geval": GEVAL_STEPS}
+# The longest case: six requests, each with up to six attempts (five retries)
+# at the judge's 1,740-second timeout, so DeepEval's own case budget never ends
+# a case first. The waits between attempts come on top.
+CASE_TIMEOUT_SECONDS = 6 * 6 * 1740
 CITATION_SUPPORT = (
     "Determine whether every statement in the actual output is supported by the "
     "retrieval context and whether every paragraph ID it cites appears in the "
     "retrieval context."
 )
 
-JudgeFactory = Callable[[str, int], DeepEvalBaseLLM]
+JudgeFactory = Callable[[str, int, bool], DeepEvalBaseLLM]
 
 
-def metrics(judge: DeepEvalBaseLLM) -> list[BaseMetric]:
-    return [
-        FaithfulnessMetric(model=judge, include_reason=True, async_mode=False),
-        GEval(
-            name="Citation support",
-            criteria=CITATION_SUPPORT,
-            evaluation_params=[
-                SingleTurnParams.INPUT,
-                SingleTurnParams.ACTUAL_OUTPUT,
-                SingleTurnParams.RETRIEVAL_CONTEXT,
-            ],
-            model=judge,
-            async_mode=False,
-        ),
-    ]
+def metric(name: str, judge: DeepEvalBaseLLM) -> BaseMetric:
+    if name == "faithfulness":
+        return FaithfulnessMetric(model=judge, include_reason=True, async_mode=False)
+    return GEval(
+        name="Citation support",
+        criteria=CITATION_SUPPORT,
+        evaluation_params=[
+            SingleTurnParams.INPUT,
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.RETRIEVAL_CONTEXT,
+        ],
+        model=judge,
+        async_mode=False,
+    )
 
 
 def run(
@@ -81,33 +83,56 @@ def run(
     judge_for: JudgeFactory,
     log: RequestLog,
     measurements: Path,
-) -> Verdict:
-    """Measures every case twice and stops at the first environment failure."""
-    outcomes: list[str] = []
+) -> tuple[Verdict, list[dict[str, str]]]:
+    """Measures every slot twice over the cases and re-measures a transport cut once.
+
+    A slot whose first measurement ends transport_error is measured once more,
+    alone, with a fresh judge; its final outcome is the re-measurement's. An
+    environment failure stops the run before any re-measurement is spent.
+    """
+    slots: list[dict[str, str]] = []
     for repeat in range(1, REPEATS + 1):
         for case in cases:
-            case_outcomes = measure_case(case, repeat, judge_for, log, measurements)
-            outcomes += [o for o in case_outcomes if o != ENVIRONMENT]
-            if ENVIRONMENT in case_outcomes:
-                return gate(outcomes, stopped=True)
-    return gate(outcomes, stopped=False)
+            first = measure_case(case, repeat, METRICS, judge_for, log, measurements)
+            final = dict(first)
+            cut = [name for name in METRICS if first[name] == "transport_error"]
+            if cut and ENVIRONMENT not in first.values():
+                final |= measure_case(
+                    case, repeat, cut, judge_for, log, measurements, remeasured=True
+                )
+            slots += [
+                {
+                    "slot": f"{case['case_id']}-r{repeat}-{name}",
+                    "first": first[name],
+                    "final": final[name],
+                }
+                for name in METRICS
+            ]
+            if ENVIRONMENT in final.values():
+                completed = [s["final"] for s in slots if s["final"] != ENVIRONMENT]
+                return gate(completed, stopped=True), slots
+    return gate([s["final"] for s in slots], stopped=False), slots
 
 
 def measure_case(
     case: dict[str, Any],
     repeat: int,
+    names: tuple[str, ...] | list[str],
     judge_for: JudgeFactory,
     log: RequestLog,
     measurements: Path,
-) -> list[str]:
+    *,
+    remeasured: bool = False,
+) -> dict[str, str]:
     test_case = LLMTestCase(
         input=case["input"],
         actual_output=case["actual_output"],
         retrieval_context=case["retrieval_context"],
     )
+    judge = judge_for(case["case_id"], repeat, remeasured)
     result = evaluate(
         [test_case],
-        metrics(judge_for(case["case_id"], repeat)),
+        [metric(name, judge) for name in names],
         async_config=AsyncConfig(run_async=False),
         display_config=DisplayConfig(show_indicator=False, print_results=False),
         cache_config=CacheConfig(write_cache=False, use_cache=False),
@@ -117,25 +142,24 @@ def measure_case(
     rows = [
         row
         for row in log.rows()
-        if row["case_id"] == case["case_id"] and row["repeat"] == repeat
+        if row["case_id"] == case["case_id"]
+        and row["repeat"] == repeat
+        and row["remeasured"] == remeasured
     ]
     metrics_data = result.test_results[0].metrics_data or []
-    outcomes = []
+    outcomes = {}
+    suffix = "-remeasured" if remeasured else ""
     with measurements.open("a", encoding="utf-8") as file:
-        for name, steps, data in zip(
-            ("faithfulness", "geval"),
-            (FAITHFULNESS_STEPS, GEVAL_STEPS),
-            metrics_data,
-            strict=True,
-        ):
-            own = measurement_rows(rows, steps)
+        for name, data in zip(names, metrics_data, strict=True):
+            own = measurement_rows(rows, STEPS[name])
             outcome = measurement_outcome(own, data.error)
-            outcomes.append(outcome)
+            outcomes[name] = outcome
             row = {
-                "measurement_id": f"{case['case_id']}-r{repeat}-{name}",
+                "measurement_id": f"{case['case_id']}-r{repeat}-{name}{suffix}",
                 "case_id": case["case_id"],
                 "repeat": repeat,
                 "metric": name,
+                "remeasured": remeasured,
                 "score": data.score,
                 "threshold": data.threshold,
                 "success": data.success,
@@ -151,17 +175,19 @@ def measure_case(
 
 
 def late_rows(log: RequestLog, measurements: Path) -> list[dict[str, Any]]:
-    """Rows that arrived after DeepEval marked their case timed out."""
+    """Rows that arrived after DeepEval marked their measurement's case timed out."""
     ended = {}
     with measurements.open(encoding="utf-8") as file:
         for line in file:
             row = json.loads(line)
-            ended[(row["case_id"], row["repeat"])] = row["case_ended_at"]
+            ended[(row["case_id"], row["repeat"], row["remeasured"])] = row[
+                "case_ended_at"
+            ]
     return [
         row
         for row in log.rows()
-        if (row["case_id"], row["repeat"]) in ended
-        and late(row, ended[(row["case_id"], row["repeat"])])
+        if (key := (row["case_id"], row["repeat"], row["remeasured"])) in ended
+        and late(row, ended[key])
     ]
 
 
@@ -177,9 +203,11 @@ def main() -> int:
     log = RequestLog(args.rows)
     cases = json.loads(args.inputs.read_text(encoding="utf-8"))["cases"]
     started_at = time.time()
-    verdict = run(
+    verdict, slots = run(
         cases,
-        lambda case_id, repeat: Judge(settings, log, case_id, repeat),
+        lambda case_id, repeat, remeasured: Judge(
+            settings, log, case_id, repeat, remeasured=remeasured
+        ),
         log,
         args.measurements,
     )
@@ -187,6 +215,10 @@ def main() -> int:
         "started_at": started_at,
         "ended_at": time.time(),
         "late_rows": len(late_rows(log, args.measurements)),
+        "remeasured_slots": [
+            s["slot"] for s in slots if s["first"] == "transport_error"
+        ],
+        "slots": slots,
     }
     args.summary.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary))
