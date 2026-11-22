@@ -56,6 +56,7 @@ def chat_model(
     deployment: str,
     *,
     timeout_seconds: float = TIMEOUT_SECONDS,
+    max_retries: int | None = None,
     http_client: "httpx2.Client | None" = None,
     http_async_client: "httpx2.AsyncClient | None" = None,
 ) -> ChatOpenAI:
@@ -66,6 +67,7 @@ def chat_model(
         use_responses_api=deployment not in CHAT_COMPLETIONS_ONLY,
         stream_usage=True,
         request_timeout=timeout_seconds,
+        max_retries=max_retries,
         http_client=http_client,
         http_async_client=http_async_client,
     )
