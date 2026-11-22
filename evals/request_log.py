@@ -77,6 +77,16 @@ def prompt_sha256(prompt: str) -> str:
     return hashlib.sha256(prompt.encode()).hexdigest()
 
 
+def strict_json(content: str | None) -> bool:
+    if content is None:
+        return False
+    try:
+        json.loads(content)
+    except json.JSONDecodeError:
+        return False
+    return True
+
+
 def request_row(
     *,
     case_id: str,
@@ -89,6 +99,7 @@ def request_row(
     error: BaseException | None,
     outcome: str,
 ) -> dict[str, Any]:
+    content = str(message.text) if message else None
     return {
         "case_id": case_id,
         "repeat": repeat,
@@ -97,7 +108,7 @@ def request_row(
         "started_at": started_at,
         "ended_at": time.time(),
         "attempts": attempts,
-        "content": str(message.text) if message else None,
+        "content": content,
         "finish_reason": message.response_metadata.get("finish_reason")
         if message
         else None,
@@ -105,4 +116,6 @@ def request_row(
         "usage_metadata": message.usage_metadata if message else None,
         "error": f"{type(error).__name__}: {error}" if error else None,
         "outcome": outcome,
+        "strict_json": strict_json(content),
+        "repaired": outcome == "valid" and not strict_json(content),
     }

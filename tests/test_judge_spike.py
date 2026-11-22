@@ -206,7 +206,15 @@ def test_each_answer_is_classed_from_deepevals_own_parse(
     else:
         with pytest.raises(raised):
             judge.generate(PROMPT, schema)
-    assert log.rows()[0]["outcome"] == outcome
+    [row] = log.rows()
+    assert row["outcome"] == outcome
+    try:
+        json.loads(content)
+        strict = True
+    except json.JSONDecodeError:
+        strict = False
+    assert row["strict_json"] is strict
+    assert row["repaired"] is (outcome == "valid" and not strict)
 
 
 def row(outcome: str, prompt: str = "p", step: str | None = "Truths") -> dict[str, Any]:
