@@ -287,7 +287,7 @@ def test_the_answer_prompt_is_the_pre_registered_text() -> None:
     )
 
 
-class ScriptedJudge(Judge):
+class ScriptedJudge(Judge):  # type: ignore[no-untyped-call]
     """The judge with its one network call replaced by a scripted answer per step."""
 
     def __init__(
