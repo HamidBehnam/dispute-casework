@@ -3,6 +3,7 @@ import json
 import socket
 import struct
 import threading
+import time
 from collections.abc import Callable, Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,14 +11,16 @@ from typing import Any
 
 import httpx2
 import judge_model
+import judge_spike
 import openai
 import pytest
 from azure.identity import CredentialUnavailableError
 from deepeval.errors import DeepEvalError
+from deepeval.evaluate import evaluate
 from deepeval.metrics.faithfulness.schema import Truths, Verdicts
 from judge_inputs import CHUNKS, QUERIES, answer_prompt, build_cases
 from judge_model import JUDGE_MAX_RETRIES, JUDGE_TIMEOUT_SECONDS, Judge
-from judge_spike import late_rows, run
+from judge_spike import CASE_TIMEOUT_SECONDS, late_rows, run
 from judge_validity import gate, measurement_outcome
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, ValidationError
@@ -577,7 +580,7 @@ def on(*steps: str, then: Callable[[str], str]) -> Callable[[str], str]:
 
 def run_scripted(
     log: RequestLog, tmp_path: Path, script: Script
-) -> tuple[Any, list[dict[str, str]], list[dict[str, Any]]]:
+) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]]]:
     measurements = tmp_path / "measurements.jsonl"
     verdict, slots = run(
         CASES,
@@ -614,9 +617,12 @@ def test_a_slot_cut_by_transport_is_remeasured_alone_and_counts_its_final(
     script: Script = {("q01", 1, False): on("Steps", then=cut)}
     verdict, slots, rows = run_scripted(log, tmp_path, script)
     assert counts(verdict) == (8, 8, 0, 0, "pass")
-    assert {"slot": "q01-r1-geval", "first": "transport_error", "final": "valid"} in (
-        slots
-    )
+    assert {
+        "slot": "q01-r1-geval",
+        "first": "transport_error",
+        "final": "valid",
+        "remeasured": True,
+    } in slots
     [remeasured] = [row for row in rows if row["remeasured"]]
     assert remeasured["measurement_id"] == "q01-r1-geval-remeasured"
     assert remeasured["outcome"] == "valid"
@@ -639,6 +645,7 @@ def test_a_slot_cut_twice_stays_transport(log: RequestLog, tmp_path: Path) -> No
         "slot": "q02-r2-faithfulness",
         "first": "transport_error",
         "final": "transport_error",
+        "remeasured": True,
     } in slots
     assert [row["outcome"] for row in rows if row["remeasured"]] == ["transport_error"]
 
@@ -656,6 +663,7 @@ def test_a_slot_cut_by_transport_then_judged_badly_counts_as_judge_failure(
         "slot": "q01-r1-faithfulness",
         "first": "transport_error",
         "final": "parse_error",
+        "remeasured": True,
     } in slots
     assert [row["outcome"] for row in rows if row["remeasured"]] == ["parse_error"]
 
@@ -768,27 +776,158 @@ def test_an_environment_failure_in_a_remeasurement_stops_the_run(
     assert {row["case_id"] for row in log.rows()} == {"q01"}
 
 
+def test_two_cut_slots_of_one_case_are_remeasured_each_alone(
+    log: RequestLog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    evaluated: list[list[str]] = []
+
+    def counted(test_cases: Any, metrics: Any, **configs: Any) -> Any:
+        evaluated.append([type(metric).__name__ for metric in metrics])
+        return evaluate(test_cases, metrics, **configs)
+
+    monkeypatch.setattr(judge_spike, "evaluate", counted)
+    judges: list[ScriptedJudge] = []
+
+    def judge_for(case_id: str, repeat: int, remeasured: bool) -> ScriptedJudge:
+        first = (case_id, repeat, remeasured) == ("q01", 1, False)
+        judge = ScriptedJudge(
+            log,
+            case_id,
+            repeat,
+            remeasured,
+            on("Truths", "Steps", then=cut) if first else valid,
+        )
+        judges.append(judge)
+        return judge
+
+    verdict, slots = run(CASES, judge_for, log, tmp_path / "measurements.jsonl")
+    assert counts(verdict) == (8, 8, 0, 0, "pass")
+    fresh = [judge for judge in judges if judge.remeasured]
+    assert len(fresh) == 2 and fresh[0] is not fresh[1]
+    assert evaluated[:3] == [
+        ["FaithfulnessMetric", "GEval"],
+        ["FaithfulnessMetric"],
+        ["GEval"],
+    ]
+    assert [s["slot"] for s in slots if s["remeasured"]] == [
+        "q01-r1-faithfulness",
+        "q01-r1-geval",
+    ]
+
+
+def test_a_case_timeout_is_not_remeasured_and_counts_as_transport(
+    log: RequestLog, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "1")
+
+    def slow(step: str) -> str:
+        time.sleep(1.5)
+        return VALID[step]
+
+    verdict, slots, rows = run_scripted(log, tmp_path, {("q01", 1, False): slow})
+    assert counts(verdict) == (8, 6, 0, 2, "undecided by transport")
+    assert [(s["first"], s["remeasured"]) for s in slots[:2]] == [
+        ("case_timeout", False),
+        ("case_timeout", False),
+    ]
+    assert not any(row["remeasured"] for row in rows)
+
+
+def test_the_case_budget_covers_six_requests_at_six_attempts_each() -> None:
+    assert CASE_TIMEOUT_SECONDS == 6 * 6 * 1740 == 62_640
+
+
+@pytest.mark.parametrize(
+    ("script", "remeasured_slots", "first_and_final"),
+    [
+        (
+            {("q01", 1, False): on("Steps", then=cut)},
+            ["q01-r1-geval"],
+            ("transport_error", "valid"),
+        ),
+        (
+            {
+                ("q01", 1, False): lambda step: {"Truths": refused, "Steps": cut}.get(
+                    step, valid
+                )(step)
+            },
+            [],
+            ("transport_error", "transport_error"),
+        ),
+    ],
+)
+def test_the_summary_lists_only_the_slots_actually_remeasured(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    script: Script,
+    remeasured_slots: list[str],
+    first_and_final: tuple[str, str],
+) -> None:
+    inputs = tmp_path / "inputs.json"
+    inputs.write_text(json.dumps({"cases": CASES}))
+    paths = [tmp_path / name for name in ("rows", "measurements", "summary")]
+    monkeypatch.setenv("FOUNDRY_ENDPOINT", "http://127.0.0.1:9")
+    monkeypatch.setenv(
+        "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", str(CASE_TIMEOUT_SECONDS)
+    )
+    monkeypatch.setattr("sys.argv", ["judge_spike", str(inputs), *map(str, paths)])
+    monkeypatch.setattr(
+        judge_spike,
+        "Judge",
+        lambda settings, log, case_id, repeat, remeasured: ScriptedJudge(
+            log,
+            case_id,
+            repeat,
+            remeasured,
+            script.get((case_id, repeat, remeasured), valid),
+        ),
+    )
+    assert judge_spike.main() == 0
+    summary = json.loads(paths[2].read_text())
+    assert summary["remeasured_slots"] == remeasured_slots
+    geval = next(s for s in summary["slots"] if s["slot"] == "q01-r1-geval")
+    assert (geval["first"], geval["final"]) == first_and_final
+
+
 def test_late_rows_compare_each_measurement_with_its_own_end(
     log: RequestLog, tmp_path: Path
 ) -> None:
     measurements = tmp_path / "measurements.jsonl"
-    ended = {False: 100.0, True: 200.0}
+    ended = [
+        (False, "faithfulness", 100.0),
+        (True, "faithfulness", 200.0),
+        (True, "geval", 300.0),
+    ]
     measurements.write_text(
         "".join(
             json.dumps(
-                {"case_id": "q01", "repeat": 1, "remeasured": r, "case_ended_at": e}
+                {
+                    "case_id": "q01",
+                    "repeat": 1,
+                    "remeasured": r,
+                    "metric": m,
+                    "case_ended_at": e,
+                }
             )
             + "\n"
-            for r, e in ended.items()
+            for r, m, e in ended
         )
     )
-    first_late = {"case_id": "q01", "repeat": 1, "remeasured": False, "ended_at": 150.0}
-    second_on_time = {
-        "case_id": "q01",
-        "repeat": 1,
-        "remeasured": True,
-        "ended_at": 150.0,
-    }
-    log.write(first_late)
-    log.write(second_on_time)
-    assert late_rows(log, measurements) == [first_late]
+
+    def request(remeasured: bool, step: str, ended_at: float) -> dict[str, Any]:
+        return {
+            "case_id": "q01",
+            "repeat": 1,
+            "remeasured": remeasured,
+            "step": step,
+            "prompt_sha256": step,
+            "started_at": 90.0,
+            "ended_at": ended_at,
+        }
+
+    first_late = request(False, "Truths", 150.0)
+    remeasured_late = request(True, "Truths", 250.0)
+    geval_on_time = request(True, "Steps", 250.0)
+    for row in (first_late, remeasured_late, geval_on_time):
+        log.write(row)
+    assert late_rows(log, measurements) == [first_late, remeasured_late]
