@@ -1,5 +1,6 @@
 import sys
 
+import openai
 import pytest
 from pydantic import ValidationError
 
@@ -85,6 +86,12 @@ def test_chat_model_sets_stream_usage() -> None:
     settings = FoundrySettings(endpoint=ENDPOINT, key="k")
     assert chat_model(settings, "DeepSeek-V4-Pro").stream_usage is True
     assert chat_model(settings, "gpt-5.4-mini").stream_usage is True
+
+
+def test_a_chat_model_without_max_retries_keeps_the_sdk_default() -> None:
+    settings = FoundrySettings(endpoint=ENDPOINT, key="k")
+    chat = chat_model(settings, "gpt-5.4-mini")
+    assert chat.root_client.max_retries == openai.DEFAULT_MAX_RETRIES == 2
 
 
 def test_embeddings_send_raw_strings_at_1536_dimensions_sixteen_a_request() -> None:
