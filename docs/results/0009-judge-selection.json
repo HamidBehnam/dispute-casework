@@ -1,0 +1,1869 @@
+{
+  "inputs_sha256": "7b357d376b8b4fe174f636de7a9b2fd08a985db0391048167b9c4971eaa1e709",
+  "method": {
+    "confidence_level": 0.95,
+    "cost": "the mean cost of each step's requests with usage, priced with the retail meters; a measurement costs the sum of its metric's step means; the scheduled run is 450 measurements per metric and the comparison 2,700; the no-cache bound prices every prompt token at the input meter; USD rounded to 6 places",
+    "gate": "over the final outcomes with environment outcomes removed: s judge failures, t transport failures, k = n - s - t; fail when s >= 2, otherwise stopped by environment when any environment outcome, pass when t = 0, otherwise undecided by transport",
+    "interval": "Wilson interval, scipy.stats.binomtest(k, n).proportion_ci(method='wilson'), rounded to 4 places",
+    "percent": "round(100 * k / n), beside the count",
+    "slots": "a slot is one case, repeat and metric; its final outcome is its re-measurement's when it has one, otherwise its first",
+    "transport": "attempts from the trace events of each request; null for a run recorded without them",
+    "versions": {
+      "scipy": "1.18.1"
+    }
+  },
+  "runs": {
+    "diagnostic": {
+      "cost": {
+        "estimate_usd": {
+          "comparison_faithfulness": 8.57185,
+          "comparison_geval": 4.827005,
+          "comparison_truths_input": 1.292368,
+          "measurement_faithfulness": 0.003175,
+          "measurement_geval": 0.001788,
+          "scheduled_run": 2.233142,
+          "steps": {
+            "Claims": 0.000601,
+            "FaithfulnessScoreReason": 0.000583,
+            "ReasonScore": 0.001185,
+            "Steps": 0.000603,
+            "Truths": 0.001132,
+            "Verdicts": 0.000859
+          }
+        },
+        "estimate_usd_without_cache": {
+          "comparison_faithfulness": 11.926013,
+          "comparison_geval": 5.771974,
+          "comparison_truths_input": 2.541827,
+          "measurement_faithfulness": 0.004417,
+          "measurement_geval": 0.002138,
+          "scheduled_run": 2.949665,
+          "steps": {
+            "Claims": 0.000981,
+            "FaithfulnessScoreReason": 0.000583,
+            "ReasonScore": 0.001535,
+            "Steps": 0.000603,
+            "Truths": 0.001595,
+            "Verdicts": 0.001258
+          }
+        },
+        "requests": 283,
+        "requests_with_usage": 276,
+        "tokens_mean": {
+          "Claims": {
+            "cached": 238.55,
+            "completion": 84.84,
+            "prompt": 394.11,
+            "requests_with_usage": 44
+          },
+          "FaithfulnessScoreReason": {
+            "cached": 0.0,
+            "completion": 38.32,
+            "prompt": 258.43,
+            "requests_with_usage": 44
+          },
+          "ReasonScore": {
+            "cached": 219.43,
+            "completion": 98.27,
+            "prompt": 685.59,
+            "requests_with_usage": 49
+          },
+          "Steps": {
+            "cached": 0.0,
+            "completion": 90.74,
+            "prompt": 165.0,
+            "requests_with_usage": 50
+          },
+          "Truths": {
+            "cached": 290.13,
+            "completion": 187.82,
+            "prompt": 541.04,
+            "requests_with_usage": 45
+          },
+          "Verdicts": {
+            "cached": 250.18,
+            "completion": 59.55,
+            "prompt": 603.89,
+            "requests_with_usage": 44
+          }
+        },
+        "usd_per_token": {
+          "V4 Pro Inp glbl Tokens": 1.74e-06,
+          "V4 Pro Outp glbl Tokens": 3.48e-06,
+          "V4 Pro cached glbl Tokens": 1.45e-07
+        }
+      },
+      "counted": false,
+      "measurements": {
+        "environment": 0,
+        "s": 0,
+        "t": 7,
+        "valid": {
+          "interval": [
+            0.8625,
+            0.9657
+          ],
+          "k": 93,
+          "n": 100,
+          "percent": 93
+        },
+        "verdict": "undecided by transport"
+      },
+      "requests": {
+        "repaired": 0,
+        "requests": 283,
+        "strict_json": 276,
+        "valid": 276
+      },
+      "slots": [
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q04-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q06-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q11-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r1-faithfulness"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q12-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q23-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q24-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q25-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r2-geval"
+        }
+      ],
+      "transport": {
+        "attempts": 552,
+        "attempts_after_a_429": {
+          "new_connection": 222,
+          "reused_connection": 4
+        },
+        "handshake_failures_of_new_connections": {
+          "interval": [
+            0.113,
+            0.191
+          ],
+          "k": 47,
+          "n": 318,
+          "percent": 15
+        },
+        "new_connections": 318,
+        "reused_connections": 234
+      }
+    },
+    "first-run": {
+      "cost": {
+        "estimate_usd": {
+          "comparison_faithfulness": 8.727317,
+          "comparison_geval": 5.078698,
+          "comparison_truths_input": 1.457912,
+          "measurement_faithfulness": 0.003232,
+          "measurement_geval": 0.001881,
+          "scheduled_run": 2.301002,
+          "steps": {
+            "Claims": 0.000595,
+            "FaithfulnessScoreReason": 0.000574,
+            "ReasonScore": 0.001284,
+            "Steps": 0.000597,
+            "Truths": 0.001181,
+            "Verdicts": 0.000882
+          }
+        },
+        "estimate_usd_without_cache": {
+          "comparison_faithfulness": 11.807381,
+          "comparison_geval": 5.731176,
+          "comparison_truths_input": 2.536409,
+          "measurement_faithfulness": 0.004373,
+          "measurement_geval": 0.002123,
+          "scheduled_run": 2.923093,
+          "steps": {
+            "Claims": 0.000976,
+            "FaithfulnessScoreReason": 0.000574,
+            "ReasonScore": 0.001525,
+            "Steps": 0.000597,
+            "Truths": 0.00158,
+            "Verdicts": 0.001243
+          }
+        },
+        "requests": 282,
+        "requests_with_usage": 274,
+        "tokens_mean": {
+          "Claims": {
+            "cached": 238.55,
+            "completion": 82.84,
+            "prompt": 395.16,
+            "requests_with_usage": 44
+          },
+          "FaithfulnessScoreReason": {
+            "cached": 0.0,
+            "completion": 36.74,
+            "prompt": 256.33,
+            "requests_with_usage": 43
+          },
+          "ReasonScore": {
+            "cached": 151.51,
+            "completion": 96.88,
+            "prompt": 682.96,
+            "requests_with_usage": 49
+          },
+          "Steps": {
+            "cached": 0.0,
+            "completion": 89.1,
+            "prompt": 165.0,
+            "requests_with_usage": 49
+          },
+          "Truths": {
+            "cached": 250.43,
+            "completion": 184.09,
+            "prompt": 539.89,
+            "requests_with_usage": 46
+          },
+          "Verdicts": {
+            "cached": 226.23,
+            "completion": 54.37,
+            "prompt": 605.81,
+            "requests_with_usage": 43
+          }
+        },
+        "usd_per_token": {
+          "V4 Pro Inp glbl Tokens": 1.74e-06,
+          "V4 Pro Outp glbl Tokens": 3.48e-06,
+          "V4 Pro cached glbl Tokens": 1.45e-07
+        }
+      },
+      "counted": true,
+      "measurements": {
+        "environment": 0,
+        "s": 0,
+        "t": 8,
+        "valid": {
+          "interval": [
+            0.85,
+            0.9589
+          ],
+          "k": 92,
+          "n": 100,
+          "percent": 92
+        },
+        "verdict": "undecided by transport"
+      },
+      "requests": {
+        "repaired": 0,
+        "requests": 282,
+        "strict_json": 274,
+        "valid": 274
+      },
+      "slots": [
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r1-faithfulness"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q03-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q08-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q11-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q18-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q09-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q16-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q17-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-geval"
+        },
+        {
+          "final": "transport_error",
+          "first": "transport_error",
+          "slot": "q20-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r2-geval"
+        }
+      ],
+      "transport": null
+    },
+    "rerun": {
+      "cost": {
+        "estimate_usd": {
+          "comparison_faithfulness": 7.57731,
+          "comparison_geval": 4.490943,
+          "comparison_truths_input": 1.006124,
+          "measurement_faithfulness": 0.002806,
+          "measurement_geval": 0.001663,
+          "scheduled_run": 2.011376,
+          "steps": {
+            "Claims": 0.000569,
+            "FaithfulnessScoreReason": 0.000569,
+            "ReasonScore": 0.001056,
+            "Steps": 0.000607,
+            "Truths": 0.001001,
+            "Verdicts": 0.000668
+          }
+        },
+        "estimate_usd_without_cache": {
+          "comparison_faithfulness": 11.810772,
+          "comparison_geval": 5.769802,
+          "comparison_truths_input": 2.527524,
+          "measurement_faithfulness": 0.004374,
+          "measurement_geval": 0.002137,
+          "scheduled_run": 2.930096,
+          "steps": {
+            "Claims": 0.000977,
+            "FaithfulnessScoreReason": 0.000577,
+            "ReasonScore": 0.00153,
+            "Steps": 0.000607,
+            "Truths": 0.001564,
+            "Verdicts": 0.001256
+          }
+        },
+        "requests": 300,
+        "requests_with_usage": 300,
+        "tokens_mean": {
+          "Claims": {
+            "cached": 256.0,
+            "completion": 83.46,
+            "prompt": 394.84,
+            "requests_with_usage": 50
+          },
+          "FaithfulnessScoreReason": {
+            "cached": 5.12,
+            "completion": 37.18,
+            "prompt": 257.3,
+            "requests_with_usage": 50
+          },
+          "ReasonScore": {
+            "cached": 296.96,
+            "completion": 96.58,
+            "prompt": 686.18,
+            "requests_with_usage": 50
+          },
+          "Steps": {
+            "cached": 0.0,
+            "completion": 91.9,
+            "prompt": 165.0,
+            "requests_with_usage": 50
+          },
+          "Truths": {
+            "cached": 353.28,
+            "completion": 180.5,
+            "prompt": 538.0,
+            "requests_with_usage": 50
+          },
+          "Verdicts": {
+            "cached": 368.64,
+            "completion": 59.6,
+            "prompt": 602.38,
+            "requests_with_usage": 50
+          }
+        },
+        "usd_per_token": {
+          "V4 Pro Inp glbl Tokens": 1.74e-06,
+          "V4 Pro Outp glbl Tokens": 3.48e-06,
+          "V4 Pro cached glbl Tokens": 1.45e-07
+        }
+      },
+      "counted": true,
+      "measurements": {
+        "environment": 0,
+        "s": 0,
+        "t": 0,
+        "valid": {
+          "interval": [
+            0.963,
+            1.0
+          ],
+          "k": 100,
+          "n": 100,
+          "percent": 100
+        },
+        "verdict": "pass"
+      },
+      "requests": {
+        "repaired": 0,
+        "requests": 300,
+        "strict_json": 300,
+        "valid": 300
+      },
+      "slots": [
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r1-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q01-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q02-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q03-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q04-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q05-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q06-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q07-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q08-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q09-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q10-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q11-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q12-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q13-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q14-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q15-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q16-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q17-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q18-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q19-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q20-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q21-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q22-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q23-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q24-r2-geval"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r2-faithfulness"
+        },
+        {
+          "final": "valid",
+          "first": "valid",
+          "slot": "q25-r2-geval"
+        }
+      ],
+      "transport": {
+        "attempts": 654,
+        "attempts_after_a_429": {
+          "new_connection": 291,
+          "reused_connection": 2
+        },
+        "handshake_failures_of_new_connections": {
+          "interval": [
+            0.12,
+            0.1901
+          ],
+          "k": 61,
+          "n": 402,
+          "percent": 15
+        },
+        "new_connections": 402,
+        "reused_connections": 252
+      }
+    }
+  }
+}
