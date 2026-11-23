@@ -1,0 +1,13 @@
+{
+  "run": "uncounted diagnostic",
+  "started_at": 1795385452.845061,
+  "ended_at": 1795389194.148524,
+  "stop_reason": null,
+  "counts_not_a_gate_result": {
+    "n": 100,
+    "k": 93,
+    "s": 0,
+    "t": 7
+  },
+  "judge_spend_usd": 0.2290257599999998
+}

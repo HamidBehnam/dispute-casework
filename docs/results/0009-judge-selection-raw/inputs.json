@@ -1,0 +1,257 @@
+{
+  "cases": [
+    {
+      "case_id": "q01",
+      "input": "1005.6(b)(1)",
+      "retrieval_context": [
+        "1005.6(b)\n§ 1005.6 Liability of consumer for unauthorized transfers.\n(b) Limitations on amount of liability. A consumer's liability for an unauthorized electronic fund transfer or a series of related unauthorized transfers shall be determined as follows:",
+        "1005.6(b)(1)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(1) Timely notice given. If the consumer notifies the financial institution within two business days after learning of the loss or theft of the access device, the consumer's liability shall not exceed the lesser of $50 or the amount of unauthorized transfers that occur before notice to the financial institution.",
+        "1005.6(b)(2)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(2) Timely notice not given. If the consumer fails to notify the financial institution within two business days after learning of the loss or theft of the access device, the consumer's liability shall not exceed the lesser of $500 or the sum of:"
+      ],
+      "actual_output": "Under § 1005.6(b)(1), if the consumer notifies the financial institution within two business days after learning of the loss or theft of the access device, the consumer’s liability is limited to the lesser of $50 or the amount of unauthorized transfers that occur before notice to the financial institution. (1005.6(b)(1))"
+    },
+    {
+      "case_id": "q02",
+      "input": "12 CFR 1005.11(c)(2)(i)",
+      "retrieval_context": [
+        "1005.11(c)(2)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(2) Forty-five day period. If the financial institution is unable to complete its investigation within 10 business days, the institution may take up to 45 days from receipt of a notice of error to investigate and determine whether an error occurred, provided the institution does the following:",
+        "1005.11(c)(2)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(i) Provisionally credits the consumer's account in the amount of the alleged error (including interest where applicable) within 10 business days of receiving the error notice. If the financial institution has a reasonable basis for believing that an unauthorized electronic fund transfer has occurred and the institution has satisfied the requirements of § 1005.6(a), the institution may withhold a maximum of $50 from the amount credited. An institution need not provisionally credit the consumer's account if:",
+        "1005.11(c)(2)(i)(A)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(A) The institution requires but does not receive written confirmation within 10 business days of an oral notice of error; or"
+      ],
+      "actual_output": "Under **12 CFR 1005.11(c)(2)(i)**, if a financial institution cannot complete its investigation within 10 business days, it may take up to 45 days from receipt of the notice of error to investigate and determine whether an error occurred, **provided it provisionally credits the consumer’s account in the amount of the alleged error (including interest where applicable) within 10 business days**. If the institution has a reasonable basis to believe an unauthorized electronic fund transfer occurred and has met the requirements of § 1005.6(a), it may withhold up to $50 from the provisional credit. The institution need not provisionally credit the account if it requires, but does not receive, written confirmation within 10 business days of an oral notice of error. (1005.11(c)(2), 1005.11(c)(2)(i), 1005.11(c)(2)(i)(A))"
+    },
+    {
+      "case_id": "q03",
+      "input": "comment 11(c)-3",
+      "retrieval_context": [
+        "1005.11(c)-2\nSupplement I to Part 1005—Official Interpretations > Section 1005.11 Procedures for Resolving Errors > 11(c) Time Limits and Extent of Investigation\n2. Written confirmation of oral notice. A financial institution must begin its investigation promptly upon receipt of an oral notice. It may not delay until it has received a written confirmation.",
+        "1005.11(c)-3\nSupplement I to Part 1005—Official Interpretations > Section 1005.11 Procedures for Resolving Errors > 11(c) Time Limits and Extent of Investigation\n3. Charges for error resolution. If a billing error occurred, whether as alleged or in a different amount or manner, the financial institution may not impose a charge related to any aspect of the error-resolution process (including charges for documentation or investigation). Since the Act grants the consumer error-resolution rights, the institution should avoid any chilling effect on the good-faith assertion of errors that might result if charges are assessed when no billing error has occurred.",
+        "1005.11(c)-4\nSupplement I to Part 1005—Official Interpretations > Section 1005.11 Procedures for Resolving Errors > 11(c) Time Limits and Extent of Investigation\n4. Correction without investigation. A financial institution may make, without investigation, a final correction to a consumer's account in the amount or manner alleged by the consumer to be in error, but must comply with all other applicable requirements of § 1005.11."
+      ],
+      "actual_output": "Comment 11(c)-3 states that if a billing error occurred—whether exactly as alleged or in a different amount or manner—the financial institution may not impose any charge related to the error-resolution process, including charges for documentation or investigation. The reason given is to avoid discouraging consumers from asserting error claims in good faith. (1005.11(c)-3)"
+    },
+    {
+      "case_id": "q04",
+      "input": "§ 1005.33(c)(1)",
+      "retrieval_context": [
+        "1005.33(b)(2)\n§ 1005.33 Procedures for resolving errors. > (b) Notice of error from sender\n(2) Request for documentation or clarification. When a notice of error is based on documentation, additional information, or clarification that the sender previously requested under paragraph (a)(1)(v) of this section, the sender's notice of error is timely if received by the remittance transfer provider the later of 180 days after the disclosed date of availability of the remittance transfer or 60 days after the provider sent the documentation, information, or clarification that had been requested.",
+        "1005.33(c)(1)\n§ 1005.33 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(1) Time limits for investigation and report to consumer of error. A remittance transfer provider shall investigate promptly and determine whether an error occurred within 90 days of receiving a notice of error. The remittance transfer provider shall report the results to the sender, including notice of any remedies available for correcting any error that the provider determines has occurred, within three business days after completing its investigation.",
+        "1005.33(c)(2)\n§ 1005.33 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(2) Remedies. Except as provided in paragraph (c)(2)(iii) of this section, if, following an assertion of an error by a sender, the remittance transfer provider determines an error occurred, the provider shall, within one business day of, or as soon as reasonably practicable after, receiving the sender's instructions regarding the appropriate remedy, correct the error as designated by the sender by:"
+      ],
+      "actual_output": "Under § 1005.33(c)(1), a remittance transfer provider must investigate promptly and determine whether an error occurred within 90 days of receiving a notice of error. The provider must then report the results to the sender, including any remedies available to correct the error, within three business days after completing the investigation. (§ 1005.33(c)(1))"
+    },
+    {
+      "case_id": "q05",
+      "input": "comment 6(b)-2",
+      "retrieval_context": [
+        "1005.6(b)-1\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b) Limitations on Amount of Liability\n1. Application of liability provisions. There are three possible tiers of consumer liability for unauthorized EFTs depending on the situation. A consumer may be liable for: (1) up to $50; (2) up to $500; or (3) an unlimited amount depending on when the unauthorized EFT occurs. More than one tier may apply to a given situation because each corresponds to a different (sometimes overlapping) time period or set of conditions.",
+        "1005.6(b)-2\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b) Limitations on Amount of Liability\n2. Consumer negligence. Negligence by the consumer cannot be used as the basis for imposing greater liability than is permissible under Regulation E. Thus, consumer behavior that may constitute negligence under state law, such as writing the PIN on a debit card or on a piece of paper kept with the card, does not affect the consumer's liability for unauthorized transfers. (However, refer to comment 2(m)-2 regarding termination of the authority of given by the consumer to another person.)",
+        "1005.6(b)-3\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b) Limitations on Amount of Liability\n3. Limits on liability. The extent of the consumer's liability is determined solely by the consumer's promptness in reporting the loss or theft of an access device. Similarly, no agreement between the consumer and an institution may impose greater liability on the consumer for an unauthorized transfer than the limits provided in Regulation E."
+      ],
+      "actual_output": "Comment 6(b)-2 says that a consumer’s negligence cannot be used to impose greater liability than Regulation E allows. So even if the consumer acted carelessly under state law, such as writing the PIN on a debit card or keeping it with the card, that does not increase the consumer’s liability for unauthorized transfers. It also notes a possible exception to consider in comment 2(m)-2 about termination of authority given to another person (1005.6(b)-2)."
+    },
+    {
+      "case_id": "q06",
+      "input": "provisional credit amount and deadline when the investigation takes longer than 10 business days",
+      "retrieval_context": [
+        "1005.11(c)(2)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(2) Forty-five day period. If the financial institution is unable to complete its investigation within 10 business days, the institution may take up to 45 days from receipt of a notice of error to investigate and determine whether an error occurred, provided the institution does the following:",
+        "1005.11(c)(2)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(i) Provisionally credits the consumer's account in the amount of the alleged error (including interest where applicable) within 10 business days of receiving the error notice. If the financial institution has a reasonable basis for believing that an unauthorized electronic fund transfer has occurred and the institution has satisfied the requirements of § 1005.6(a), the institution may withhold a maximum of $50 from the amount credited. An institution need not provisionally credit the consumer's account if:",
+        "1005.11(c)(2)(i)(A)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(A) The institution requires but does not receive written confirmation within 10 business days of an oral notice of error; or"
+      ],
+      "actual_output": "If the financial institution cannot complete its investigation within 10 business days, it may take up to 45 days to investigate, but it must **provisionally credit the consumer’s account for the amount of the alleged error (including interest, if applicable) within 10 business days of receiving the error notice**. If the institution has a reasonable basis to believe an unauthorized EFT occurred and has satisfied § 1005.6(a), it may **withhold up to $50** from that provisional credit. (1005.11(c)(2), 1005.11(c)(2)(i))"
+    },
+    {
+      "case_id": "q07",
+      "input": "error on a new account within 30 days of the first deposit: how long to resolve",
+      "retrieval_context": [
+        "1005.11(c)(3)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(3) Extension of time periods. The time periods in paragraphs (c)(1) and (c)(2) of this section are extended as follows:",
+        "1005.11(c)(3)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(i) The applicable time is 20 business days in place of 10 business days under paragraphs (c)(1) and (2) of this section if the notice of error involves an electronic fund transfer to or from the account within 30 days after the first deposit to the account was made.",
+        "1005.11(c)(3)(ii)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(ii) The applicable time is 90 days in place of 45 days under paragraph (c)(2) of this section, for completing an investigation, if a notice of error involves an electronic fund transfer that:"
+      ],
+      "actual_output": "If the notice of error involves an electronic fund transfer to or from a new account within 30 days after the first deposit, the applicable time is **20 business days instead of 10 business days** under paragraphs (c)(1) and (c)(2) (1005.11(c)(3)(i))."
+    },
+    {
+      "case_id": "q08",
+      "input": "consumer liability when a lost debit card is reported within two business days",
+      "retrieval_context": [
+        "1005.6(b)\n§ 1005.6 Liability of consumer for unauthorized transfers.\n(b) Limitations on amount of liability. A consumer's liability for an unauthorized electronic fund transfer or a series of related unauthorized transfers shall be determined as follows:",
+        "1005.6(b)(1)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(1) Timely notice given. If the consumer notifies the financial institution within two business days after learning of the loss or theft of the access device, the consumer's liability shall not exceed the lesser of $50 or the amount of unauthorized transfers that occur before notice to the financial institution.",
+        "1005.6(b)(2)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(2) Timely notice not given. If the consumer fails to notify the financial institution within two business days after learning of the loss or theft of the access device, the consumer's liability shall not exceed the lesser of $500 or the sum of:"
+      ],
+      "actual_output": "If a consumer reports a lost debit card within two business days after learning of the loss or theft, the consumer’s liability for unauthorized transfers is limited to the lesser of $50 or the amount of unauthorized transfers that occur before the financial institution is notified. (1005.6(b)(1))"
+    },
+    {
+      "case_id": "q09",
+      "input": "unauthorized transfers on a periodic statement not reported within 60 days",
+      "retrieval_context": [
+        "1005.6(b)(2)(ii)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability. > (2) Timely notice not given.\n(ii) The amount of unauthorized transfers that occur after the close of two business days and before notice to the institution, provided the institution establishes that these transfers would not have occurred had the consumer notified the institution within that two-day period.",
+        "1005.6(b)(3)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(3) Periodic statement; timely notice not given. A consumer must report an unauthorized electronic fund transfer that appears on a periodic statement within 60 days of the financial institution's transmittal of the statement to avoid liability for subsequent transfers. If the consumer fails to do so, the consumer's liability shall not exceed the amount of the unauthorized transfers that occur after the close of the 60 days and before notice to the institution, and that the institution establishes would not have occurred had the consumer notified the institution within the 60-day period. When an access device is involved in the unauthorized transfer, the consumer may be liable for other amounts set forth in paragraphs (b)(1) or (b)(2) of this section, as applicable.",
+        "1005.6(b)(4)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(4) Extension of time limits. If the consumer's delay in notifying the financial institution was due to extenuating circumstances, the institution shall extend the times specified above to a reasonable period."
+      ],
+      "actual_output": "If an unauthorized electronic fund transfer appears on a periodic statement and the consumer does not report it within 60 days of the financial institution’s transmittal of the statement, the consumer’s liability is limited to the amount of unauthorized transfers that occur after the close of the 60 days and before notice to the institution, so long as the institution establishes those transfers would not have occurred had the consumer notified it within the 60-day period. If extenuating circumstances caused the delay, the institution must extend the 60-day limit to a reasonable period. (1005.6(b)(3), 1005.6(b)(4))"
+    },
+    {
+      "case_id": "q10",
+      "input": "written confirmation within 10 business days of an oral notice",
+      "retrieval_context": [
+        "1005.11(b)(1)(iii)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer > (1) Timing; contents.\n(iii) Indicates why the consumer believes an error exists and includes to the extent possible the type, date, and amount of the error, except for requests described in paragraph (a)(1)(vii) of this section.",
+        "1005.11(b)(2)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer\n(2) Written confirmation. A financial institution may require the consumer to give written confirmation of an error within 10 business days of an oral notice. An institution that requires written confirmation shall inform the consumer of the requirement and provide the address where confirmation must be sent when the consumer gives the oral notification.",
+        "1005.11(b)(3)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer\n(3) Request for documentation or clarifications. When a notice of error is based on documentation or clarification that the consumer requested under paragraph (a)(1)(vii) of this section, the consumer's notice of error is timely if received by the financial institution no later than 60 days after the institution sends the information requested."
+      ],
+      "actual_output": "A financial institution may require the consumer to provide **written confirmation of an error within 10 business days of an oral notice**. If it does so, it must **tell the consumer about this requirement and provide the address where the confirmation should be sent at the time of the oral notification**. (1005.11(b)(2))"
+    },
+    {
+      "case_id": "q11",
+      "input": "point-of-sale debit card transaction",
+      "retrieval_context": [
+        "1005.11(c)(3)(ii)(A)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(A) Was not initiated within a state;",
+        "1005.11(c)(3)(ii)(B)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(B) Resulted from a point-of-sale debit card transaction; or",
+        "1005.11(c)(3)(ii)(C)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(C) Occurred within 30 days after the first deposit to the account was made."
+      ],
+      "actual_output": "A “point-of-sale debit card transaction” is a transaction that **resulted from a point-of-sale debit card transaction**. In the context provided, this appears as a condition under which an extension of time periods may apply. (1005.11(c)(3)(ii)(B))"
+    },
+    {
+      "case_id": "q12",
+      "input": "stop payment of a preauthorized electronic fund transfer at least three business days before the scheduled date",
+      "retrieval_context": [
+        "1005.10(b)\n§ 1005.10 Preauthorized transfers.\n(b) Written authorization for preauthorized transfers from consumer's account. Preauthorized electronic fund transfers from a consumer's account may be authorized only by a writing signed or similarly authenticated by the consumer. The person that obtains the authorization shall provide a copy to the consumer.",
+        "1005.10(c)(1)\n§ 1005.10 Preauthorized transfers. > (c) Consumer's right to stop payment\n(1) Notice. A consumer may stop payment of a preauthorized electronic fund transfer from the consumer's account by notifying the financial institution orally or in writing at least three business days before the scheduled date of the transfer.",
+        "1005.10(c)(2)\n§ 1005.10 Preauthorized transfers. > (c) Consumer's right to stop payment\n(2) Written confirmation. The financial institution may require the consumer to give written confirmation of a stop-payment order within 14 days of an oral notification. An institution that requires written confirmation shall inform the consumer of the requirement and provide the address where confirmation must be sent when the consumer gives the oral notification. An oral stop-payment order ceases to be binding after 14 days if the consumer fails to provide the required written confirmation."
+      ],
+      "actual_output": "A consumer may stop payment of a preauthorized electronic fund transfer by notifying the financial institution orally or in writing at least three business days before the scheduled date of the transfer. (1005.10(c)(1))"
+    },
+    {
+      "case_id": "q13",
+      "input": "retain evidence of compliance for two years",
+      "retrieval_context": [
+        "1005.13(a)\n§ 1005.13 Administrative enforcement; record retention.\n(a) Enforcement by Federal agencies. Compliance with this part is enforced in accordance with section 918 of the Act.",
+        "1005.13(b)(1)\n§ 1005.13 Administrative enforcement; record retention. > (b) Record retention.\n(1) Any person subject to the Act and this part shall retain evidence of compliance with the requirements imposed by the Act and this part for a period of not less than two years from the date disclosures are required to be made or action is required to be taken.",
+        "1005.13(b)(2)\n§ 1005.13 Administrative enforcement; record retention. > (b) Record retention.\n(2) Any person subject to the Act and this part having actual notice that it is the subject of an investigation or an enforcement proceeding by its enforcement agency, or having been served with notice of an action filed under sections 910, 916, or 917(a) of the Act, shall retain the records that pertain to the investigation, action, or proceeding until final disposition of the matter unless an earlier time is allowed by court or agency order."
+      ],
+      "actual_output": "Any person subject to the Act and this part must retain evidence of compliance with the requirements imposed by the Act and this part for at least two years from the date disclosures are required to be made or action is required to be taken. (1005.13(b)(1))"
+    },
+    {
+      "case_id": "q14",
+      "input": "business day offices open to the public",
+      "retrieval_context": [
+        "1005.2(c)\n§ 1005.2 Definitions.\n(c) “Act” means the Electronic Fund Transfer Act (Title IX of the Consumer Credit Protection Act, 15 U.S.C. 1693 et seq.).",
+        "1005.2(d)\n§ 1005.2 Definitions.\n(d) “Business day” means any day on which the offices of the consumer's financial institution are open to the public for carrying on substantially all business functions.",
+        "1005.2(e)\n§ 1005.2 Definitions.\n(e) “Consumer” means a natural person."
+      ],
+      "actual_output": "A “business day” means any day on which the offices of the consumer’s financial institution are open to the public for carrying on substantially all business functions. (1005.2(d))"
+    },
+    {
+      "case_id": "q15",
+      "input": "What counts as an error under Regulation E?",
+      "retrieval_context": [
+        "1005.10(e)(2)\n§ 1005.10 Preauthorized transfers. > (e) Compulsory use\n(2) Employment or government benefit. No financial institution or other person may require a consumer to establish an account for receipt of electronic fund transfers with a particular institution as a condition of employment or receipt of a government benefit.",
+        "1005.11(a)(1)\n§ 1005.11 Procedures for resolving errors. > (a) Definition of error\n(1) Types of transfers or inquiries covered. The term “error” means:",
+        "1005.11(a)(1)(i)\n§ 1005.11 Procedures for resolving errors. > (a) Definition of error > (1) Types of transfers or inquiries covered.\n(i) An unauthorized electronic fund transfer;"
+      ],
+      "actual_output": "Under Regulation E, an “error” includes **an unauthorized electronic fund transfer**. (1005.11(a)(1)(i))"
+    },
+    {
+      "case_id": "q16",
+      "input": "How long after the periodic statement is sent can a consumer still give notice of an error?",
+      "retrieval_context": [
+        "1005.11(b)(1)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer\n(1) Timing; contents. A financial institution shall comply with the requirements of this section with respect to any oral or written notice of error from the consumer that:",
+        "1005.11(b)(1)(i)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer > (1) Timing; contents.\n(i) Is received by the institution no later than 60 days after the institution sends the periodic statement or provides the passbook documentation, required by § 1005.9, on which the alleged error is first reflected;",
+        "1005.11(b)(1)(ii)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer > (1) Timing; contents.\n(ii) Enables the institution to identify the consumer's name and account number; and"
+      ],
+      "actual_output": "A consumer can give notice of an error up to **60 days after** the financial institution sends the periodic statement (1005.11(b)(1)(i))."
+    },
+    {
+      "case_id": "q17",
+      "input": "How many business days does the bank have to investigate and decide after receiving a notice of error?",
+      "retrieval_context": [
+        "1005.11(b)(3)\n§ 1005.11 Procedures for resolving errors. > (b) Notice of error from consumer\n(3) Request for documentation or clarifications. When a notice of error is based on documentation or clarification that the consumer requested under paragraph (a)(1)(vii) of this section, the consumer's notice of error is timely if received by the financial institution no later than 60 days after the institution sends the information requested.",
+        "1005.11(c)(1)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(1) Ten-day period. A financial institution shall investigate promptly and, except as otherwise provided in this paragraph (c), shall determine whether an error occurred within 10 business days of receiving a notice of error. The institution shall report the results to the consumer within three business days after completing its investigation. The institution shall correct the error within one business day after determining that an error occurred.",
+        "1005.11(c)(2)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(2) Forty-five day period. If the financial institution is unable to complete its investigation within 10 business days, the institution may take up to 45 days from receipt of a notice of error to investigate and determine whether an error occurred, provided the institution does the following:"
+      ],
+      "actual_output": "The bank generally has **10 business days** to investigate and determine whether an error occurred after receiving a notice of error, unless an exception applies that allows up to **45 days**. (1005.11(c)(1), 1005.11(c)(2))"
+    },
+    {
+      "case_id": "q18",
+      "input": "Can the bank skip provisional credit if the customer never sends the written confirmation it asked for?",
+      "retrieval_context": [
+        "1005.11(c)(2)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(i) Provisionally credits the consumer's account in the amount of the alleged error (including interest where applicable) within 10 business days of receiving the error notice. If the financial institution has a reasonable basis for believing that an unauthorized electronic fund transfer has occurred and the institution has satisfied the requirements of § 1005.6(a), the institution may withhold a maximum of $50 from the amount credited. An institution need not provisionally credit the consumer's account if:",
+        "1005.11(c)(2)(i)(A)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(A) The institution requires but does not receive written confirmation within 10 business days of an oral notice of error; or",
+        "1005.11(c)(2)(i)(B)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (2) Forty-five day period.\n(B) The alleged error involves an account that is subject to Regulation T of the Board of Governors of the Federal Reserve System (Securities Credit by Brokers and Dealers, 12 CFR part 220)."
+      ],
+      "actual_output": "Yes. An institution need not provisionally credit the consumer’s account if it requires, but does not receive, written confirmation within 10 business days of an oral notice of error (1005.11(c)(2)(i)(A); 1005.11(c)(2)(i))."
+    },
+    {
+      "case_id": "q19",
+      "input": "Which disputes get 90 days instead of 45 days to investigate?",
+      "retrieval_context": [
+        "1005.11(c)(3)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(i) The applicable time is 20 business days in place of 10 business days under paragraphs (c)(1) and (2) of this section if the notice of error involves an electronic fund transfer to or from the account within 30 days after the first deposit to the account was made.",
+        "1005.11(c)(3)(ii)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(ii) The applicable time is 90 days in place of 45 days under paragraph (c)(2) of this section, for completing an investigation, if a notice of error involves an electronic fund transfer that:",
+        "1005.11(c)(3)(ii)(A)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(A) Was not initiated within a state;"
+      ],
+      "actual_output": "A notice of error gets **90 days instead of 45 days** to complete the investigation if it involves an electronic fund transfer that **was not initiated within a state**. (1005.11(c)(3)(ii), 1005.11(c)(3)(ii)(A))"
+    },
+    {
+      "case_id": "q20",
+      "input": "Is reviewing only our own records enough when we have no agreement with the merchant?",
+      "retrieval_context": [
+        "1005.11(c)(3)(ii)(C)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (3) Extension of time periods.\n(C) Occurred within 30 days after the first deposit to the account was made.",
+        "1005.11(c)(4)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation\n(4) Investigation. With the exception of transfers covered by § 1005.14 of this part, a financial institution's review of its own records regarding an alleged error satisfies the requirements of this section if:",
+        "1005.11(c)(4)(i)\n§ 1005.11 Procedures for resolving errors. > (c) Time limits and extent of investigation > (4) Investigation.\n(i) The alleged error concerns a transfer to or from a third party; and"
+      ],
+      "actual_output": "Yes—if the alleged error concerns a transfer to or from a third party, a financial institution’s review of its own records can satisfy the investigation requirement, except for transfers covered by § 1005.14 (1005.11(c)(4), 1005.11(c)(4)(i)). The context does not require an agreement with the merchant for this rule to apply."
+    },
+    {
+      "case_id": "q21",
+      "input": "What must the bank tell the customer when it finds that no error occurred?",
+      "retrieval_context": [
+        "1005.11(d)\n§ 1005.11 Procedures for resolving errors.\n(d) Procedures if financial institution determines no error or different error occurred. In addition to following the procedures specified in paragraph (c) of this section, the financial institution shall follow the procedures set forth in this paragraph (d) if it determines that no error occurred or that an error occurred in a manner or amount different from that described by the consumer:",
+        "1005.11(d)(1)\n§ 1005.11 Procedures for resolving errors. > (d) Procedures if financial institution determines no error or different error occurred.\n(1) Written explanation. The institution's report of the results of its investigation shall include a written explanation of the institution's findings and shall note the consumer's right to request the documents that the institution relied on in making its determination. Upon request, the institution shall promptly provide copies of the documents.",
+        "1005.11(d)(2)\n§ 1005.11 Procedures for resolving errors. > (d) Procedures if financial institution determines no error or different error occurred.\n(2) Debiting provisional credit. Upon debiting a provisionally credited amount, the financial institution shall:"
+      ],
+      "actual_output": "When the bank finds that no error occurred, it must provide the customer with a written explanation of its findings and tell the customer that they have the right to request the documents the bank relied on in making its determination. If requested, the bank must promptly provide copies of those documents. (1005.11(d)(1))"
+    },
+    {
+      "case_id": "q22",
+      "input": "After debiting a provisional credit, how long must the bank keep honoring checks and preauthorized transfers?",
+      "retrieval_context": [
+        "1005.11(d)(2)(i)\n§ 1005.11 Procedures for resolving errors. > (d) Procedures if financial institution determines no error or different error occurred. > (2) Debiting provisional credit.\n(i) Notify the consumer of the date and amount of the debiting;",
+        "1005.11(d)(2)(ii)\n§ 1005.11 Procedures for resolving errors. > (d) Procedures if financial institution determines no error or different error occurred. > (2) Debiting provisional credit.\n(ii) Notify the consumer that the institution will honor checks, drafts, or similar instruments payable to third parties and preauthorized transfers from the consumer's account (without charge to the consumer as a result of an overdraft) for five business days after the notification. The institution shall honor items as specified in the notice, but need honor only items that it would have paid if the provisionally credited funds had not been debited.",
+        "1005.11(e)\n§ 1005.11 Procedures for resolving errors.\n(e) Reassertion of error. A financial institution that has fully complied with the error resolution requirements has no further responsibilities under this section should the consumer later reassert the same error, except in the case of an error asserted by the consumer following receipt of information provided under paragraph (a)(1)(vii) of this section."
+      ],
+      "actual_output": "After debiting the provisional credit, the bank must honor checks, drafts, similar third-party instruments, and preauthorized transfers for **five business days after the notification**. It must do so **without charging the consumer for any overdraft resulting from that debit** (1005.11(d)(2)(ii))."
+    },
+    {
+      "case_id": "q23",
+      "input": "Customer reasserts the same error after we already resolved it",
+      "retrieval_context": [
+        "1005.11(d)(2)(ii)\n§ 1005.11 Procedures for resolving errors. > (d) Procedures if financial institution determines no error or different error occurred. > (2) Debiting provisional credit.\n(ii) Notify the consumer that the institution will honor checks, drafts, or similar instruments payable to third parties and preauthorized transfers from the consumer's account (without charge to the consumer as a result of an overdraft) for five business days after the notification. The institution shall honor items as specified in the notice, but need honor only items that it would have paid if the provisionally credited funds had not been debited.",
+        "1005.11(e)\n§ 1005.11 Procedures for resolving errors.\n(e) Reassertion of error. A financial institution that has fully complied with the error resolution requirements has no further responsibilities under this section should the consumer later reassert the same error, except in the case of an error asserted by the consumer following receipt of information provided under paragraph (a)(1)(vii) of this section.",
+        "1005.12(a)(1)\n§ 1005.12 Relation to other laws. > (a) Relation to Truth in Lending.\n(1) The Electronic Fund Transfer Act and this part govern:"
+      ],
+      "actual_output": "If the financial institution has **fully complied with the error resolution requirements**, it has **no further responsibilities under this section** if the consumer later **reasserts the same error**, **except** when the error was asserted after the consumer received information under paragraph (a)(1)(vii) (1005.11(e))."
+    },
+    {
+      "case_id": "q24",
+      "input": "Customer was hospitalized and reported the unauthorized transfer late. Are the time limits extended?",
+      "retrieval_context": [
+        "1005.6(b)(3)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(3) Periodic statement; timely notice not given. A consumer must report an unauthorized electronic fund transfer that appears on a periodic statement within 60 days of the financial institution's transmittal of the statement to avoid liability for subsequent transfers. If the consumer fails to do so, the consumer's liability shall not exceed the amount of the unauthorized transfers that occur after the close of the 60 days and before notice to the institution, and that the institution establishes would not have occurred had the consumer notified the institution within the 60-day period. When an access device is involved in the unauthorized transfer, the consumer may be liable for other amounts set forth in paragraphs (b)(1) or (b)(2) of this section, as applicable.",
+        "1005.6(b)(4)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability.\n(4) Extension of time limits. If the consumer's delay in notifying the financial institution was due to extenuating circumstances, the institution shall extend the times specified above to a reasonable period.",
+        "1005.6(b)(5)(i)\n§ 1005.6 Liability of consumer for unauthorized transfers. > (b) Limitations on amount of liability. > (5) Notice to financial institution.\n(i) Notice to a financial institution is given when a consumer takes steps reasonably necessary to provide the institution with the pertinent information, whether or not a particular employee or agent of the institution actually receives the information.",
+        "1005.6(b)(3)-2\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b)(3) Periodic Statement; Timely Notice Not Given\n2. Transfers not involving access device. The first two tiers of liability do not apply to unauthorized transfers from a consumer's account made without an access device. If, however, the consumer fails to report such unauthorized transfers within 60 calendar days of the financial institution's transmittal of the periodic statement, the consumer may be liable for any transfers occurring after the close of the 60 days and before notice is given to the institution. For example, a consumer's account is electronically debited for $200 without the consumer's authorization and by means other than the consumer's access device. If the consumer notifies the institution within 60 days of the transmittal of the periodic statement that shows the unauthorized transfer, the consumer has no liability. However, if in addition to the $200, the consumer's account is debited for a $400 unauthorized transfer on the 61st day and the consumer fails to notify the institution of the first unauthorized transfer until the 62nd day, the consumer may be liable for the full $400.",
+        "1005.6(b)(4)-1\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b)(4) Extension of Time Limits\n1. Extenuating circumstances. Examples of circumstances that require extension of the notification periods under this section include the consumer's extended travel or hospitalization.",
+        "1005.6(b)(5)-1\nSupplement I to Part 1005—Official Interpretations > Section 1005.6 Liability of Consumer for Unauthorized Transfers > 6(b)(5) Notice to Financial Institution\n1. Receipt of notice. A financial institution is considered to have received notice for purposes of limiting the consumer's liability if notice is given in a reasonable manner, even if the consumer notifies the institution but uses an address or telephone number other than the one specified by the institution."
+      ],
+      "actual_output": "Yes. If the delay in notifying the financial institution was due to extenuating circumstances, the institution must extend the time limits to a reasonable period, and hospitalization is given as an example of such a circumstance (1005.6(b)(4); 1005.6(b)(4)-1)."
+    },
+    {
+      "case_id": "q25",
+      "input": "Is a transfer by a family member who was given the card and PIN an unauthorized electronic fund transfer?",
+      "retrieval_context": [
+        "1005.2(m)\n§ 1005.2 Definitions.\n(m) “Unauthorized electronic fund transfer” means an electronic fund transfer from a consumer's account initiated by a person other than the consumer without actual authority to initiate the transfer and from which the consumer receives no benefit. The term does not include an electronic fund transfer initiated:",
+        "1005.2(m)(1)\n§ 1005.2 Definitions.\n(1) By a person who was furnished the access device to the consumer's account by the consumer, unless the consumer has notified the financial institution that transfers by that person are no longer authorized;",
+        "1005.2(m)(2)\n§ 1005.2 Definitions.\n(2) With fraudulent intent by the consumer or any person acting in concert with the consumer; or"
+      ],
+      "actual_output": "Not necessarily. A transfer initiated by a person who was furnished the access device by the consumer is **not** an unauthorized electronic fund transfer, unless the consumer has notified the financial institution that transfers by that person are no longer authorized. A family member given the card and PIN would generally fall under this rule. (1005.2(m), 1005.2(m)(1))"
+    }
+  ]
+}
