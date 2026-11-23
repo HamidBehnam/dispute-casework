@@ -1,14 +1,10 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from cohere import ClientV2
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-if TYPE_CHECKING:
-    import httpx2
 
 EMBEDDING_DEPLOYMENT = "text-embedding-3-large"
 EMBEDDING_DIMENSIONS = 1536
@@ -57,8 +53,6 @@ def chat_model(
     *,
     timeout_seconds: float = TIMEOUT_SECONDS,
     max_retries: int | None = None,
-    http_client: "httpx2.Client | None" = None,
-    http_async_client: "httpx2.AsyncClient | None" = None,
 ) -> ChatOpenAI:
     return ChatOpenAI(
         openai_api_base=f"{settings.endpoint}/openai/v1",
@@ -68,8 +62,6 @@ def chat_model(
         stream_usage=True,
         request_timeout=timeout_seconds,
         max_retries=max_retries,
-        http_client=http_client,
-        http_async_client=http_async_client,
     )
 
 
