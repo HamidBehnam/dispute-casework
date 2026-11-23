@@ -12,6 +12,7 @@ Usage: python evals/judge_results.py
 import hashlib
 import json
 from dataclasses import dataclass
+from importlib.metadata import version
 from itertools import pairwise
 from pathlib import Path
 from statistics import fmean
@@ -46,7 +47,7 @@ INPUT_METER = "V4 Pro Inp glbl Tokens"
 CACHED_METER = "V4 Pro cached glbl Tokens"
 OUTPUT_METER = "V4 Pro Outp glbl Tokens"
 METERS = (INPUT_METER, CACHED_METER, OUTPUT_METER)
-TOKENS_PER_UNIT = {"1K": 1_000, "1M": 1_000_000}
+TOKENS_PER_PRICE_UNIT = 1_000
 # The Eval design's call counts: 150 golden cases and three repeats for the
 # scheduled run, and six arms on top of that for the published comparison.
 SCHEDULED_PER_METRIC = 150 * 3
@@ -70,7 +71,7 @@ METHOD = {
     "no-cache bound prices every prompt token at the input meter; USD rounded to "
     "6 places",
     "percent": "round(100 * k / n), beside the count",
-    "versions": {"scipy": "1.18.1"},
+    "versions": {"scipy": version("scipy")},
 }
 
 
@@ -182,8 +183,12 @@ def transport(requests: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def price(prices: dict[str, Any], meter: str) -> float:
-    [item] = [item for item in prices["Items"] if item["meterName"] == meter]
-    return float(item["retailPrice"]) / TOKENS_PER_UNIT[item["unitOfMeasure"]]
+    [item] = [
+        item
+        for item in prices["Items"]
+        if item["meterName"] == meter and item["unitOfMeasure"] == "1K"
+    ]
+    return float(item["retailPrice"]) / TOKENS_PER_PRICE_UNIT
 
 
 def cost(requests: list[dict[str, Any]], prices: dict[str, Any]) -> dict[str, Any]:

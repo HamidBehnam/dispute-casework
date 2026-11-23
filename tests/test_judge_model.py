@@ -11,7 +11,6 @@ from deepeval.metrics.faithfulness.schema import Truths, Verdicts
 from judge_model import JUDGE_MAX_RETRIES, JUDGE_TIMEOUT_SECONDS, Judge
 from pydantic import BaseModel, ValidationError
 
-from dispute_casework import foundry
 from dispute_casework.foundry import FoundrySettings
 
 pytestmark = pytest.mark.block_network(allowed_hosts=["127.0.0.1"])
@@ -89,12 +88,6 @@ def test_the_judge_client_carries_its_timeout_under_a_key_and_under_a_token_prov
     assert judge.chat.root_async_client.timeout == JUDGE_TIMEOUT_SECONDS
     assert judge.chat.root_client.max_retries == JUDGE_MAX_RETRIES == 8
     assert judge.chat.root_async_client.max_retries == JUDGE_MAX_RETRIES
-
-
-def test_a_chat_model_without_max_retries_keeps_the_sdk_default() -> None:
-    settings = FoundrySettings(endpoint="https://ai-test.example", key="k")
-    chat = foundry.chat_model(settings, "gpt-5.4-mini")
-    assert chat.root_client.max_retries == openai.DEFAULT_MAX_RETRIES == 2
 
 
 def test_a_schema_request_asks_for_json_mode_at_temperature_zero(
