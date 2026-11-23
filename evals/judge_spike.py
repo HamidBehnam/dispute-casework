@@ -31,7 +31,7 @@ from deepeval.evaluate.configs import (
 from deepeval.metrics import BaseMetric, FaithfulnessMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase, SingleTurnParams
-from judge_model import Judge
+from judge_model import JUDGE_MAX_RETRIES, JUDGE_TIMEOUT_SECONDS, Judge
 from judge_validity import (
     ENVIRONMENT,
     FAITHFULNESS_STEPS,
@@ -49,10 +49,10 @@ from dispute_casework.foundry import FoundrySettings
 REPEATS = 2
 METRICS = ("faithfulness", "geval")
 STEPS = {"faithfulness": FAITHFULNESS_STEPS, "geval": GEVAL_STEPS}
-# The longest case: six requests, each with up to six attempts (five retries)
-# at the judge's 1,740-second timeout, so DeepEval's own case budget never ends
-# a case first. The waits between attempts come on top.
-CASE_TIMEOUT_SECONDS = 6 * 6 * 1740
+# The longest case: six requests, each with all its attempts at the judge's
+# timeout, so DeepEval's own case budget never ends a case first. The waits
+# between attempts come on top.
+CASE_TIMEOUT_SECONDS = 6 * (1 + JUDGE_MAX_RETRIES) * JUDGE_TIMEOUT_SECONDS
 CITATION_SUPPORT = (
     "Determine whether every statement in the actual output is supported by the "
     "retrieval context and whether every paragraph ID it cites appears in the "
@@ -83,28 +83,32 @@ def run(
     judge_for: JudgeFactory,
     log: RequestLog,
     measurements: Path,
-) -> tuple[Verdict, list[dict[str, str]]]:
+) -> tuple[Verdict, list[dict[str, Any]]]:
     """Measures every slot twice over the cases and re-measures a transport cut once.
 
     A slot whose first measurement ends transport_error is measured once more,
     alone, with a fresh judge; its final outcome is the re-measurement's. An
-    environment failure stops the run before any re-measurement is spent.
+    environment failure stops the run before any further request is spent.
     """
-    slots: list[dict[str, str]] = []
+    slots: list[dict[str, Any]] = []
     for repeat in range(1, REPEATS + 1):
         for case in cases:
             first = measure_case(case, repeat, METRICS, judge_for, log, measurements)
             final = dict(first)
-            cut = [name for name in METRICS if first[name] == "transport_error"]
-            if cut and ENVIRONMENT not in first.values():
+            remeasured = []
+            for name in METRICS:
+                if first[name] != "transport_error" or ENVIRONMENT in final.values():
+                    continue
                 final |= measure_case(
-                    case, repeat, cut, judge_for, log, measurements, remeasured=True
+                    case, repeat, (name,), judge_for, log, measurements, remeasured=True
                 )
+                remeasured.append(name)
             slots += [
                 {
                     "slot": f"{case['case_id']}-r{repeat}-{name}",
                     "first": first[name],
                     "final": final[name],
+                    "remeasured": name in remeasured,
                 }
                 for name in METRICS
             ]
@@ -117,7 +121,7 @@ def run(
 def measure_case(
     case: dict[str, Any],
     repeat: int,
-    names: tuple[str, ...] | list[str],
+    names: tuple[str, ...],
     judge_for: JudgeFactory,
     log: RequestLog,
     measurements: Path,
@@ -176,19 +180,24 @@ def measure_case(
 
 def late_rows(log: RequestLog, measurements: Path) -> list[dict[str, Any]]:
     """Rows that arrived after DeepEval marked their measurement's case timed out."""
-    ended = {}
+    rows = log.rows()
+    found = []
     with measurements.open(encoding="utf-8") as file:
         for line in file:
-            row = json.loads(line)
-            ended[(row["case_id"], row["repeat"], row["remeasured"])] = row[
-                "case_ended_at"
+            measurement = json.loads(line)
+            same = [
+                row
+                for row in rows
+                if row["case_id"] == measurement["case_id"]
+                and row["repeat"] == measurement["repeat"]
+                and row["remeasured"] == measurement["remeasured"]
             ]
-    return [
-        row
-        for row in log.rows()
-        if (key := (row["case_id"], row["repeat"], row["remeasured"])) in ended
-        and late(row, ended[key])
-    ]
+            found += [
+                row
+                for row in measurement_rows(same, STEPS[measurement["metric"]])
+                if late(row, measurement["case_ended_at"])
+            ]
+    return found
 
 
 def main() -> int:
@@ -215,9 +224,7 @@ def main() -> int:
         "started_at": started_at,
         "ended_at": time.time(),
         "late_rows": len(late_rows(log, args.measurements)),
-        "remeasured_slots": [
-            s["slot"] for s in slots if s["first"] == "transport_error"
-        ],
+        "remeasured_slots": [s["slot"] for s in slots if s["remeasured"]],
         "slots": slots,
     }
     args.summary.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
