@@ -3,6 +3,7 @@
   "method": {
     "confidence_level": 0.95,
     "cost": "the mean cost of each step's requests with usage, priced with the retail meters; a measurement costs the sum of its metric's step means; the scheduled run is 450 measurements per metric and the comparison 2,700; the no-cache bound prices every prompt token at the input meter; USD rounded to 6 places",
+    "counted": "false marks the uncounted diagnostic run; its verdict is not a gate result",
     "gate": "over the final outcomes with environment outcomes removed: s judge failures, t transport failures, k = n - s - t; fail when s >= 2, otherwise stopped by environment when any environment outcome, pass when t = 0, otherwise undecided by transport",
     "interval": "Wilson interval, scipy.stats.binomtest(k, n).proportion_ci(method='wilson'), rounded to 4 places",
     "percent": "round(100 * k / n), beside the count",

@@ -63,6 +63,8 @@ METHOD = {
     "failures, t transport failures, k = n - s - t; fail when s >= 2, otherwise "
     "stopped by environment when any environment outcome, pass when t = 0, "
     "otherwise undecided by transport",
+    "counted": "false marks the uncounted diagnostic run; its verdict is not a gate "
+    "result",
     "transport": "attempts from the trace events of each request; null for a run "
     "recorded without them",
     "cost": "the mean cost of each step's requests with usage, priced with the "

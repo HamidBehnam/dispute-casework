@@ -1,3 +1,4 @@
+import asyncio
 import json
 import threading
 from collections.abc import Iterator
@@ -95,6 +96,17 @@ def test_a_schema_request_asks_for_json_mode_at_temperature_zero(
 ) -> None:
     chat_server.replies = [(200, completion(TRUTHS))]
     assert judge_at(chat_server).generate(PROMPT, Truths) == Truths(truths=["a"])
+    assert chat_server.bodies[0]["response_format"] == {"type": "json_object"}
+    assert chat_server.bodies[0]["temperature"] == 0.0
+    assert "max_tokens" not in chat_server.bodies[0]
+
+
+def test_an_async_schema_request_asks_for_json_mode_and_is_parsed(
+    chat_server: ChatServer,
+) -> None:
+    chat_server.replies = [(200, completion(TRUTHS))]
+    answer = asyncio.run(judge_at(chat_server).a_generate(PROMPT, Truths))
+    assert answer == Truths(truths=["a"])
     assert chat_server.bodies[0]["response_format"] == {"type": "json_object"}
     assert chat_server.bodies[0]["temperature"] == 0.0
     assert "max_tokens" not in chat_server.bodies[0]
