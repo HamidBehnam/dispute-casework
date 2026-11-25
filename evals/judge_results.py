@@ -263,7 +263,9 @@ def cost(requests: list[dict[str, Any]], prices: dict[str, Any]) -> dict[str, An
 
 
 def results(raw: Path) -> dict[str, Any]:
-    prices = json.loads((raw / "prices-deepseek-eastus2.json").read_text())
+    prices = json.loads(
+        (raw / "prices-deepseek-eastus2.json").read_text(encoding="utf-8")
+    )
     runs = {}
     for name, counted in RUNS.items():
         requests = lines(raw / name / "requests.jsonl")
@@ -284,7 +286,9 @@ def results(raw: Path) -> dict[str, Any]:
 
 
 def main() -> None:
-    RESULTS.write_text(json.dumps(results(RAW), indent=2, sort_keys=True) + "\n")
+    RESULTS.write_text(
+        json.dumps(results(RAW), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 if __name__ == "__main__":
