@@ -73,6 +73,7 @@ def chat_server() -> Iterator[ChatServer]:
     threading.Thread(target=server.http.serve_forever, daemon=True).start()
     yield server
     server.http.shutdown()
+    server.http.server_close()
 
 
 def judge_at(server: ChatServer) -> Judge:
