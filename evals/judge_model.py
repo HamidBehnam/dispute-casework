@@ -24,17 +24,19 @@ class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
     own model classes do, so the metric receives the schema instance.
     """
 
+    model: ChatOpenAI  # type: ignore[assignment]
+
     def __init__(self, settings: FoundrySettings) -> None:
-        self.chat = chat_model(
-            settings,
+        self.settings = settings
+        super().__init__(JUDGE_DEPLOYMENT)
+
+    def load_model(self) -> ChatOpenAI:  # type: ignore[override]
+        return chat_model(
+            self.settings,
             JUDGE_DEPLOYMENT,
             timeout_seconds=JUDGE_TIMEOUT_SECONDS,
             max_retries=JUDGE_MAX_RETRIES,
         )
-        super().__init__(JUDGE_DEPLOYMENT)
-
-    def load_model(self) -> ChatOpenAI:  # type: ignore[override]
-        return self.chat
 
     def get_model_name(self) -> str:
         return JUDGE_DEPLOYMENT
@@ -53,8 +55,8 @@ class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
         self, schema: type[BaseModel] | None
     ) -> Runnable[LanguageModelInput, AIMessage]:
         if schema is None:
-            return self.chat.bind(temperature=0.0)
-        return self.chat.bind(temperature=0.0, response_format={"type": "json_object"})
+            return self.model.bind(temperature=0.0)
+        return self.model.bind(temperature=0.0, response_format={"type": "json_object"})
 
 
 def parse(message: AIMessage, schema: type[BaseModel] | None) -> BaseModel | str:
