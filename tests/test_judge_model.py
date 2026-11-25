@@ -84,10 +84,10 @@ def test_the_judge_client_carries_its_timeout_under_a_key_and_under_a_token_prov
     key: str | None,
 ) -> None:
     judge = Judge(FoundrySettings(endpoint="https://ai-test.example", key=key))
-    assert judge.chat.root_client.timeout == JUDGE_TIMEOUT_SECONDS == 360
-    assert judge.chat.root_async_client.timeout == JUDGE_TIMEOUT_SECONDS
-    assert judge.chat.root_client.max_retries == JUDGE_MAX_RETRIES == 8
-    assert judge.chat.root_async_client.max_retries == JUDGE_MAX_RETRIES
+    assert judge.model.root_client.timeout == JUDGE_TIMEOUT_SECONDS == 360
+    assert judge.model.root_async_client.timeout == JUDGE_TIMEOUT_SECONDS
+    assert judge.model.root_client.max_retries == JUDGE_MAX_RETRIES == 8
+    assert judge.model.root_async_client.max_retries == JUDGE_MAX_RETRIES
 
 
 def test_a_schema_request_asks_for_json_mode_at_temperature_zero(
