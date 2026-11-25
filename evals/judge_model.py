@@ -1,7 +1,7 @@
 """The evaluation judge: DeepSeek-V4-Pro through the project's Foundry chat client."""
 
+from deepeval.metrics.utils import trimAndLoadJson
 from deepeval.models import DeepEvalBaseLLM
-from deepeval.models.llms.utils import trim_and_load_json
 from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import Runnable
@@ -61,4 +61,4 @@ def parse(message: AIMessage, schema: type[BaseModel] | None) -> BaseModel | str
     content = str(message.text)
     if schema is None:
         return content
-    return schema.model_validate(trim_and_load_json(content))
+    return schema.model_validate(trimAndLoadJson(content))
