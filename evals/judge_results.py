@@ -72,6 +72,18 @@ METHOD = {
     "scheduled run is 450 measurements per metric and the comparison 2,700; the "
     "no-cache bound prices every prompt token at the input meter; USD rounded to "
     "6 places",
+    "measured_with": {
+        "first-run": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, the "
+        "SDK's default of 2 retries; harness at bb3f134, the last commit before "
+        "the run started",
+        "diagnostic": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, the "
+        "SDK's default of 2 retries; harness at f7ddcc9, the last commit before "
+        "the run started",
+        "rerun": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, 5 retries; "
+        "harness at 960b6bf, the last commit before the run started",
+        "committed_judge": "360 s timeout and 8 retries, decided after these runs "
+        "and measured by none of them",
+    },
     "percent": "round(100 * k / n), beside the count",
     "versions": {"scipy": version("scipy")},
 }

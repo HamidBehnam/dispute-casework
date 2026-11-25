@@ -6,6 +6,12 @@
     "counted": "false marks the uncounted diagnostic run; its verdict is not a gate result",
     "gate": "over the final outcomes with environment outcomes removed: s judge failures, t transport failures, k = n - s - t; fail when s >= 2, otherwise stopped by environment when any environment outcome, pass when t = 0, otherwise undecided by transport",
     "interval": "Wilson interval, scipy.stats.binomtest(k, n).proportion_ci(method='wilson'), rounded to 4 places",
+    "measured_with": {
+      "committed_judge": "360 s timeout and 8 retries, decided after these runs and measured by none of them",
+      "diagnostic": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, the SDK's default of 2 retries; harness at f7ddcc9, the last commit before the run started",
+      "first-run": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, the SDK's default of 2 retries; harness at bb3f134, the last commit before the run started",
+      "rerun": "DeepSeek-V4-Pro on chat completions, 1740 s timeout, 5 retries; harness at 960b6bf, the last commit before the run started"
+    },
     "percent": "round(100 * k / n), beside the count",
     "slots": "a slot is one case, repeat and metric; its final outcome is its re-measurement's when it has one, otherwise its first",
     "transport": "attempts from the trace events of each request; null for a run recorded without them",
