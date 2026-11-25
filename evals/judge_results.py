@@ -1,10 +1,10 @@
 """Writes docs/results/0009-judge-selection.json from the judge-selection runs.
 
 The raw readings live under docs/results/0009-judge-selection-raw: per run the
-measurement rows, the request rows (a failed answer's headers and body removed)
-and the summary the run wrote, with the frozen inputs and the retail prices
-read before the first run. Every figure in the results file is computed here
-from them.
+measurement rows, the request rows (without the response headers of failed
+attempts; a 429's error object stays in the request's `error`) and the summary
+the run wrote, with the frozen inputs and the retail prices read before the
+first run. Every figure in the results file is computed here from them.
 
 Usage: python evals/judge_results.py
 """
