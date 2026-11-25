@@ -32,8 +32,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "cryptography==50.0.2",
     "deepeval==4.2.8",
     "ir-measures==0.4.3",
+    "langgraph-checkpoint==4.3.0",
     "mypy==2.3.1",
     "openai==3.22.1",
     "pip-audit==2.10.1",
