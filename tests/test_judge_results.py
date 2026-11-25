@@ -135,5 +135,5 @@ def test_the_figures_match_hand_counts_of_the_raw_readings() -> None:
     handshakes = runs["diagnostic"]["transport"][
         "handshake_failures_of_new_connections"
     ]
-    assert (handshakes["k"], handshakes["n"]) == (47, 318)
+    assert (handshakes["k"], handshakes["n"], handshakes["percent"]) == (47, 318, 15)
     assert runs["rerun"]["cost"]["estimate_usd"]["steps"]["Truths"] == 0.001001
