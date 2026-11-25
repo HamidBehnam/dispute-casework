@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
-from judge_results import RAW, RESULTS, gate, measurement_counts, results
+from judge_results import RAW, RESULTS, gate, measurement_counts, results, slots
 
 
 def test_results_file_is_current(tmp_path: Path) -> None:
@@ -50,3 +50,48 @@ def test_an_environment_slot_stops_the_run_and_is_not_counted() -> None:
     assert counts["environment"] == 1
     assert (counts["valid"]["k"], counts["valid"]["n"]) == (2, 2)
     assert counts["verdict"] == "stopped by environment, undecided"
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "parse_error",
+        "schema_error",
+        "blank_content",
+        "hidden_re_request",
+        "exception_other",
+    ],
+)
+def test_every_judge_failure_counts_in_s(failure: str) -> None:
+    verdict = gate(["valid"] * 99 + [failure], stopped=False)
+    assert (verdict.k, verdict.s, verdict.t) == (99, 1, 0)
+
+
+@pytest.mark.parametrize("failure", ["transport_error", "case_timeout"])
+def test_every_transport_failure_counts_in_t(failure: str) -> None:
+    verdict = gate(["valid"] * 99 + [failure], stopped=False)
+    assert (verdict.k, verdict.s, verdict.t) == (99, 0, 1)
+
+
+def test_a_re_measured_slot_ends_with_its_re_measurement() -> None:
+    def row(metric: str, outcome: str, remeasured: bool) -> dict[str, object]:
+        return {
+            "case_id": "q01",
+            "repeat": 1,
+            "metric": metric,
+            "outcome": outcome,
+            "remeasured": remeasured,
+        }
+
+    measurements = [
+        row("faithfulness", "transport_error", False),
+        row("geval", "valid", False),
+        row("faithfulness", "valid", True),
+    ]
+    run_slots = slots(measurements)
+    assert run_slots == [
+        {"slot": "q01-r1-faithfulness", "first": "transport_error", "final": "valid"},
+        {"slot": "q01-r1-geval", "first": "valid", "final": "valid"},
+    ]
+    counts = measurement_counts([slot["final"] for slot in run_slots])
+    assert (counts["valid"]["k"], counts["t"]) == (2, 0)
