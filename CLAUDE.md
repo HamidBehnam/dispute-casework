@@ -31,6 +31,10 @@ The live sign-in suite runs locally and never in CI. It needs the web build, the
 
     uv run pytest -m live tests/test_live_identity.py
 
+The judge-selection results file is regenerated from its committed raw readings, with the environment and the user site ignored:
+
+    .venv/bin/python -E -s evals/judge_results.py
+
 ## Code
 
 - Maximum simplicity, subject to four constraints holding at once: correct (including failure paths, authorization paths and idempotency of writes); industry-standard (how it is done in production today, never a tutorial pattern); acceptable to a senior reviewer without changes; self-explanatory. When they conflict: correct, then industry-standard, then acceptable, then simple.
