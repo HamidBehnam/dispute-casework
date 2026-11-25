@@ -134,21 +134,16 @@ def test_an_answer_is_parsed_into_the_schema_unaltered(
     assert judge_at(chat_server).generate(PROMPT, Truths) == expected
 
 
-@pytest.mark.parametrize(
-    ("content", "schema", "raised", "message"),
-    [
-        ("not json", Truths, ValueError, "invalid JSON"),
-        ("   ", Truths, ValueError, "invalid JSON"),
-        ('{"truths": "x"}', Truths, ValidationError, "truths"),
-        ('{"claims": ["a"]}', Truths, ValidationError, "truths"),
-        (
-            '{"verdicts": [{"verdict": "probably"}]}',
-            Verdicts,
-            ValidationError,
-            "verdict",
-        ),
-    ],
-)
+NOT_THE_SCHEMA: list[tuple[str, type[BaseModel], type[Exception], str]] = [
+    ("not json", Truths, ValueError, "invalid JSON"),
+    ("   ", Truths, ValueError, "invalid JSON"),
+    ('{"truths": "x"}', Truths, ValidationError, "truths"),
+    ('{"claims": ["a"]}', Truths, ValidationError, "truths"),
+    ('{"verdicts": [{"verdict": "probably"}]}', Verdicts, ValidationError, "verdict"),
+]
+
+
+@pytest.mark.parametrize(("content", "schema", "raised", "message"), NOT_THE_SCHEMA)
 def test_an_answer_that_is_not_the_schema_raises(
     chat_server: ChatServer,
     content: str,
@@ -159,3 +154,16 @@ def test_an_answer_that_is_not_the_schema_raises(
     chat_server.replies = [(200, completion(content))]
     with pytest.raises(raised, match=message):
         judge_at(chat_server).generate(PROMPT, schema)
+
+
+@pytest.mark.parametrize(("content", "schema", "raised", "message"), NOT_THE_SCHEMA)
+def test_an_async_answer_that_is_not_the_schema_raises(
+    chat_server: ChatServer,
+    content: str,
+    schema: type[BaseModel],
+    raised: type[Exception],
+    message: str,
+) -> None:
+    chat_server.replies = [(200, completion(content))]
+    with pytest.raises(raised, match=message):
+        asyncio.run(judge_at(chat_server).a_generate(PROMPT, schema))
