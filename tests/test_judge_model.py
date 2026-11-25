@@ -7,7 +7,6 @@ from typing import Any
 
 import openai
 import pytest
-from deepeval.errors import DeepEvalError
 from deepeval.metrics.faithfulness.schema import Truths, Verdicts
 from judge_model import JUDGE_MAX_RETRIES, JUDGE_TIMEOUT_SECONDS, Judge
 from pydantic import BaseModel, ValidationError
@@ -120,27 +119,42 @@ def test_a_request_gives_up_after_its_retries(chat_server: ChatServer) -> None:
 
 
 @pytest.mark.parametrize(
-    ("content", "schema", "raised"),
+    ("content", "expected"),
     [
-        ("```json\n" + TRUTHS + "\n```", Truths, None),
-        ('{"truths": ["a"]', Truths, None),
-        ("not json", Truths, DeepEvalError),
-        ("   ", Truths, DeepEvalError),
-        ('{"truths": "x"}', Truths, ValidationError),
-        ('{"claims": ["a"]}', Truths, ValidationError),
-        ('{"verdicts": [{"verdict": "probably"}]}', Verdicts, ValidationError),
+        ("```json\n" + TRUTHS + "\n```", Truths(truths=["a"])),
+        ('{"truths": ["a"]', Truths(truths=["a"])),
+        ('{"truths": ["see 1005.6(b), }"]}', Truths(truths=["see 1005.6(b), }"])),
     ],
 )
-def test_an_answer_is_parsed_by_deepevals_own_parse(
+def test_an_answer_is_parsed_into_the_schema_unaltered(
+    chat_server: ChatServer, content: str, expected: Truths
+) -> None:
+    chat_server.replies = [(200, completion(content))]
+    assert judge_at(chat_server).generate(PROMPT, Truths) == expected
+
+
+@pytest.mark.parametrize(
+    ("content", "schema", "raised", "message"),
+    [
+        ("not json", Truths, ValueError, "invalid JSON"),
+        ("   ", Truths, ValueError, "invalid JSON"),
+        ('{"truths": "x"}', Truths, ValidationError, "truths"),
+        ('{"claims": ["a"]}', Truths, ValidationError, "truths"),
+        (
+            '{"verdicts": [{"verdict": "probably"}]}',
+            Verdicts,
+            ValidationError,
+            "verdict",
+        ),
+    ],
+)
+def test_an_answer_that_is_not_the_schema_raises(
     chat_server: ChatServer,
     content: str,
     schema: type[BaseModel],
-    raised: type[Exception] | None,
+    raised: type[Exception],
+    message: str,
 ) -> None:
     chat_server.replies = [(200, completion(content))]
-    judge = judge_at(chat_server)
-    if raised is None:
-        assert isinstance(judge.generate(PROMPT, schema), schema)
-    else:
-        with pytest.raises(raised):
-            judge.generate(PROMPT, schema)
+    with pytest.raises(raised, match=message):
+        judge_at(chat_server).generate(PROMPT, schema)
