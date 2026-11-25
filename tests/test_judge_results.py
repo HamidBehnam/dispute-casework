@@ -2,7 +2,15 @@ import json
 from pathlib import Path
 
 import pytest
-from judge_results import RAW, RESULTS, gate, measurement_counts, results, slots
+from judge_results import (
+    RAW,
+    RESULTS,
+    count,
+    gate,
+    measurement_counts,
+    results,
+    slots,
+)
 
 
 def test_results_file_is_current(tmp_path: Path) -> None:
@@ -95,3 +103,37 @@ def test_a_re_measured_slot_ends_with_its_re_measurement() -> None:
     ]
     counts = measurement_counts([slot["final"] for slot in run_slots])
     assert (counts["valid"]["k"], counts["t"]) == (2, 0)
+
+
+def test_the_wilson_interval_matches_its_closed_form() -> None:
+    assert count(100, 100) == {
+        "k": 100,
+        "n": 100,
+        "percent": 100,
+        "interval": [0.963, 1.0],
+    }
+    assert count(92, 100) == {
+        "k": 92,
+        "n": 100,
+        "percent": 92,
+        "interval": [0.85, 0.9589],
+    }
+
+
+def test_the_figures_match_hand_counts_of_the_raw_readings() -> None:
+    runs = results(RAW)["runs"]
+    first_run = runs["first-run"]["measurements"]
+    assert (first_run["valid"]["k"], first_run["valid"]["n"], first_run["t"]) == (
+        92,
+        100,
+        8,
+    )
+    assert runs["rerun"]["transport"]["attempts_after_a_429"] == {
+        "new_connection": 291,
+        "reused_connection": 2,
+    }
+    handshakes = runs["diagnostic"]["transport"][
+        "handshake_failures_of_new_connections"
+    ]
+    assert (handshakes["k"], handshakes["n"]) == (47, 318)
+    assert runs["rerun"]["cost"]["estimate_usd"]["steps"]["Truths"] == 0.001001
