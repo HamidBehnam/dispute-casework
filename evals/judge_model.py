@@ -20,8 +20,9 @@ JUDGE_MAX_RETRIES = 8
 class Judge(DeepEvalBaseLLM):  # type: ignore[no-untyped-call]
     """A DeepEval model on the judge deployment.
 
-    With a schema it asks for JSON mode and parses the answer the way DeepEval's
-    own model classes do, so the metric receives the schema instance.
+    With a schema it asks for JSON mode and parses the answer with the helper
+    DeepEval's metrics use for a text answer, then validates it, so the metric
+    receives the schema instance.
     """
 
     model: ChatOpenAI  # type: ignore[assignment]
