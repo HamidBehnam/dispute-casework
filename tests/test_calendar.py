@@ -1,6 +1,7 @@
 """The committed bank calendar and the generator that writes it."""
 
 import json
+from collections.abc import Callable
 from datetime import date
 from typing import Any
 
@@ -23,7 +24,9 @@ def committed() -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("calendar", [generated, committed])
-def test_saturday_holiday_not_observed_friday(calendar: Any) -> None:
+def test_saturday_holiday_not_observed_friday(
+    calendar: Callable[[], dict[str, Any]],
+) -> None:
     closed = calendar()["closed_weekdays"]
     assert closed.keys().isdisjoint(SATURDAY_HOLIDAY_FRIDAYS)
     assert SUNDAY_HOLIDAY_MONDAY in closed
