@@ -90,13 +90,31 @@ def test_each_tier_sees_exactly_its_labels(
     assert dict(counted) == {label: len(rows[label]) for label in LABELS[tier]}
 
 
+ROW_SECURITY = {
+    "app.actions": (True, True),
+    "app.approvals": (True, True),
+    "app.audit_events": (True, True),
+    "app.cases": (True, True),
+    "bank.ledger_entries": (False, False),
+    "corpus.chunks": (True, True),
+    "lg.checkpoint_blobs": (False, False),
+    "lg.checkpoint_migrations": (False, False),
+    "lg.checkpoint_writes": (False, False),
+    "lg.checkpoints": (False, False),
+}
+
+
 def test_force_rls_on_protected_tables(database: DatabaseSettings) -> None:
-    with connect(database, options="-c role=tier_full") as connection:
-        row = connection.execute(
-            "SELECT relrowsecurity, relforcerowsecurity FROM pg_class"
-            " WHERE oid = 'corpus.chunks'::regclass"
-        ).fetchone()
-    assert row == (True, True)
+    with connect(database) as connection:
+        rows = connection.execute(
+            "SELECT n.nspname || '.' || c.relname, c.relrowsecurity,"
+            " c.relforcerowsecurity FROM pg_class c"
+            " JOIN pg_namespace n ON n.oid = c.relnamespace"
+            " WHERE c.relkind = 'r' AND n.nspname IN ('app', 'bank', 'corpus', 'lg')"
+        ).fetchall()
+    assert {table: (enabled, forced) for table, enabled, forced in rows} == (
+        ROW_SECURITY
+    )
 
 
 def test_no_role_bypasses_rls(

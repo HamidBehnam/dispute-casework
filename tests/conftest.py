@@ -171,6 +171,12 @@ def runner(database: DatabaseSettings) -> DatabaseSettings:
 
 
 @pytest.fixture(scope="session")
+def superuser(database: DatabaseSettings) -> DatabaseSettings:
+    """Row security does not bind a superuser, so fixtures seed rows through it."""
+    return DatabaseSettings(url=url(SUPERUSER))
+
+
+@pytest.fixture(scope="session")
 def loader_grant(
     database: DatabaseSettings,
 ) -> Callable[[], AbstractContextManager[None]]:
