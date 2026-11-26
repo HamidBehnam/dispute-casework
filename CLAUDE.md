@@ -35,6 +35,10 @@ The judge-selection results file is regenerated from its committed raw readings,
 
     .venv/bin/python -E -s evals/judge_results.py
 
+The bank calendar is regenerated from the pinned holidays release:
+
+    uv run python -m dispute_casework.calendar_build
+
 ## Code
 
 - Maximum simplicity, subject to four constraints holding at once: correct (including failure paths, authorization paths and idempotency of writes); industry-standard (how it is done in production today, never a tutorial pattern); acceptable to a senior reviewer without changes; self-explanatory. When they conflict: correct, then industry-standard, then acceptable, then simple.
