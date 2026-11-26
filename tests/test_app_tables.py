@@ -46,6 +46,7 @@ OTHER_CASE = uuid.UUID(int=103)
 WAITING_ACTION = uuid.UUID(int=201)
 SECOND_WAITING_ACTION = uuid.UUID(int=202)
 OTHER_ACTION = uuid.UUID(int=203)
+IN_REVIEW_ACTION = uuid.UUID(int=204)
 SEEDED_KEY = "seeded-approval"
 OTHER_KEY = "other-approval"
 
@@ -76,14 +77,15 @@ def seeded(superuser: DatabaseSettings) -> Iterator[None]:
             [(case, PREPARER, status) for status, case in PREPARER_CASES.items()]
             + [(OTHER_CASE, OTHER_PREPARER, "intake")],
         )
-        connection.execute(
+        connection.cursor().executemany(
             "INSERT INTO app.actions (action_id, case_id, preparer_oid, payload)"
-            " VALUES (%s, %s, %s, '{}'), (%s, %s, %s, '{}'), (%s, %s, %s, '{}')",
-            (
-                *(WAITING_ACTION, WAITING_CASE, PREPARER),
-                *(SECOND_WAITING_ACTION, WAITING_CASE, PREPARER),
-                *(OTHER_ACTION, OTHER_CASE, OTHER_PREPARER),
-            ),
+            " VALUES (%s, %s, %s, '{}')",
+            [
+                (WAITING_ACTION, WAITING_CASE, PREPARER),
+                (SECOND_WAITING_ACTION, WAITING_CASE, PREPARER),
+                (OTHER_ACTION, OTHER_CASE, OTHER_PREPARER),
+                (IN_REVIEW_ACTION, OWN_CASE, PREPARER),
+            ],
         )
         connection.execute(
             "INSERT INTO app.approvals (action_id, idempotency_key, approver_oid,"
@@ -371,7 +373,7 @@ def test_each_principal_sees_exactly_its_cases(
         (
             PREPARER,
             ("preparer",),
-            {WAITING_ACTION, SECOND_WAITING_ACTION},
+            {WAITING_ACTION, SECOND_WAITING_ACTION, IN_REVIEW_ACTION},
             {SEEDED_KEY},
             {WAITING_CASE},
         ),
@@ -385,7 +387,7 @@ def test_each_principal_sees_exactly_its_cases(
         (
             VIEWER,
             ("restricted_viewer",),
-            {WAITING_ACTION, SECOND_WAITING_ACTION, OTHER_ACTION},
+            {WAITING_ACTION, SECOND_WAITING_ACTION, OTHER_ACTION, IN_REVIEW_ACTION},
             {SEEDED_KEY, OTHER_KEY},
             {WAITING_CASE, OTHER_CASE},
         ),
@@ -498,6 +500,73 @@ def test_an_approval_naming_another_approver_is_refused(
         pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
     ):
         insert(connection, "app.approvals", STRANGER)
+
+
+def test_an_approval_of_an_action_the_approver_cannot_see_is_refused(
+    database: DatabaseSettings,
+) -> None:
+    """The action's case is still in review, outside the approver's statuses."""
+    with (
+        acting_as(database, APPROVER, "approver") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
+    ):
+        connection.execute(
+            "INSERT INTO app.approvals (action_id, idempotency_key, approver_oid,"
+            " preparer_oid, decision) VALUES (%s, 'unseen', %s, %s, 'approve')",
+            (IN_REVIEW_ACTION, APPROVER, PREPARER),
+        )
+
+
+def test_an_audit_event_naming_another_actor_is_refused(
+    database: DatabaseSettings,
+) -> None:
+    with (
+        acting_as(database, PREPARER, "preparer") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
+    ):
+        connection.execute(
+            "INSERT INTO app.audit_events (case_id, actor_oid) VALUES (%s, %s)",
+            (OWN_CASE, STRANGER),
+        )
+
+
+def test_an_audit_event_on_a_case_the_actor_cannot_see_is_refused(
+    database: DatabaseSettings,
+) -> None:
+    with (
+        acting_as(database, PREPARER, "preparer") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
+    ):
+        connection.execute(
+            "INSERT INTO app.audit_events (case_id, actor_oid) VALUES (%s, %s)",
+            (OTHER_CASE, PREPARER),
+        )
+
+
+def test_an_action_by_a_principal_without_the_preparer_role_is_refused(
+    database: DatabaseSettings,
+) -> None:
+    """The principal prepared the case and sees it, so only the missing role refuses."""
+    with (
+        acting_as(database, PREPARER, "restricted_viewer") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
+    ):
+        insert(connection, "app.actions", PREPARER)
+
+
+def test_an_action_on_another_preparers_case_is_refused(
+    database: DatabaseSettings,
+) -> None:
+    """The principal sees the case through restricted_viewer; only ownership refuses."""
+    with (
+        acting_as(database, PREPARER, "preparer", "restricted_viewer") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
+    ):
+        connection.execute(
+            "INSERT INTO app.actions (case_id, preparer_oid, payload)"
+            " VALUES (%s, %s, '{}')",
+            (OTHER_CASE, OTHER_PREPARER),
+        )
 
 
 def test_a_case_naming_another_preparer_is_refused(
