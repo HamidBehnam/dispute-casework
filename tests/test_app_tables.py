@@ -438,7 +438,7 @@ def test_without_the_setting_no_app_row_is_visible_or_writable(
     with connect(database, options="-c role=app_rw") as connection:
         assert connection.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
         with pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"):
-            insert(connection, table, PREPARER)
+            insert(connection, table, APPROVER)
 
 
 def test_a_setting_from_an_earlier_transaction_leaves_nothing_visible(
