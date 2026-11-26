@@ -76,7 +76,7 @@ def upgrade(
         oid("preparer_oid"),
         sa.Column("status", sa.Text, nullable=False, server_default="intake"),
         sa.CheckConstraint(f"status IN ({one_of(CASE_STATES)})", name="case_status"),
-        # The target of the preparer copies in actions and approvals.
+        # The target of the preparer copy in actions.
         sa.UniqueConstraint("case_id", "preparer_oid"),
         schema="app",
     )
@@ -93,6 +93,7 @@ def upgrade(
         sa.ForeignKeyConstraint(
             ["case_id", "preparer_oid"], ["app.cases.case_id", "app.cases.preparer_oid"]
         ),
+        # The target of the preparer copy in approvals.
         sa.UniqueConstraint("action_id", "preparer_oid"),
         schema="app",
     )
