@@ -4,13 +4,13 @@ Status: Accepted. Supersedes 0005 in part: in 0005 the "Role bound at connect, a
 
 ## Context
 
-A case, the action proposed for it, the approval of that action and the case's audit trail live in the database, and the database must hold the design's guarantees on them even when the application above it is wrong. Those guarantees are: each role sees and writes only its own rows, an approver never approves a case they prepared, an action is decided at most once, and the audit trail is never rewritten. The ledger the mock bank posts to needs the same one-key-per-write rule. Deadlines count business days, so the bank needs a calendar that CI can read without a network call, for the two years the test dates fall in.
+A case, the action proposed for it, the approval of that action and the case's audit trail live in the database, and the database must hold the design's guarantees on them even when the application above it is wrong. Those guarantees are: each role sees and writes only its own rows, an approver never approves a case they prepared, an action is decided at most once, and the audit trail is never rewritten. The ledger the mock bank posts to needs the same one-key-per-write rule. Deadlines count business days, so the bank needs a calendar fixed in a reviewed file, so that CI and the deadline tool read the same dates whatever holidays release is installed, for the two years the test dates fall in.
 
 ## Decision
 
 - **Revision 0004, forward-only on 0003, in one transaction** (`transaction_per_migration=True` in `migrations/env.py`). It creates `app.cases`, `app.actions`, `app.approvals`, `app.audit_events` and `bank.ledger_entries`.
   - `app_owner` owns the four app tables and `bank_owner` owns the ledger.
-  - Row-level security is enabled and forced on the four app tables.
+  - Row-level security is enabled and forced on the four app tables. It is forced because PostgreSQL 17 lets an owner past it otherwise: "Table owners normally bypass row security as well, though a table owner can choose to be subject to row security with ALTER TABLE".
   - The ledger has no policy and no grant to any role the application can set.
 - **The role `app_rw`**, NOLOGIN, granted to `dcw_service` `WITH INHERIT FALSE`, as the tier roles are. A connection binds it with `-c role=app_rw`.
 - **The principal comes from two transaction-scoped settings**, `app.oid` and `app.roles` (space-separated role names).
@@ -34,10 +34,11 @@ A case, the action proposed for it, the approval of that action and the case's a
 - **Grants.**
   - `app_rw` holds USAGE on `app`, SELECT on the four tables, and INSERT on named columns only. `status`, `event_id` and `occurred_at` take their defaults.
   - No role the application can set holds UPDATE, DELETE or TRUNCATE on an app table.
-  - Every foreign key is NO ACTION.
+  - Every foreign key is NO ACTION. A referential action runs as the referencing table's owner with forced row security off, so a cascade would change audit rows outside every policy.
 - **One decision per action.** `app.approvals` carries `UNIQUE (action_id)` and `UNIQUE (idempotency_key)`, both NOT NULL. `bank.ledger_entries` is minimal at this step: `entry_id` and `idempotency_key`, NOT NULL and UNIQUE.
 - **Approver ≠ preparer, declaratively.**
   - `app.actions` and `app.approvals` copy the case's `preparer_oid`, NOT NULL. Composite foreign keys tie the copy to `cases(case_id, preparer_oid)` and to `actions(action_id, preparer_oid)`.
+  - The copy is NOT NULL because a NULL would pass both checks. PostgreSQL 17: "a check constraint is satisfied if the check expression evaluates to true or the null value", and "MATCH SIMPLE allows any of the foreign key columns to be null; if any of them are null, the row is not required to have a match in the referenced table."
   - `CHECK (approver_oid <> preparer_oid)` refuses an approval by the preparer.
 - **One login.** The application keeps one login. Its reach is recorded with two limits:
   - Granting `app_rw` to `dcw_service` lets any connection of the login, a tier connection included, `SET ROLE app_rw`.
@@ -55,7 +56,7 @@ A case, the action proposed for it, the approval of that action and the case's a
 
 ## What it does
 
-The application reads and writes cases, actions, approvals and audit events as `app_rw`, with the user's object ID and roles set for the transaction. Postgres then shows each role only its rows and refuses:
+A connection bound to `app_rw`, with the user's object ID and roles set for the transaction, sees only that role's rows, and Postgres refuses:
 - a write the role may not make;
 - a second decision on an action;
 - an approval by the case's preparer;
@@ -63,7 +64,7 @@ The application reads and writes cases, actions, approvals and audit events as `
 - an audit event in another person's name or on a case the writer cannot see;
 - any update, delete or truncate of the audit trail by the application's roles.
 
-The deadline code reads its business days from a committed file, not from a library call at run time.
+The application's `app_rw` engine and the function that sets the two settings land with their first caller; at this step the tests set them with SQL. The deadline tool (step 10) will read its business days from the committed file, not from a library call at run time.
 
 ## What it changed and what it costs
 
@@ -90,3 +91,4 @@ The deadline code reads its business days from a committed file, not from a libr
 - **Transaction-scoped settings** over a database role per persona. The design names the setting for the app tables, and the corpus's reasons against it, the vendor search on its own pooled connections, do not apply here.
 - **One login** over one login per tier. Separate logins would stop a `SET ROLE` from one tier to another inside a session, but not a compromised process that holds every credential, since the replica's containers share their identities. They would also need one principal and one connection limit per tier against one shared budget.
 - **The calendar now, from XFED,** over waiting for the deadline tool or writing the dates by hand. The Saturday rule is tested now against the Federal Reserve's own dates, and a hand-written list would not be vendor-based.
+- **XFED** over `holidays.US` or the stock-exchange calendar with an override in the project. Those calendars close the Friday before a Saturday holiday, which the Federal Reserve Banks keep open, so they would need an override. XFED needs none.
