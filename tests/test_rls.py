@@ -173,6 +173,7 @@ def test_the_login_can_set_exactly_the_roles_dcw_service_holds(
         login = connection.info.user
     assert memberships == [
         (login, "dcw_service", True, True),
+        ("dcw_service", "app_rw", False, True),
         ("dcw_service", "lg_app", False, True),
         ("dcw_service", "tier_full", False, True),
         ("dcw_service", "tier_public", False, True),

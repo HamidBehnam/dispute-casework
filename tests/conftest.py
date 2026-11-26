@@ -48,6 +48,7 @@ MIGRATION_ROLES = [
     "tier_public",
     "tier_full",
     "lg_app",
+    "app_rw",
     "corpus_owner",
     "lg_owner",
     "bank_owner",
