@@ -35,8 +35,9 @@ ACTION_STATES = ("proposed", "approved", "returned", "rejected", "executed")
 DECISIONS = ("approve", "return", "reject")
 APPROVER_STATES = CASE_STATES[CASE_STATES.index("awaiting_approval") :]
 
-# The principal comes from a transaction-scoped setting; a missing or empty
-# setting reads as NULL and matches no row.
+# The principal and its roles come from transaction-scoped settings. A missing
+# or empty setting reads as NULL: no comparison with the principal holds, and
+# no role is held.
 PRINCIPAL = "NULLIF(current_setting('app.oid', true), '')::uuid"
 
 
