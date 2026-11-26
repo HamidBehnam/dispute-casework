@@ -29,7 +29,7 @@ def render() -> str:
         "business_days": "Monday to Friday, except the closed weekdays",
         "closed_weekdays": {
             day.isoformat(): name
-            for day, name in sorted(reserve_banks.items())
+            for day, name in reserve_banks.items()
             if not reserve_banks.is_weekend(day)
         },
         "source": f"holidays {version('holidays')}, market {MARKET}",
