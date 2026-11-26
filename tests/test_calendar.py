@@ -1,7 +1,7 @@
 """The committed bank calendar and the generator that writes it."""
 
 import json
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 import pytest
@@ -47,4 +47,3 @@ def test_the_calendar_covers_exactly_its_two_years() -> None:
     assert (first, last) == (date(2026, 1, 1), date(2027, 12, 31))
     closed = [date.fromisoformat(day) for day in calendar["closed_weekdays"]]
     assert all(first <= day <= last for day in closed)
-    assert last - first == timedelta(days=729)
