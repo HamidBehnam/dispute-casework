@@ -20,8 +20,6 @@ CALENDAR = Path(__file__).parent / "calendar" / f"bank-{YEARS[0]}-{YEARS[-1]}.js
 
 
 def render() -> str:
-    # expand=False keeps the calendar to these years; a holiday outside them
-    # would otherwise be added on lookup, or read as a working day.
     reserve_banks = holidays.financial_holidays(MARKET, years=YEARS, expand=False)
     calendar = {
         "first_day": date(YEARS[0], 1, 1).isoformat(),
