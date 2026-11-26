@@ -19,24 +19,18 @@ MARKET = "XFED"
 CALENDAR = Path(__file__).parent / "calendar" / f"bank-{YEARS[0]}-{YEARS[-1]}.json"
 
 
-def closed_weekdays() -> dict[date, str]:
+def render() -> str:
     # expand=False keeps the calendar to these years; a holiday outside them
     # would otherwise be added on lookup, or read as a working day.
     reserve_banks = holidays.financial_holidays(MARKET, years=YEARS, expand=False)
-    return {
-        day: name
-        for day, name in sorted(reserve_banks.items())
-        if not reserve_banks.is_weekend(day)
-    }
-
-
-def render() -> str:
     calendar = {
         "first_day": date(YEARS[0], 1, 1).isoformat(),
         "last_day": date(YEARS[-1], 12, 31).isoformat(),
         "business_days": "Monday to Friday, except the closed weekdays",
         "closed_weekdays": {
-            day.isoformat(): name for day, name in closed_weekdays().items()
+            day.isoformat(): name
+            for day, name in sorted(reserve_banks.items())
+            if not reserve_banks.is_weekend(day)
         },
         "source": f"holidays {version('holidays')}, market {MARKET}",
     }
