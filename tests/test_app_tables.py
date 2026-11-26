@@ -17,8 +17,31 @@ VIEWER = uuid.UUID(int=3)
 OTHER_PREPARER = uuid.UUID(int=4)
 STRANGER = uuid.UUID(int=5)
 
-OWN_CASE = uuid.UUID(int=101)
-WAITING_CASE = uuid.UUID(int=102)
+STATUSES = (
+    "intake",
+    "triaged",
+    "in_review",
+    "awaiting_approval",
+    "approved",
+    "returned",
+    "rejected",
+    "executed",
+    "closed",
+)
+PREPARER_CASES = {status: uuid.UUID(int=110 + i) for i, status in enumerate(STATUSES)}
+APPROVER_CASES = {
+    PREPARER_CASES[status]
+    for status in (
+        "awaiting_approval",
+        "approved",
+        "returned",
+        "rejected",
+        "executed",
+        "closed",
+    )
+}
+OWN_CASE = PREPARER_CASES["in_review"]
+WAITING_CASE = PREPARER_CASES["awaiting_approval"]
 OTHER_CASE = uuid.UUID(int=103)
 WAITING_ACTION = uuid.UUID(int=201)
 SECOND_WAITING_ACTION = uuid.UUID(int=202)
@@ -48,11 +71,10 @@ TABLE_PRIVILEGES = ("DELETE", "TRUNCATE", "TRIGGER", "MAINTAIN")
 def seeded(superuser: DatabaseSettings) -> Iterator[None]:
     """Cases, actions, approvals and audit events, written past row security."""
     with connect(superuser) as connection:
-        connection.execute(
-            "INSERT INTO app.cases (case_id, preparer_oid, status) VALUES"
-            " (%s, %s, 'in_review'), (%s, %s, 'awaiting_approval'),"
-            " (%s, %s, 'intake')",
-            (OWN_CASE, PREPARER, WAITING_CASE, PREPARER, OTHER_CASE, OTHER_PREPARER),
+        connection.cursor().executemany(
+            "INSERT INTO app.cases (case_id, preparer_oid, status) VALUES (%s, %s, %s)",
+            [(case, PREPARER, status) for status, case in PREPARER_CASES.items()]
+            + [(OTHER_CASE, OTHER_PREPARER, "intake")],
         )
         connection.execute(
             "INSERT INTO app.actions (action_id, case_id, preparer_oid, payload)"
@@ -325,11 +347,11 @@ def test_the_other_settable_roles_are_refused_on_schema_app(
 @pytest.mark.parametrize(
     ("oid", "roles", "cases"),
     [
-        (PREPARER, ("preparer",), {OWN_CASE, WAITING_CASE}),
+        (PREPARER, ("preparer",), set(PREPARER_CASES.values())),
         (OTHER_PREPARER, ("preparer",), {OTHER_CASE}),
-        (APPROVER, ("approver",), {WAITING_CASE}),
+        (APPROVER, ("approver",), APPROVER_CASES),
         (PREPARER, ("approver",), set()),
-        (VIEWER, ("restricted_viewer",), {OWN_CASE, WAITING_CASE, OTHER_CASE}),
+        (VIEWER, ("restricted_viewer",), {*PREPARER_CASES.values(), OTHER_CASE}),
         (STRANGER, (), set()),
     ],
 )
