@@ -1,6 +1,6 @@
 # ADR 0010: App tables under row security, and the bank calendar
 
-Status: Accepted. Supersedes 0005 in part: in 0005 the sentence "the login can set exactly those three roles and no other" (the login now also sets `app_rw`).
+Status: Accepted. Supersedes 0005 in part: in 0005 the "Role bound at connect, and its reach." bullet's "the login can set exactly those three roles and no other" and "a `SET ROLE` to another of the three", and the "What it does." bullet's "one of the three roles" and "another of the three" (the login now also sets a fourth role, `app_rw`).
 
 ## Context
 
