@@ -385,34 +385,26 @@ def test_child_rows_follow_their_case(
         assert visible(connection, "app.audit_events", "case_id") == audited
 
 
-INSERTS = {
-    "app.cases": ("INSERT INTO app.cases (preparer_oid) VALUES (%s)", "oid"),
-    "app.actions": (
-        "INSERT INTO app.actions (case_id, preparer_oid, payload)"
-        " VALUES (%s, %s, '{}')",
-        "action",
-    ),
-    "app.approvals": (
-        "INSERT INTO app.approvals (action_id, idempotency_key, approver_oid,"
-        " preparer_oid, decision) VALUES (%s, %s, %s, %s, 'approve')",
-        "approval",
-    ),
-    "app.audit_events": (
-        "INSERT INTO app.audit_events (case_id, actor_oid) VALUES (%s, %s)",
-        "event",
-    ),
-}
-
-
 def insert(connection: Connection[Any], table: str, oid: uuid.UUID) -> None:
-    statement, shape = INSERTS[table]
-    parameters: dict[str, tuple[Any, ...]] = {
-        "oid": (oid,),
-        "action": (WAITING_CASE, PREPARER),
-        "approval": (WAITING_ACTION, str(uuid.uuid4()), oid, PREPARER),
-        "event": (WAITING_CASE, oid),
+    statements: dict[str, tuple[str, tuple[Any, ...]]] = {
+        "app.cases": ("INSERT INTO app.cases (preparer_oid) VALUES (%s)", (oid,)),
+        "app.actions": (
+            "INSERT INTO app.actions (case_id, preparer_oid, payload)"
+            " VALUES (%s, %s, '{}')",
+            (WAITING_CASE, PREPARER),
+        ),
+        "app.approvals": (
+            "INSERT INTO app.approvals (action_id, idempotency_key, approver_oid,"
+            " preparer_oid, decision) VALUES (%s, %s, %s, %s, 'approve')",
+            (WAITING_ACTION, str(uuid.uuid4()), oid, PREPARER),
+        ),
+        "app.audit_events": (
+            "INSERT INTO app.audit_events (case_id, actor_oid) VALUES (%s, %s)",
+            (WAITING_CASE, oid),
+        ),
     }
-    connection.execute(statement, parameters[shape])
+    statement, parameters = statements[table]
+    connection.execute(statement, parameters)
 
 
 @pytest.mark.parametrize("table", APP_TABLES)
