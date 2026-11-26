@@ -245,7 +245,9 @@ def test_app_rw_is_refused_updates_deletes_and_truncates(
 ) -> None:
     with (
         acting_as(database, PREPARER, "preparer", "approver") as connection,
-        pytest.raises(psycopg.errors.InsufficientPrivilege),
+        pytest.raises(
+            psycopg.errors.InsufficientPrivilege, match="permission denied for table"
+        ),
     ):
         connection.execute(statement)
 
@@ -279,7 +281,9 @@ def test_server_set_columns_cannot_be_written(
 ) -> None:
     with (
         acting_as(database, PREPARER, "preparer") as connection,
-        pytest.raises(psycopg.errors.InsufficientPrivilege),
+        pytest.raises(
+            psycopg.errors.InsufficientPrivilege, match="permission denied for table"
+        ),
     ):
         connection.execute(statement, parameters)
 
