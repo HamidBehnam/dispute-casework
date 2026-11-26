@@ -469,11 +469,11 @@ def test_the_restricted_viewer_writes_nothing(
 def test_a_principal_without_the_approver_role_cannot_approve(
     database: DatabaseSettings,
 ) -> None:
-    with (
-        acting_as(database, APPROVER, "preparer") as connection,
-        pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"),
-    ):
-        insert(connection, "app.approvals", APPROVER)
+    """The principal sees the action, so only the missing role refuses the row."""
+    with acting_as(database, STRANGER, "preparer", "restricted_viewer") as connection:
+        assert WAITING_ACTION in visible(connection, "app.actions", "action_id")
+        with pytest.raises(psycopg.errors.InsufficientPrivilege, match="row-level"):
+            insert(connection, "app.approvals", STRANGER)
 
 
 def test_an_approval_naming_another_approver_is_refused(
